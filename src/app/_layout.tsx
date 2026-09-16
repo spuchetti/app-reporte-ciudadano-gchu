@@ -1,4 +1,5 @@
-import { DarkTheme, DefaultTheme, SplashScreen, Stack, ThemeProvider } from "expo-router";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { SplashScreen, Stack } from "expo-router";
 import { useColorScheme } from "react-native";
 
 import { SesionProvider, useSesion } from "@/contexto/sesion";
