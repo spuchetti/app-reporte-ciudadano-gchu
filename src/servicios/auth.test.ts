@@ -1,28 +1,14 @@
-jest.mock("@/servicios/almacen-seguro", () => {
-  const memoria = new Map<string, string>();
-  return {
-    guardarSecreto: jest.fn(async (clave: string, valor: string) => {
-      memoria.set(clave, valor);
-    }),
-    leerSecreto: jest.fn(async (clave: string) => memoria.get(clave) ?? null),
-    borrarSecreto: jest.fn(async (clave: string) => {
-      memoria.delete(clave);
-    }),
-    __memoria: memoria,
-  };
-});
-
-jest.mock("expo-local-authentication", () => ({
-  hasHardwareAsync: jest.fn(async () => true),
-  isEnrolledAsync: jest.fn(async () => true),
-  authenticateAsync: jest.fn(async () => ({ success: true })),
-}));
+﻿/// <reference types="jest" />
+jest.mock("@/servicios/almacen-seguro");
+jest.mock("expo-local-authentication");
 
 import * as LocalAuthentication from "expo-local-authentication";
 import { Platform } from "react-native";
 
-import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
-import { usuariosMock } from "@/mocks";
+import * as almacenSeguro from "@/servicios/almacen-seguro";
+import { SesionAutenticada } from "@/tipos";
+import { usuariosMock } from "../mocks";
+import { credencialesMock, emailErrorDeRed } from "../mocks/credenciales";
 import {
   cerrarSesion,
   dispositivoTieneHuella,
@@ -32,14 +18,23 @@ import {
   recuperarArranque,
   registrarVecino,
   reingresarConHuella,
-} from "@/servicios/auth";
+} from "./auth";
+import { ErrorServicio } from "./error";
 
-const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
-  __memoria: Map<string, string>;
-};
+const memoria = new Map<string, string>();
+const guardarSecreto = jest.mocked(almacenSeguro.guardarSecreto);
+const leerSecreto = jest.mocked(almacenSeguro.leerSecreto);
+const borrarSecreto = jest.mocked(almacenSeguro.borrarSecreto);
+const hasHardwareAsync = jest.mocked(LocalAuthentication.hasHardwareAsync);
+const isEnrolledAsync = jest.mocked(LocalAuthentication.isEnrolledAsync);
+const authenticateAsync = jest.mocked(LocalAuthentication.authenticateAsync);
 
 const usuariosIniciales = usuariosMock.length;
 const credencialesIniciales = credencialesMock.length;
+
+function fijarPlataforma(os: typeof Platform.OS) {
+  (Platform as { OS: typeof Platform.OS }).OS = os;
+}
 
 async function esperar<T>(promesa: Promise<T>): Promise<T> {
   const pendiente = promesa;
@@ -48,7 +43,9 @@ async function esperar<T>(promesa: Promise<T>): Promise<T> {
 }
 
 async function esperarError(promesa: Promise<unknown>, codigo: string) {
-  const assertion = expect(promesa).rejects.toMatchObject({ codigo });
+  const assertion = expect(promesa).rejects.toMatchObject<
+    Pick<ErrorServicio, "codigo">
+  >({ codigo });
   await jest.runAllTimersAsync();
   await assertion;
 }
@@ -56,14 +53,20 @@ async function esperarError(promesa: Promise<unknown>, codigo: string) {
 describe("servicios/auth", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    almacen.__memoria.clear();
+    memoria.clear();
     jest.clearAllMocks();
-    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: true,
+    fijarPlataforma("ios");
+
+    guardarSecreto.mockImplementation(async (clave, valor) => {
+      memoria.set(clave, valor);
     });
-    (Platform as { OS: string }).OS = "ios";
+    leerSecreto.mockImplementation(async (clave) => memoria.get(clave) ?? null);
+    borrarSecreto.mockImplementation(async (clave) => {
+      memoria.delete(clave);
+    });
+    hasHardwareAsync.mockResolvedValue(true);
+    isEnrolledAsync.mockResolvedValue(true);
+    authenticateAsync.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -73,7 +76,7 @@ describe("servicios/auth", () => {
   });
 
   test("inicia sesión de un vecino del mock y guarda token", async () => {
-    const sesion = await esperar(
+    const sesion: SesionAutenticada = await esperar(
       iniciarSesion("norma.pereyra@gmail.com", "vecino123"),
     );
 
@@ -81,11 +84,11 @@ describe("servicios/auth", () => {
     expect(sesion.usuario.rol).toBe("vecino");
     expect(sesion.usuario.nombre).toBe("Norma Pereyra");
     expect(sesion.token).toMatch(/^tok-usr-001-/);
-    expect(almacen.__memoria.get("sesion")).toContain("norma.pereyra@gmail.com");
+    expect(memoria.get("sesion")).toContain("norma.pereyra@gmail.com");
   });
 
   test("inicia sesión de un operador", async () => {
-    const sesion = await esperar(
+    const sesion: SesionAutenticada = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
@@ -112,7 +115,7 @@ describe("servicios/auth", () => {
   });
 
   test("registra un vecino nuevo y deja la sesión iniciada", async () => {
-    const sesion = await esperar(
+    const sesion: SesionAutenticada = await esperar(
       registrarVecino({
         nombre: "Ana López",
         email: "ana.lopez@gchu.test",
@@ -124,11 +127,13 @@ describe("servicios/auth", () => {
     expect(sesion.usuario.rol).toBe("vecino");
     expect(sesion.usuario.email).toBe("ana.lopez@gchu.test");
     expect(sesion.usuario.telefono).toBe("3446-000000");
-    expect(usuariosMock.some((u) => u.email === "ana.lopez@gchu.test")).toBe(true);
+    expect(usuariosMock.some((u) => u.email === "ana.lopez@gchu.test")).toBe(
+      true,
+    );
   });
 
   test("guarda teléfono vacío como null", async () => {
-    const sesion = await esperar(
+    const sesion: SesionAutenticada = await esperar(
       registrarVecino({
         nombre: "Pedro Díaz",
         email: "pedro.diaz@gchu.test",
@@ -201,25 +206,27 @@ describe("servicios/auth", () => {
 
     const sesion = await reingresarConHuella();
     expect(sesion.usuario.rol).toBe("operador");
-    expect(LocalAuthentication.authenticateAsync).toHaveBeenCalled();
+    expect(authenticateAsync).toHaveBeenCalled();
   });
 
   test("no reingresa con huella si el usuario cancela", async () => {
     await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
+    authenticateAsync.mockResolvedValue({
       success: false,
       error: "user_cancel",
     });
 
-    await expect(reingresarConHuella()).rejects.toMatchObject({
+    await expect(reingresarConHuella()).rejects.toMatchObject<
+      Pick<ErrorServicio, "codigo">
+    >({
       codigo: "BIOMETRIA_CANCELADA",
     });
   });
 
   test("en web no hay huella", async () => {
-    (Platform as { OS: string }).OS = "web";
+    fijarPlataforma("web");
     await expect(dispositivoTieneHuella()).resolves.toBe(false);
   });
 });
