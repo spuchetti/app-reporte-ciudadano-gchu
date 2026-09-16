@@ -15,3 +15,8 @@ export interface Foto {
   url: string;
   esPrincipal: boolean;
 }
+
+export interface ErrorApi {
+  codigo: string;
+  mensaje: string;
+}

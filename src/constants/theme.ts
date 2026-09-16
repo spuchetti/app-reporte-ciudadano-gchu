@@ -7,6 +7,21 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const Paleta = {
+  ink: '#12232E',
+  inkSoft: '#3E5560',
+  paper: '#F1F4F3',
+  paperRaised: '#FFFFFF',
+  teal: '#1F6F78',
+  tealDeep: '#144D53',
+  orange: '#E8630C',
+  amarillo: '#F2B705',
+  azul: '#2E6E9E',
+  verde: '#2F9E52',
+  rojo: '#D64545',
+  line: 'rgba(18,35,46,0.12)',
+} as const;
+
 export const Colors = {
   light: {
     text: '#000000',
