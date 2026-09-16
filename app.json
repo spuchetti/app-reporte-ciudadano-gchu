@@ -85,14 +85,6 @@
         }
       ],
       [
-        "react-native-maps",
-        {
-          "permissions": {
-            "location": "La app usa tu ubicación para saber exactamente dónde está el problema que reportás."
-          }
-        }
-      ],
-      [
         "expo-secure-store",
         {
           "faceIDPermission": "Permite usar Face ID para autenticación segura."
