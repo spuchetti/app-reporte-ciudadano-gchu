@@ -1,16 +1,59 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
+import { DarkTheme, DefaultTheme, SplashScreen, Stack, ThemeProvider } from "expo-router";
 import { useColorScheme } from "react-native";
 
-import AppTabs from "@/components/app-tabs";
+import { SesionProvider, useSesion } from "@/contexto/sesion";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AppTabs />
+      <SesionProvider>
+        <SplashScreenController />
+        <RootNavigator />
+      </SesionProvider>
     </ThemeProvider>
+  );
+}
+
+function SplashScreenController() {
+  const { isLoading } = useSesion();
+
+  if (!isLoading) {
+    SplashScreen.hide();
+  }
+
+  return null;
+}
+
+function RootNavigator() {
+  const { sesion, isLoading } = useSesion();
+
+  if (isLoading) {
+    return null;
+  }
+
+  const esInvitado = sesion?.esInvitado === true;
+  const esVecino = sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
+  const esOperador =
+    sesion?.esInvitado === false && sesion.usuario.rol === "operador";
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!sesion}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={esVecino}>
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+      <Stack.Protected guard={esOperador}>
+        <Stack.Screen name="(operador)" />
+      </Stack.Protected>
+      <Stack.Protected guard={esInvitado}>
+        <Stack.Screen name="(publico)" />
+      </Stack.Protected>
+    </Stack>
   );
 }

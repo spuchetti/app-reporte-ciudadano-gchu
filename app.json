@@ -15,7 +15,8 @@
         "NSCameraUsageDescription": "La app necesita acceso a la cámara para tomar fotos del problema que querés reportar.",
         "NSLocationWhenInUseUsageDescription": "La app usa tu ubicación para saber exactamente dónde está el problema que reportás.",
         "NSMicrophoneUsageDescription": "La app usa el micrófono para que puedas grabar una nota de voz describiendo el problema.",
-        "NSPhotoLibraryUsageDescription": "La app necesita acceso a tu galería para seleccionar fotos del problema."
+        "NSPhotoLibraryUsageDescription": "La app necesita acceso a tu galería para seleccionar fotos del problema.",
+        "NSFaceIDUsageDescription": "La app usa Face ID para que el operador pueda reingresar sin tipear la contraseña."
       }
     },
     "android": {
