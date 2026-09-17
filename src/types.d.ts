@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 // src/types.d.ts
 declare module "*.css" {
   const content: any;
