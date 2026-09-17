@@ -1,38 +1,36 @@
-﻿/// <reference types="jest" />
-jest.mock("@/servicios/almacen-seguro");
-jest.mock("expo-local-authentication");
+jest.mock("@/servicios/almacen-seguro", () => {
+  const memoria = new Map<string, string>();
+  return {
+    guardarSecreto: jest.fn(async (clave: string, valor: string) => {
+      memoria.set(clave, valor);
+    }),
+    leerSecreto: jest.fn(async (clave: string) => memoria.get(clave) ?? null),
+    borrarSecreto: jest.fn(async (clave: string) => {
+      memoria.delete(clave);
+    }),
+    __memoria: memoria,
+  };
+});
 
-import * as LocalAuthentication from "expo-local-authentication";
-import { Platform } from "react-native";
-
-import * as almacenSeguro from "@/servicios/almacen-seguro";
-import { SesionAutenticada } from "@/tipos";
-import { usuariosMock } from "../mocks";
-import { credencialesMock, emailErrorDeRed } from "../mocks/credenciales";
+import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
+import { usuariosMock } from "@/mocks";
 import {
   cerrarSesion,
   iniciarSesion,
   MENSAJE_SESION_VENCIDA,
   recuperarArranque,
   registrarVecino,
-  reingresarConHuella,
-} from "./auth";
-import { ErrorServicio } from "./error";
+  TTL_TOKEN_MS,
+  validarToken,
+} from "@/servicios/auth";
+import { SesionAutenticada, Usuario } from "@/tipos";
 
-const memoria = new Map<string, string>();
-const guardarSecreto = jest.mocked(almacenSeguro.guardarSecreto);
-const leerSecreto = jest.mocked(almacenSeguro.leerSecreto);
-const borrarSecreto = jest.mocked(almacenSeguro.borrarSecreto);
-const hasHardwareAsync = jest.mocked(LocalAuthentication.hasHardwareAsync);
-const isEnrolledAsync = jest.mocked(LocalAuthentication.isEnrolledAsync);
-const authenticateAsync = jest.mocked(LocalAuthentication.authenticateAsync);
+const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
+  __memoria: Map<string, string>;
+};
 
 const usuariosIniciales = usuariosMock.length;
 const credencialesIniciales = credencialesMock.length;
-
-function fijarPlataforma(os: typeof Platform.OS) {
-  (Platform as { OS: typeof Platform.OS }).OS = os;
-}
 
 async function esperar<T>(promesa: Promise<T>): Promise<T> {
   const pendiente = promesa;
@@ -41,9 +39,7 @@ async function esperar<T>(promesa: Promise<T>): Promise<T> {
 }
 
 async function esperarError(promesa: Promise<unknown>, codigo: string) {
-  const assertion = expect(promesa).rejects.toMatchObject<
-    Pick<ErrorServicio, "codigo">
-  >({ codigo });
+  const assertion = expect(promesa).rejects.toMatchObject({ codigo });
   await jest.runAllTimersAsync();
   await assertion;
 }
@@ -68,20 +64,8 @@ function guardarSesion(sesion: unknown) {
 describe("servicios/auth", () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    memoria.clear();
+    almacen.__memoria.clear();
     jest.clearAllMocks();
-    fijarPlataforma("ios");
-
-    guardarSecreto.mockImplementation(async (clave, valor) => {
-      memoria.set(clave, valor);
-    });
-    leerSecreto.mockImplementation(async (clave) => memoria.get(clave) ?? null);
-    borrarSecreto.mockImplementation(async (clave) => {
-      memoria.delete(clave);
-    });
-    hasHardwareAsync.mockResolvedValue(true);
-    isEnrolledAsync.mockResolvedValue(true);
-    authenticateAsync.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
@@ -90,21 +74,15 @@ describe("servicios/auth", () => {
     jest.useRealTimers();
   });
 
-  test("inicia sesión de un vecino del mock y guarda token", async () => {
-    const sesion: SesionAutenticada = await esperar(
+  test("no inicia sesión de un vecino: el login es solo de operador", async () => {
+    await esperarError(
       iniciarSesion("norma.pereyra@gmail.com", "vecino123"),
       "CREDENCIALES_INVALIDAS",
     );
-
-    expect(sesion.esInvitado).toBe(false);
-    expect(sesion.usuario.rol).toBe("vecino");
-    expect(sesion.usuario.nombre).toBe("Norma Pereyra");
-    expect(sesion.token).toMatch(/^tok-usr-001-/);
-    expect(memoria.get("sesion")).toContain("norma.pereyra@gmail.com");
   });
 
-  test("inicia sesión de un operador", async () => {
-    const sesion: SesionAutenticada = await esperar(
+  test("inicia sesión de un operador y guarda un token con vencimiento", async () => {
+    const sesion = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
@@ -132,8 +110,8 @@ describe("servicios/auth", () => {
     await esperarError(iniciarSesion(emailErrorDeRed, "operador123"), "RED");
   });
 
-  test("registra un vecino nuevo y deja la sesión iniciada", async () => {
-    const sesion: SesionAutenticada = await esperar(
+  test("identifica un vecino con nombre, email y teléfono, sin contraseña", async () => {
+    const sesion = await esperar(
       registrarVecino({
         nombre: "Ana López",
         email: "ana.lopez@gchu.test",
@@ -145,13 +123,11 @@ describe("servicios/auth", () => {
     expect(sesion.usuario.zonaId).toBeNull();
     expect(sesion.usuario.email).toBe("ana.lopez@gchu.test");
     expect(sesion.usuario.telefono).toBe("3446-000000");
-    expect(usuariosMock.some((u) => u.email === "ana.lopez@gchu.test")).toBe(
-      true,
-    );
+    expect(usuariosMock.some((u) => u.email === "ana.lopez@gchu.test")).toBe(true);
   });
 
-  test("guarda teléfono vacío como null", async () => {
-    const sesion: SesionAutenticada = await esperar(
+  test("guarda el id del vecino en el dispositivo", async () => {
+    const sesion = await esperar(
       registrarVecino({
         nombre: "Pedro Díaz",
         email: "pedro.diaz@gchu.test",
@@ -240,9 +216,9 @@ describe("servicios/auth", () => {
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
-    const sesion = await reingresarConHuella();
-    expect(sesion.usuario.rol).toBe("operador");
-    expect(authenticateAsync).toHaveBeenCalled();
+    const usuario = await esperar(validarToken(sesion.token));
+    expect(usuario.rol).toBe("operador");
+    expect(usuario.email).toBe("jorge.fernandez@gualeguaychu.gov.ar");
   });
 
   test("GET /me rechaza un token que no coincide", async () => {
@@ -257,15 +233,18 @@ describe("servicios/auth", () => {
         expiraEn: new Date(Date.now() - 1000).toISOString(),
       }),
     );
-    authenticateAsync.mockResolvedValue({
-      success: false,
-      error: "user_cancel",
-    });
 
-    await expect(reingresarConHuella()).rejects.toMatchObject<
-      Pick<ErrorServicio, "codigo">
-    >({
-      codigo: "BIOMETRIA_CANCELADA",
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({ sesion: null, sesionVencida: true });
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+  });
+
+  test("si el token es inválido, borra la sesión y avisa que venció", async () => {
+    guardarSesion({
+      token: "",
+      usuario: usuariosMock[0],
+      expiraEn: new Date(Date.now() + TTL_TOKEN_MS).toISOString(),
+      esInvitado: false,
     });
 
     const arranque = await esperar(recuperarArranque());
@@ -273,8 +252,18 @@ describe("servicios/auth", () => {
     expect(almacen.__memoria.has("sesion")).toBe(false);
   });
 
-  test("en web no hay huella", async () => {
-    fijarPlataforma("web");
-    await expect(dispositivoTieneHuella()).resolves.toBe(false);
+  test("validarToken usa el mismo aviso para token vencido", async () => {
+    const vencida = sesionDe(usuariosMock[0], {
+      expiraEn: new Date(Date.now() - 60_000).toISOString(),
+    });
+    guardarSesion(vencida);
+
+    const promesa = validarToken(vencida.token);
+    const assertion = expect(promesa).rejects.toMatchObject({
+      codigo: "TOKEN_EXPIRADO",
+      mensaje: MENSAJE_SESION_VENCIDA,
+    });
+    await jest.runAllTimersAsync();
+    await assertion;
   });
 });
