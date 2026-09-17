@@ -27,6 +27,13 @@ export interface TipoDeReporte {
   areaResponsable: string;
 }
 
+/** Datos del reporte público antes de pedir identidad. */
+export interface DatosBorradorReporte {
+  tipoId: string;
+  descripcion: string;
+  direccion: string;
+}
+
 export interface CambioDeEstado {
   id: string;
   reporteId: string;

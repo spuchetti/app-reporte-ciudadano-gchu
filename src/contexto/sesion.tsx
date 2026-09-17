@@ -10,27 +10,25 @@ import {
 
 import {
   cerrarSesion as cerrarSesionServicio,
-  dispositivoTieneHuella,
-  emailOperadorPendiente,
-  entrarComoInvitado as entrarComoInvitadoServicio,
   iniciarSesion as iniciarSesionServicio,
   recuperarArranque,
   registrarVecino,
-  reingresarConHuella as reingresarConHuellaServicio,
 } from "@/servicios/auth";
-import { DatosRegistro, Sesion } from "@/tipos";
+import { crearReporte, datosCreacionDesdeBorrador } from "@/servicios/reportes";
+import { DatosBorradorReporte, DatosRegistro, Sesion } from "@/tipos";
 
 type ValorSesion = {
   sesion: Sesion | null;
   isLoading: boolean;
-  pendienteHuella: boolean;
-  huellaDisponible: boolean;
-  emailOperador: string | null;
+  sesionVencida: boolean;
   iniciarSesion: (email: string, contrasena: string) => Promise<void>;
   registrar: (datos: DatosRegistro) => Promise<void>;
-  entrarComoInvitado: () => Promise<void>;
-  reingresarConHuella: () => Promise<void>;
+  enviarPrimerReporte: (
+    datos: DatosRegistro,
+    borrador: DatosBorradorReporte,
+  ) => Promise<void>;
   cerrarSesion: () => Promise<void>;
+  cerrarAvisoSesionVencida: () => void;
 };
 
 const SesionContext = createContext<ValorSesion | null>(null);
@@ -38,28 +36,20 @@ const SesionContext = createContext<ValorSesion | null>(null);
 export function SesionProvider({ children }: PropsWithChildren) {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [pendienteHuella, setPendienteHuella] = useState(false);
-  const [huellaDisponible, setHuellaDisponible] = useState(false);
-  const [emailOperador, setEmailOperador] = useState<string | null>(null);
+  const [sesionVencida, setSesionVencida] = useState(false);
 
   useEffect(() => {
     let activo = true;
 
     (async () => {
-      const [arranque, tieneHuella, email] = await Promise.all([
-        recuperarArranque(),
-        dispositivoTieneHuella(),
-        emailOperadorPendiente(),
-      ]);
+      const arranque = await recuperarArranque();
 
       if (!activo) {
         return;
       }
 
       setSesion(arranque.sesion);
-      setPendienteHuella(arranque.pendienteHuella);
-      setHuellaDisponible(tieneHuella);
-      setEmailOperador(email);
+      setSesionVencida(arranque.sesionVencida);
       setIsLoading(false);
     })();
 
@@ -71,63 +61,55 @@ export function SesionProvider({ children }: PropsWithChildren) {
   const iniciarSesion = useCallback(async (email: string, contrasena: string) => {
     const siguiente = await iniciarSesionServicio(email, contrasena);
     setSesion(siguiente);
-    setPendienteHuella(false);
-    setEmailOperador(
-      siguiente.usuario.rol === "operador" ? siguiente.usuario.email : null,
-    );
+    setSesionVencida(false);
   }, []);
 
   const registrar = useCallback(async (datos: DatosRegistro) => {
     const siguiente = await registrarVecino(datos);
     setSesion(siguiente);
-    setPendienteHuella(false);
-    setEmailOperador(null);
+    setSesionVencida(false);
   }, []);
 
-  const entrarComoInvitado = useCallback(async () => {
-    const siguiente = await entrarComoInvitadoServicio();
-    setSesion(siguiente);
-    setPendienteHuella(false);
-    setEmailOperador(null);
-  }, []);
-
-  const reingresarConHuella = useCallback(async () => {
-    const siguiente = await reingresarConHuellaServicio();
-    setSesion(siguiente);
-    setPendienteHuella(false);
-  }, []);
+  const enviarPrimerReporte = useCallback(
+    async (datos: DatosRegistro, borrador: DatosBorradorReporte) => {
+      const siguiente = await registrarVecino(datos);
+      await crearReporte(datosCreacionDesdeBorrador(borrador, siguiente.usuario.id));
+      setSesion(siguiente);
+      setSesionVencida(false);
+    },
+    [],
+  );
 
   const cerrarSesion = useCallback(async () => {
     await cerrarSesionServicio();
     setSesion(null);
-    setPendienteHuella(false);
-    setEmailOperador(null);
+    setSesionVencida(false);
+  }, []);
+
+  const cerrarAvisoSesionVencida = useCallback(() => {
+    setSesionVencida(false);
   }, []);
 
   const valor = useMemo(
     () => ({
       sesion,
       isLoading,
-      pendienteHuella,
-      huellaDisponible,
-      emailOperador,
+      sesionVencida,
       iniciarSesion,
       registrar,
-      entrarComoInvitado,
-      reingresarConHuella,
+      enviarPrimerReporte,
       cerrarSesion,
+      cerrarAvisoSesionVencida,
     }),
     [
       sesion,
       isLoading,
-      pendienteHuella,
-      huellaDisponible,
-      emailOperador,
+      sesionVencida,
       iniciarSesion,
       registrar,
-      entrarComoInvitado,
-      reingresarConHuella,
+      enviarPrimerReporte,
       cerrarSesion,
+      cerrarAvisoSesionVencida,
     ],
   );
 
