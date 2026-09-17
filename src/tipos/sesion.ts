@@ -8,19 +8,20 @@ export interface Credenciales {
 export interface DatosRegistro {
   nombre: string;
   email: string;
-  telefono: string | null;
-  contrasena: string;
+  telefono: string;
 }
 
 /** Cuerpo de { datos } en login/registro cuando exista la API. */
 export interface DatosSesion {
   token: string;
   usuario: Usuario;
+  expiraEn: string;
 }
 
 export type SesionAutenticada = {
   token: string;
   usuario: Usuario;
+  expiraEn: string;
   esInvitado: false;
 };
 
