@@ -22,12 +22,13 @@ export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const dosColumnas = width >= 768;
-  const { iniciarSesion } = useSesion();
+  const { iniciarSesion, pendienteBiometria, desbloquearConBiometria } =
+    useSesion();
 
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState<"login" | "biometria" | null>(null);
 
   async function onIngresar() {
     if (!email.trim() || !contrasena) {
@@ -36,7 +37,7 @@ export default function LoginOperadorScreen() {
     }
 
     setError(null);
-    setCargando(true);
+    setCargando("login");
     try {
       await iniciarSesion(email, contrasena);
     } catch (err) {
@@ -46,7 +47,23 @@ export default function LoginOperadorScreen() {
           : "No se pudo completar el acceso. Intentá de nuevo.",
       );
     } finally {
-      setCargando(false);
+      setCargando(null);
+    }
+  }
+
+  async function onBiometria() {
+    setError(null);
+    setCargando("biometria");
+    try {
+      await desbloquearConBiometria();
+    } catch (err) {
+      setError(
+        esErrorServicio(err)
+          ? err.message
+          : "No se pudo confirmar la identidad.",
+      );
+    } finally {
+      setCargando(null);
     }
   }
 
@@ -127,16 +144,28 @@ export default function LoginOperadorScreen() {
 
             <Boton
               titulo="Ingresar"
-              cargando={cargando}
-              disabled={cargando}
+              cargando={cargando === "login"}
+              disabled={cargando !== null}
               onPress={onIngresar}
             />
+
+            {pendienteBiometria ? (
+              <View style={styles.bloqueBiometria}>
+                <Boton
+                  titulo="Ingresar con biometría"
+                  variante="secundario"
+                  cargando={cargando === "biometria"}
+                  disabled={cargando !== null}
+                  onPress={onBiometria}
+                />
+              </View>
+            ) : null}
 
             <View style={styles.separador} />
             <Boton
               titulo="Volver al mapa"
               variante="texto"
-              disabled={cargando}
+              disabled={cargando !== null}
               onPress={() => router.replace("/")}
             />
 
@@ -236,6 +265,9 @@ const styles = StyleSheet.create({
   },
   separador: {
     height: 12,
+  },
+  bloqueBiometria: {
+    marginTop: 12,
   },
   ayuda: {
     marginTop: 24,

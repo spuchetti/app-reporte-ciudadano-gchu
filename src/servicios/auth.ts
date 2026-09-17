@@ -1,3 +1,6 @@
+import * as LocalAuthentication from "expo-local-authentication";
+import { Platform } from "react-native";
+
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import {
@@ -196,13 +199,38 @@ export async function cerrarSesion(): Promise<void> {
   await borrarSecreto(CLAVE_SESION);
 }
 
-export async function recuperarArranque(): Promise<{
+export type ResultadoArranque = {
   sesion: SesionAutenticada | null;
   sesionVencida: boolean;
-}> {
+  pendienteBiometria: boolean;
+};
+
+export async function dispositivoTieneBiometria(): Promise<boolean> {
+  if (Platform.OS === "web") {
+    return false;
+  }
+
+  const hardware = await LocalAuthentication.hasHardwareAsync();
+  const enrolado = await LocalAuthentication.isEnrolledAsync();
+  return hardware && enrolado;
+}
+
+async function confirmarBiometria(): Promise<boolean> {
+  const resultado = await LocalAuthentication.authenticateAsync({
+    promptMessage: "Confirmá tu identidad para continuar",
+    cancelLabel: "Cancelar",
+    disableDeviceFallback: false,
+  });
+  return resultado.success;
+}
+
+export async function desbloquearConBiometria(): Promise<SesionAutenticada> {
   const crudo = await leerSecreto(CLAVE_SESION);
   if (!crudo) {
-    return { sesion: null, sesionVencida: false };
+    throw new ErrorServicio({
+      codigo: "SIN_SESION",
+      mensaje: "No hay una sesión para desbloquear.",
+    });
   }
 
   let parsed: unknown;
@@ -210,25 +238,72 @@ export async function recuperarArranque(): Promise<{
     parsed = JSON.parse(crudo);
   } catch {
     await borrarSecreto(CLAVE_SESION);
-    return { sesion: null, sesionVencida: true };
+    throw errorToken("TOKEN_INVALIDO");
   }
 
   if (!esSesionAutenticada(parsed)) {
     await borrarSecreto(CLAVE_SESION);
-    return { sesion: null, sesionVencida: true };
+    throw errorToken("TOKEN_INVALIDO");
+  }
+
+  const usuario = await validarToken(parsed.token);
+  const disponible = await dispositivoTieneBiometria();
+  if (!disponible) {
+    throw new ErrorServicio({
+      codigo: "BIOMETRIA_NO_DISPONIBLE",
+      mensaje: "Este dispositivo no tiene huella o Face ID configurado.",
+    });
+  }
+
+  const ok = await confirmarBiometria();
+  if (!ok) {
+    throw new ErrorServicio({
+      codigo: "BIOMETRIA_CANCELADA",
+      mensaje: "No se pudo confirmar la identidad.",
+    });
+  }
+
+  return { ...parsed, usuario };
+}
+
+export async function recuperarArranque(): Promise<ResultadoArranque> {
+  const crudo = await leerSecreto(CLAVE_SESION);
+  if (!crudo) {
+    return { sesion: null, sesionVencida: false, pendienteBiometria: false };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(crudo);
+  } catch {
+    await borrarSecreto(CLAVE_SESION);
+    return { sesion: null, sesionVencida: true, pendienteBiometria: false };
+  }
+
+  if (!esSesionAutenticada(parsed)) {
+    await borrarSecreto(CLAVE_SESION);
+    return { sesion: null, sesionVencida: true, pendienteBiometria: false };
   }
 
   try {
     const usuario = await validarToken(parsed.token);
-    return {
-      sesion: { ...parsed, usuario },
-      sesionVencida: false,
-    };
+    const sesion = { ...parsed, usuario };
+    const pedirBiometria = await dispositivoTieneBiometria();
+    if (!pedirBiometria) {
+      return { sesion, sesionVencida: false, pendienteBiometria: false };
+    }
+
+    const ok = await confirmarBiometria();
+    if (ok) {
+      return { sesion, sesionVencida: false, pendienteBiometria: false };
+    }
+
+    return { sesion: null, sesionVencida: false, pendienteBiometria: true };
   } catch (error) {
     await borrarSecreto(CLAVE_SESION);
     const sesionVencida =
       esErrorServicio(error) &&
       (error.codigo === "TOKEN_EXPIRADO" || error.codigo === "TOKEN_INVALIDO");
-    return { sesion: null, sesionVencida };
+    return { sesion: null, sesionVencida, pendienteBiometria: false };
   }
 }

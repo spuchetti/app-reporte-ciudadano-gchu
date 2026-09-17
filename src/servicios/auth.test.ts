@@ -12,10 +12,21 @@ jest.mock("@/servicios/almacen-seguro", () => {
   };
 });
 
+jest.mock("expo-local-authentication", () => ({
+  hasHardwareAsync: jest.fn(async () => false),
+  isEnrolledAsync: jest.fn(async () => false),
+  authenticateAsync: jest.fn(async () => ({ success: true })),
+}));
+
+import * as LocalAuthentication from "expo-local-authentication";
+import { Platform } from "react-native";
+
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import {
   cerrarSesion,
+  desbloquearConBiometria,
+  dispositivoTieneBiometria,
   iniciarSesion,
   MENSAJE_SESION_VENCIDA,
   recuperarArranque,
@@ -66,6 +77,12 @@ describe("servicios/auth", () => {
     jest.useFakeTimers();
     almacen.__memoria.clear();
     jest.clearAllMocks();
+    (Platform as { OS: string }).OS = "ios";
+    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(false);
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(false);
+    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
+      success: true,
+    });
   });
 
   afterEach(() => {
@@ -162,7 +179,11 @@ describe("servicios/auth", () => {
 
   test("sin usuario guardado, el arranque no tiene sesión", async () => {
     const arranque = await esperar(recuperarArranque());
-    expect(arranque).toEqual({ sesion: null, sesionVencida: false });
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: false,
+      pendienteBiometria: false,
+    });
   });
 
   test("al cerrar sesión borra el secreto", async () => {
@@ -176,7 +197,11 @@ describe("servicios/auth", () => {
     await esperar(cerrarSesion());
 
     const arranque = await esperar(recuperarArranque());
-    expect(arranque).toEqual({ sesion: null, sesionVencida: false });
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: false,
+      pendienteBiometria: false,
+    });
   });
 
   test("al reabrir, un vecino con token vigente recupera la sesión", async () => {
@@ -235,7 +260,11 @@ describe("servicios/auth", () => {
     );
 
     const arranque = await esperar(recuperarArranque());
-    expect(arranque).toEqual({ sesion: null, sesionVencida: true });
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: true,
+      pendienteBiometria: false,
+    });
     expect(almacen.__memoria.has("sesion")).toBe(false);
   });
 
@@ -248,7 +277,11 @@ describe("servicios/auth", () => {
     });
 
     const arranque = await esperar(recuperarArranque());
-    expect(arranque).toEqual({ sesion: null, sesionVencida: true });
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: true,
+      pendienteBiometria: false,
+    });
     expect(almacen.__memoria.has("sesion")).toBe(false);
   });
 
@@ -265,5 +298,83 @@ describe("servicios/auth", () => {
     });
     await jest.runAllTimersAsync();
     await assertion;
+  });
+
+  test("en web no pide biometría y restaura el token vigente", async () => {
+    (Platform as { OS: string }).OS = "web";
+    await esperar(
+      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+    );
+
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque.pendienteBiometria).toBe(false);
+    expect(arranque.sesion?.esInvitado).toBe(false);
+    expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
+  });
+
+  test("con biometría enrolada, un token vigente pide confirmación y entra", async () => {
+    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
+
+    const creada = await esperar(
+      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+    );
+    const arranque = await esperar(recuperarArranque());
+
+    expect(LocalAuthentication.authenticateAsync).toHaveBeenCalled();
+    expect(arranque.pendienteBiometria).toBe(false);
+    expect(arranque.sesion?.esInvitado).toBe(false);
+    if (arranque.sesion?.esInvitado === false) {
+      expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
+    }
+  });
+
+  test("si cancela la biometría, no borra el token y queda pendiente", async () => {
+    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
+      success: false,
+      error: "user_cancel",
+    });
+
+    await esperar(
+      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+    );
+    const arranque = await esperar(recuperarArranque());
+
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: false,
+      pendienteBiometria: true,
+    });
+    expect(almacen.__memoria.has("sesion")).toBe(true);
+  });
+
+  test("desbloquea con biometría un token vigente después de cancelar", async () => {
+    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
+      success: false,
+    });
+
+    await esperar(
+      registrarVecino({
+        nombre: "Ana López",
+        email: "ana.biometria@gchu.test",
+        telefono: "3446-000000",
+      }),
+    );
+    await esperar(recuperarArranque());
+
+    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+    const sesion = await esperar(desbloquearConBiometria());
+    expect(sesion.usuario.rol).toBe("vecino");
+  });
+
+  test("en web no hay biometría disponible", async () => {
+    (Platform as { OS: string }).OS = "web";
+    await expect(dispositivoTieneBiometria()).resolves.toBe(false);
   });
 });
