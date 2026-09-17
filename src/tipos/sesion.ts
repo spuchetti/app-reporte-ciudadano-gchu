@@ -15,11 +15,13 @@ export interface DatosRegistro {
 export interface DatosSesion {
   token: string;
   usuario: Usuario;
+  expiraEn: string;
 }
 
 export type SesionAutenticada = {
   token: string;
   usuario: Usuario;
+  expiraEn: string;
   esInvitado: false;
 };
 

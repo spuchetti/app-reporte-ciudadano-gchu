@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { router } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   KeyboardAvoidingView,
@@ -17,9 +17,25 @@ import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
 
-export default function RegisterScreen() {
+function textoParam(valor: string | string[] | undefined) {
+  if (Array.isArray(valor)) {
+    return valor[0] ?? "";
+  }
+  return valor ?? "";
+}
+
+export default function DatosVecinoScreen() {
   const insets = useSafeAreaInsets();
-  const { registrar } = useSesion();
+  const params = useLocalSearchParams<{
+    tipoId?: string | string[];
+    descripcion?: string | string[];
+    direccion?: string | string[];
+  }>();
+  const { enviarPrimerReporte } = useSesion();
+
+  const tipoId = textoParam(params.tipoId);
+  const descripcion = textoParam(params.descripcion);
+  const direccion = textoParam(params.direccion);
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -27,20 +43,23 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
+  if (!tipoId || !direccion) {
+    return <Redirect href="/reporte" />;
+  }
+
   async function onSubmit() {
     setError(null);
     setCargando(true);
     try {
-      await registrar({
-        nombre,
-        email,
-        telefono,
-      });
+      await enviarPrimerReporte(
+        { nombre, email, telefono },
+        { tipoId, descripcion, direccion },
+      );
     } catch (err) {
       setError(
         esErrorServicio(err)
           ? err.message
-          : "No se pudieron guardar tus datos. Intentá de nuevo.",
+          : "No se pudo enviar el reporte. Intentá de nuevo.",
       );
     } finally {
       setCargando(false);
@@ -66,7 +85,8 @@ export default function RegisterScreen() {
         <View style={styles.formInner}>
           <Text style={styles.titulo}>Tus datos</Text>
           <Text style={styles.subtitulo}>
-            Los pedimos una vez, antes de enviar tu primer reporte.
+            Los pedimos para enviar el reporte y avisarte el estado. No hace
+            falta contraseña.
           </Text>
 
           <CampoTexto
@@ -103,10 +123,10 @@ export default function RegisterScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Boton titulo="Continuar" cargando={cargando} onPress={onSubmit} />
+          <Boton titulo="Enviar reporte" cargando={cargando} onPress={onSubmit} />
           <View style={styles.separador} />
           <Boton
-            titulo="Volver al mapa"
+            titulo="Volver al reporte"
             variante="texto"
             disabled={cargando}
             onPress={() => router.back()}

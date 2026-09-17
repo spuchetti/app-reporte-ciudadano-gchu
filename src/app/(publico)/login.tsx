@@ -22,36 +22,23 @@ export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const dosColumnas = width >= 768;
-  const {
-    iniciarSesion,
-    reingresarConHuella,
-    pendienteHuella,
-    huellaDisponible,
-    emailOperador,
-    posponerAccesoOperador,
-  } = useSesion();
+  const { iniciarSesion } = useSesion();
 
-  const [email, setEmail] = useState(emailOperador ?? "");
+  const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState<"login" | "huella" | null>(null);
-
-  const puedeHuella = pendienteHuella && huellaDisponible;
-  const ocupado = cargando !== null;
+  const [cargando, setCargando] = useState(false);
 
   async function onIngresar() {
     if (!email.trim() || !contrasena) {
       setError("Completá email y contraseña.");
       return;
     }
-    await manejar("login", () => iniciarSesion(email, contrasena));
-  }
 
-  async function manejar<T>(clave: typeof cargando, accion: () => Promise<T>) {
     setError(null);
-    setCargando(clave);
+    setCargando(true);
     try {
-      await accion();
+      await iniciarSesion(email, contrasena);
     } catch (err) {
       setError(
         esErrorServicio(err)
@@ -59,7 +46,7 @@ export default function LoginOperadorScreen() {
           : "No se pudo completar el acceso. Intentá de nuevo.",
       );
     } finally {
-      setCargando(null);
+      setCargando(false);
     }
   }
 
@@ -121,7 +108,7 @@ export default function LoginOperadorScreen() {
               autoCorrect={false}
               autoComplete="email"
               textContentType="emailAddress"
-              editable={!ocupado}
+              editable={!cargando}
             />
 
             <CampoTexto
@@ -132,7 +119,7 @@ export default function LoginOperadorScreen() {
               secureTextEntry
               autoComplete="password"
               textContentType="password"
-              editable={!ocupado}
+              editable={!cargando}
               onSubmitEditing={onIngresar}
             />
 
@@ -140,32 +127,17 @@ export default function LoginOperadorScreen() {
 
             <Boton
               titulo="Ingresar"
-              cargando={cargando === "login"}
-              disabled={ocupado}
+              cargando={cargando}
+              disabled={cargando}
               onPress={onIngresar}
             />
-
-            {puedeHuella ? (
-              <View style={styles.bloqueHuella}>
-                <Boton
-                  titulo="Ingresar con huella"
-                  variante="secundario"
-                  cargando={cargando === "huella"}
-                  disabled={ocupado}
-                  onPress={() => manejar("huella", reingresarConHuella)}
-                />
-              </View>
-            ) : null}
 
             <View style={styles.separador} />
             <Boton
               titulo="Volver al mapa"
               variante="texto"
-              disabled={ocupado}
-              onPress={() => {
-                posponerAccesoOperador();
-                router.replace("/");
-              }}
+              disabled={cargando}
+              onPress={() => router.replace("/")}
             />
 
             <View style={styles.ayuda}>
@@ -264,9 +236,6 @@ const styles = StyleSheet.create({
   },
   separador: {
     height: 12,
-  },
-  bloqueHuella: {
-    marginTop: 12,
   },
   ayuda: {
     marginTop: 24,

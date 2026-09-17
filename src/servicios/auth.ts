@@ -1,6 +1,3 @@
-import * as LocalAuthentication from "expo-local-authentication";
-import { Platform } from "react-native";
-
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import {
@@ -8,10 +5,14 @@ import {
   guardarSecreto,
   leerSecreto,
 } from "@/servicios/almacen-seguro";
-import { ErrorServicio } from "@/servicios/error";
-import { DatosRegistro, Sesion, SesionAutenticada, Usuario } from "@/tipos";
+import { ErrorServicio, esErrorServicio } from "@/servicios/error";
+import { DatosRegistro, SesionAutenticada, Usuario } from "@/tipos";
 
 const CLAVE_SESION = "sesion";
+export const TTL_TOKEN_MS = 8 * 60 * 60 * 1000;
+export const MENSAJE_SESION_VENCIDA =
+  "Tu sesión venció. Volvé a identificarte o ingresá como operador.";
+
 const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -19,10 +20,33 @@ function emailValido(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function esSesionAutenticada(valor: unknown): valor is SesionAutenticada {
+  if (!valor || typeof valor !== "object") {
+    return false;
+  }
+
+  const sesion = valor as Partial<SesionAutenticada>;
+  const usuario = sesion.usuario;
+
+  return (
+    sesion.esInvitado === false &&
+    typeof sesion.token === "string" &&
+    sesion.token.length > 0 &&
+    typeof sesion.expiraEn === "string" &&
+    Number.isFinite(Date.parse(sesion.expiraEn)) &&
+    typeof usuario === "object" &&
+    usuario !== null &&
+    typeof usuario.id === "string" &&
+    typeof usuario.email === "string" &&
+    (usuario.rol === "vecino" || usuario.rol === "operador")
+  );
+}
+
 function armarSesion(usuario: Usuario): SesionAutenticada {
   return {
     token: `tok-${usuario.id}-${Date.now()}`,
     usuario,
+    expiraEn: new Date(Date.now() + TTL_TOKEN_MS).toISOString(),
     esInvitado: false,
   };
 }
@@ -31,23 +55,38 @@ async function persistirSesion(sesion: SesionAutenticada) {
   await guardarSecreto(CLAVE_SESION, JSON.stringify(sesion));
 }
 
-async function leerSesionGuardada(): Promise<SesionAutenticada | null> {
+function errorToken(codigo: "TOKEN_INVALIDO" | "TOKEN_EXPIRADO") {
+  return new ErrorServicio({
+    codigo,
+    mensaje: MENSAJE_SESION_VENCIDA,
+  });
+}
+
+/** Mock de GET /me: valida el token guardado y su vencimiento. */
+export async function validarToken(token: string): Promise<Usuario> {
+  await delay(300);
+
   const crudo = await leerSecreto(CLAVE_SESION);
   if (!crudo) {
-    return null;
+    throw errorToken("TOKEN_INVALIDO");
   }
 
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(crudo) as Sesion;
-    if (parsed.esInvitado || !parsed.usuario) {
-      await borrarSecreto(CLAVE_SESION);
-      return null;
-    }
-    return parsed;
+    parsed = JSON.parse(crudo);
   } catch {
-    await borrarSecreto(CLAVE_SESION);
-    return null;
+    throw errorToken("TOKEN_INVALIDO");
   }
+
+  if (!esSesionAutenticada(parsed) || parsed.token !== token) {
+    throw errorToken("TOKEN_INVALIDO");
+  }
+
+  if (Date.parse(parsed.expiraEn) <= Date.now()) {
+    throw errorToken("TOKEN_EXPIRADO");
+  }
+
+  return parsed.usuario;
 }
 
 export async function iniciarSesion(
@@ -159,67 +198,37 @@ export async function cerrarSesion(): Promise<void> {
 
 export async function recuperarArranque(): Promise<{
   sesion: SesionAutenticada | null;
-  pendienteHuella: boolean;
+  sesionVencida: boolean;
 }> {
-  const guardada = await leerSesionGuardada();
-  if (!guardada) {
-    return { sesion: null, pendienteHuella: false };
+  const crudo = await leerSecreto(CLAVE_SESION);
+  if (!crudo) {
+    return { sesion: null, sesionVencida: false };
   }
 
-  if (guardada.usuario.rol === "operador") {
-    return { sesion: null, pendienteHuella: true };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(crudo);
+  } catch {
+    await borrarSecreto(CLAVE_SESION);
+    return { sesion: null, sesionVencida: true };
   }
 
-  return { sesion: guardada, pendienteHuella: false };
-}
-
-export async function dispositivoTieneHuella(): Promise<boolean> {
-  if (Platform.OS === "web") {
-    return false;
+  if (!esSesionAutenticada(parsed)) {
+    await borrarSecreto(CLAVE_SESION);
+    return { sesion: null, sesionVencida: true };
   }
 
-  const hardware = await LocalAuthentication.hasHardwareAsync();
-  const enrolado = await LocalAuthentication.isEnrolledAsync();
-  return hardware && enrolado;
-}
-
-export async function reingresarConHuella(): Promise<SesionAutenticada> {
-  const guardada = await leerSesionGuardada();
-  if (!guardada || guardada.usuario.rol !== "operador") {
-    throw new ErrorServicio({
-      codigo: "SIN_SESION_OPERADOR",
-      mensaje: "No hay un operador para reingresar con huella.",
-    });
+  try {
+    const usuario = await validarToken(parsed.token);
+    return {
+      sesion: { ...parsed, usuario },
+      sesionVencida: false,
+    };
+  } catch (error) {
+    await borrarSecreto(CLAVE_SESION);
+    const sesionVencida =
+      esErrorServicio(error) &&
+      (error.codigo === "TOKEN_EXPIRADO" || error.codigo === "TOKEN_INVALIDO");
+    return { sesion: null, sesionVencida };
   }
-
-  const disponible = await dispositivoTieneHuella();
-  if (!disponible) {
-    throw new ErrorServicio({
-      codigo: "BIOMETRIA_NO_DISPONIBLE",
-      mensaje: "Este dispositivo no tiene huella o Face ID configurado.",
-    });
-  }
-
-  const resultado = await LocalAuthentication.authenticateAsync({
-    promptMessage: "Ingresá con tu huella para continuar",
-    cancelLabel: "Cancelar",
-    disableDeviceFallback: false,
-  });
-
-  if (!resultado.success) {
-    throw new ErrorServicio({
-      codigo: "BIOMETRIA_CANCELADA",
-      mensaje: "No se pudo confirmar la identidad.",
-    });
-  }
-
-  return guardada;
-}
-
-export async function emailOperadorPendiente(): Promise<string | null> {
-  const guardada = await leerSesionGuardada();
-  if (!guardada || guardada.usuario.rol !== "operador") {
-    return null;
-  }
-  return guardada.usuario.email;
 }

@@ -1,5 +1,14 @@
 import { cambiosEstadoMock, reportesMock, tiposReporteMock } from "@/mocks";
-import { CambioDeEstado, Reporte, TipoDeReporte } from "@/tipos";
+import { ErrorServicio } from "@/servicios/error";
+import {
+  CambioDeEstado,
+  DatosBorradorReporte,
+  Reporte,
+  TipoDeReporte,
+} from "@/tipos";
+
+const COORDENADAS_CENTRO = { latitud: -33.0156, longitud: -58.5089 };
+const ZONA_POR_DEFECTO = "zon-centro";
 
 // Simular delay de red
 const delay = (ms: number = 500) =>
@@ -35,6 +44,45 @@ export const obtenerReportesPorZona = async (
   await delay(500);
   return reportesMock.filter((r) => r.zonaId === zonaId);
 };
+
+export function validarBorradorReporte(borrador: DatosBorradorReporte) {
+  if (!tiposReporteMock.some((tipo) => tipo.id === borrador.tipoId)) {
+    throw new ErrorServicio({
+      codigo: "TIPO_INVALIDO",
+      mensaje: "Elegí el tipo de problema.",
+    });
+  }
+
+  if (borrador.direccion.trim().length < 5) {
+    throw new ErrorServicio({
+      codigo: "DIRECCION_INVALIDA",
+      mensaje: "Ingresá la dirección.",
+    });
+  }
+}
+
+export function datosCreacionDesdeBorrador(
+  borrador: DatosBorradorReporte,
+  autorId: string,
+): Omit<Reporte, "id" | "codigo" | "creadoEn"> {
+  validarBorradorReporte(borrador);
+
+  return {
+    tipoId: borrador.tipoId,
+    descripcion: borrador.descripcion.trim() || null,
+    audioUrl: null,
+    fotos: [],
+    coordenadas: COORDENADAS_CENTRO,
+    direccion: borrador.direccion.trim(),
+    zonaId: ZONA_POR_DEFECTO,
+    estado: "recibido",
+    autorId,
+    cuadrillaId: null,
+    duplicadoDe: null,
+    adhesiones: 0,
+    sincronizado: false,
+  };
+}
 
 // Crear un nuevo reporte
 export const crearReporte = async (

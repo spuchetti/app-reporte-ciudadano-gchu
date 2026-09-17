@@ -12,26 +12,18 @@ jest.mock("@/servicios/almacen-seguro", () => {
   };
 });
 
-jest.mock("expo-local-authentication", () => ({
-  hasHardwareAsync: jest.fn(async () => true),
-  isEnrolledAsync: jest.fn(async () => true),
-  authenticateAsync: jest.fn(async () => ({ success: true })),
-}));
-
-import * as LocalAuthentication from "expo-local-authentication";
-import { Platform } from "react-native";
-
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import {
   cerrarSesion,
-  dispositivoTieneHuella,
-  emailOperadorPendiente,
   iniciarSesion,
+  MENSAJE_SESION_VENCIDA,
   recuperarArranque,
   registrarVecino,
-  reingresarConHuella,
+  TTL_TOKEN_MS,
+  validarToken,
 } from "@/servicios/auth";
+import { SesionAutenticada, Usuario } from "@/tipos";
 
 const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
   __memoria: Map<string, string>;
@@ -52,17 +44,28 @@ async function esperarError(promesa: Promise<unknown>, codigo: string) {
   await assertion;
 }
 
+function sesionDe(
+  usuario: Usuario,
+  overrides: Partial<SesionAutenticada> = {},
+): SesionAutenticada {
+  return {
+    token: `tok-${usuario.id}-test`,
+    usuario,
+    expiraEn: new Date(Date.now() + TTL_TOKEN_MS).toISOString(),
+    esInvitado: false,
+    ...overrides,
+  };
+}
+
+function guardarSesion(sesion: unknown) {
+  almacen.__memoria.set("sesion", JSON.stringify(sesion));
+}
+
 describe("servicios/auth", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     almacen.__memoria.clear();
     jest.clearAllMocks();
-    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: true,
-    });
-    (Platform as { OS: string }).OS = "ios";
   });
 
   afterEach(() => {
@@ -78,13 +81,15 @@ describe("servicios/auth", () => {
     );
   });
 
-  test("inicia sesión de un operador", async () => {
+  test("inicia sesión de un operador y guarda un token con vencimiento", async () => {
     const sesion = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
     expect(sesion.esInvitado).toBe(false);
     expect(sesion.usuario.rol).toBe("operador");
+    expect(sesion.token).toMatch(/^tok-/);
+    expect(Date.parse(sesion.expiraEn)).toBeGreaterThan(Date.now());
   });
 
   test("rechaza credenciales inválidas con el mismo mensaje", async () => {
@@ -105,7 +110,7 @@ describe("servicios/auth", () => {
     await esperarError(iniciarSesion(emailErrorDeRed, "operador123"), "RED");
   });
 
-  test("registra un vecino con nombre, email y teléfono, sin contraseña", async () => {
+  test("identifica un vecino con nombre, email y teléfono, sin contraseña", async () => {
     const sesion = await esperar(
       registrarVecino({
         nombre: "Ana López",
@@ -156,8 +161,8 @@ describe("servicios/auth", () => {
   });
 
   test("sin usuario guardado, el arranque no tiene sesión", async () => {
-    const arranque = await recuperarArranque();
-    expect(arranque).toEqual({ sesion: null, pendienteHuella: false });
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({ sesion: null, sesionVencida: false });
   });
 
   test("al cerrar sesión borra el secreto", async () => {
@@ -170,11 +175,11 @@ describe("servicios/auth", () => {
     );
     await esperar(cerrarSesion());
 
-    const arranque = await recuperarArranque();
-    expect(arranque).toEqual({ sesion: null, pendienteHuella: false });
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({ sesion: null, sesionVencida: false });
   });
 
-  test("al reabrir, un vecino recupera la sesión sin volver a registrarse", async () => {
+  test("al reabrir, un vecino con token vigente recupera la sesión", async () => {
     const creada = await esperar(
       registrarVecino({
         nombre: "Ana López",
@@ -183,8 +188,8 @@ describe("servicios/auth", () => {
       }),
     );
 
-    const arranque = await recuperarArranque();
-    expect(arranque.pendienteHuella).toBe(false);
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque.sesionVencida).toBe(false);
     expect(arranque.sesion?.esInvitado).toBe(false);
     if (arranque.sesion?.esInvitado === false) {
       expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
@@ -192,45 +197,73 @@ describe("servicios/auth", () => {
     }
   });
 
-  test("al reabrir, un operador queda pendiente de huella", async () => {
-    await esperar(
+  test("al reabrir, un operador con token vigente entra a su sesión", async () => {
+    const creada = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
-    const arranque = await recuperarArranque();
-    expect(arranque.sesion).toBeNull();
-    expect(arranque.pendienteHuella).toBe(true);
-    await expect(emailOperadorPendiente()).resolves.toBe(
-      "jorge.fernandez@gualeguaychu.gov.ar",
-    );
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque.sesionVencida).toBe(false);
+    expect(arranque.sesion?.esInvitado).toBe(false);
+    if (arranque.sesion?.esInvitado === false) {
+      expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
+      expect(arranque.sesion.usuario.rol).toBe("operador");
+    }
   });
 
-  test("reingresa al operador con huella si la biometría confirma", async () => {
-    await esperar(
+  test("GET /me acepta un token vigente", async () => {
+    const sesion = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
-    const sesion = await reingresarConHuella();
-    expect(sesion.usuario.rol).toBe("operador");
-    expect(LocalAuthentication.authenticateAsync).toHaveBeenCalled();
+    const usuario = await esperar(validarToken(sesion.token));
+    expect(usuario.rol).toBe("operador");
+    expect(usuario.email).toBe("jorge.fernandez@gualeguaychu.gov.ar");
   });
 
-  test("no reingresa con huella si el usuario cancela", async () => {
-    await esperar(
-      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+  test("GET /me rechaza un token que no coincide", async () => {
+    guardarSesion(sesionDe(usuariosMock[3]));
+
+    await esperarError(validarToken("tok-ajeno"), "TOKEN_INVALIDO");
+  });
+
+  test("si el token expiró, borra la sesión y avisa que venció", async () => {
+    guardarSesion(
+      sesionDe(usuariosMock[3], {
+        expiraEn: new Date(Date.now() - 1000).toISOString(),
+      }),
     );
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: false,
-      error: "user_cancel",
+
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({ sesion: null, sesionVencida: true });
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+  });
+
+  test("si el token es inválido, borra la sesión y avisa que venció", async () => {
+    guardarSesion({
+      token: "",
+      usuario: usuariosMock[0],
+      expiraEn: new Date(Date.now() + TTL_TOKEN_MS).toISOString(),
+      esInvitado: false,
     });
 
-    await expect(reingresarConHuella()).rejects.toMatchObject({
-      codigo: "BIOMETRIA_CANCELADA",
-    });
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({ sesion: null, sesionVencida: true });
+    expect(almacen.__memoria.has("sesion")).toBe(false);
   });
 
-  test("en web no hay huella", async () => {
-    (Platform as { OS: string }).OS = "web";
-    await expect(dispositivoTieneHuella()).resolves.toBe(false);
+  test("validarToken usa el mismo aviso para token vencido", async () => {
+    const vencida = sesionDe(usuariosMock[0], {
+      expiraEn: new Date(Date.now() - 60_000).toISOString(),
+    });
+    guardarSesion(vencida);
+
+    const promesa = validarToken(vencida.token);
+    const assertion = expect(promesa).rejects.toMatchObject({
+      codigo: "TOKEN_EXPIRADO",
+      mensaje: MENSAJE_SESION_VENCIDA,
+    });
+    await jest.runAllTimersAsync();
+    await assertion;
   });
 });

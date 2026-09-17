@@ -1,19 +1,16 @@
-import { Redirect, router } from "expo-router";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
 
 export default function MapaPublicoScreen() {
   const insets = useSafeAreaInsets();
-  const { pendienteHuella } = useSesion();
-
-  if (pendienteHuella) {
-    return <Redirect href="/login" />;
-  }
+  const { sesionVencida, cerrarAvisoSesionVencida } = useSesion();
 
   return (
     <View style={styles.pantalla}>
@@ -22,17 +19,23 @@ export default function MapaPublicoScreen() {
         <Text style={styles.titulo}>Mapa de Gualeguaychú</Text>
         <Text style={styles.subtitulo}>Podés mirar los reportes sin registrarte</Text>
       </View>
-      <View style={styles.mapa}>
+
+      {sesionVencida ? (
+        <View style={styles.aviso}>
+          <Text style={styles.avisoTexto}>{MENSAJE_SESION_VENCIDA}</Text>
+          <Pressable onPress={cerrarAvisoSesionVencida} accessibilityRole="button">
+            <Text style={styles.avisoCerrar}>Cerrar</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
         <Text style={styles.mapaEmoji}>🗺️</Text>
-        <Text style={styles.mapaTexto}>
-          Para enviar un reporte dejá tu nombre, email y teléfono. Esa identidad
-          queda en este dispositivo.
-        </Text>
       </View>
       <View style={[styles.pie, { paddingBottom: insets.bottom + 16 }]}>
         <Boton
-          titulo="Reportar un problema"
-          onPress={() => router.push("/register")}
+          titulo="Generar reporte"
+          onPress={() => router.push("/reporte")}
         />
         <View style={styles.separador} />
         <Boton
@@ -67,6 +70,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Paleta.inkSoft,
   },
+  aviso: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#FDECEC",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avisoTexto: {
+    flex: 1,
+    fontSize: 13,
+    color: Paleta.rojo,
+    lineHeight: 18,
+  },
+  avisoCerrar: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Paleta.ink,
+  },
   mapa: {
     flex: 1,
     backgroundColor: "#E1F5EE",
@@ -76,14 +100,6 @@ const styles = StyleSheet.create({
   },
   mapaEmoji: {
     fontSize: 48,
-    marginBottom: 12,
-  },
-  mapaTexto: {
-    fontSize: 14,
-    color: Paleta.inkSoft,
-    textAlign: "center",
-    lineHeight: 20,
-    maxWidth: 280,
   },
   pie: {
     paddingHorizontal: 16,
