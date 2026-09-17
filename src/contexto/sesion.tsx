@@ -10,6 +10,7 @@ import {
 
 import {
   cerrarSesion as cerrarSesionServicio,
+  desbloquearConBiometria as desbloquearConBiometriaServicio,
   iniciarSesion as iniciarSesionServicio,
   recuperarArranque,
   registrarVecino,
@@ -21,12 +22,14 @@ type ValorSesion = {
   sesion: Sesion | null;
   isLoading: boolean;
   sesionVencida: boolean;
+  pendienteBiometria: boolean;
   iniciarSesion: (email: string, contrasena: string) => Promise<void>;
   registrar: (datos: DatosRegistro) => Promise<void>;
   enviarPrimerReporte: (
     datos: DatosRegistro,
     borrador: DatosBorradorReporte,
   ) => Promise<void>;
+  desbloquearConBiometria: () => Promise<void>;
   cerrarSesion: () => Promise<void>;
   cerrarAvisoSesionVencida: () => void;
 };
@@ -37,6 +40,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sesionVencida, setSesionVencida] = useState(false);
+  const [pendienteBiometria, setPendienteBiometria] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -50,6 +54,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
 
       setSesion(arranque.sesion);
       setSesionVencida(arranque.sesionVencida);
+      setPendienteBiometria(arranque.pendienteBiometria);
       setIsLoading(false);
     })();
 
@@ -62,12 +67,14 @@ export function SesionProvider({ children }: PropsWithChildren) {
     const siguiente = await iniciarSesionServicio(email, contrasena);
     setSesion(siguiente);
     setSesionVencida(false);
+    setPendienteBiometria(false);
   }, []);
 
   const registrar = useCallback(async (datos: DatosRegistro) => {
     const siguiente = await registrarVecino(datos);
     setSesion(siguiente);
     setSesionVencida(false);
+    setPendienteBiometria(false);
   }, []);
 
   const enviarPrimerReporte = useCallback(
@@ -76,14 +83,23 @@ export function SesionProvider({ children }: PropsWithChildren) {
       await crearReporte(datosCreacionDesdeBorrador(borrador, siguiente.usuario.id));
       setSesion(siguiente);
       setSesionVencida(false);
+      setPendienteBiometria(false);
     },
     [],
   );
+
+  const desbloquearConBiometria = useCallback(async () => {
+    const siguiente = await desbloquearConBiometriaServicio();
+    setSesion(siguiente);
+    setSesionVencida(false);
+    setPendienteBiometria(false);
+  }, []);
 
   const cerrarSesion = useCallback(async () => {
     await cerrarSesionServicio();
     setSesion(null);
     setSesionVencida(false);
+    setPendienteBiometria(false);
   }, []);
 
   const cerrarAvisoSesionVencida = useCallback(() => {
@@ -95,9 +111,11 @@ export function SesionProvider({ children }: PropsWithChildren) {
       sesion,
       isLoading,
       sesionVencida,
+      pendienteBiometria,
       iniciarSesion,
       registrar,
       enviarPrimerReporte,
+      desbloquearConBiometria,
       cerrarSesion,
       cerrarAvisoSesionVencida,
     }),
@@ -105,9 +123,11 @@ export function SesionProvider({ children }: PropsWithChildren) {
       sesion,
       isLoading,
       sesionVencida,
+      pendienteBiometria,
       iniciarSesion,
       registrar,
       enviarPrimerReporte,
+      desbloquearConBiometria,
       cerrarSesion,
       cerrarAvisoSesionVencida,
     ],

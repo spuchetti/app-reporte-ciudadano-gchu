@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -7,10 +8,34 @@ import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
+import { esErrorServicio } from "@/servicios/error";
 
 export default function MapaPublicoScreen() {
   const insets = useSafeAreaInsets();
-  const { sesionVencida, cerrarAvisoSesionVencida } = useSesion();
+  const {
+    sesionVencida,
+    cerrarAvisoSesionVencida,
+    pendienteBiometria,
+    desbloquearConBiometria,
+  } = useSesion();
+  const [desbloqueando, setDesbloqueando] = useState(false);
+  const [errorBiometria, setErrorBiometria] = useState<string | null>(null);
+
+  async function onBiometria() {
+    setErrorBiometria(null);
+    setDesbloqueando(true);
+    try {
+      await desbloquearConBiometria();
+    } catch (err) {
+      setErrorBiometria(
+        esErrorServicio(err)
+          ? err.message
+          : "No se pudo confirmar la identidad.",
+      );
+    } finally {
+      setDesbloqueando(false);
+    }
+  }
 
   return (
     <View style={styles.pantalla}>
@@ -33,8 +58,23 @@ export default function MapaPublicoScreen() {
         <Text style={styles.mapaEmoji}>🗺️</Text>
       </View>
       <View style={[styles.pie, { paddingBottom: insets.bottom + 16 }]}>
+        {pendienteBiometria ? (
+          <>
+            {errorBiometria ? (
+              <Text style={styles.errorBiometria}>{errorBiometria}</Text>
+            ) : null}
+            <Boton
+              titulo="Ingresar con biometría"
+              cargando={desbloqueando}
+              disabled={desbloqueando}
+              onPress={onBiometria}
+            />
+            <View style={styles.separador} />
+          </>
+        ) : null}
         <Boton
           titulo="Generar reporte"
+          disabled={desbloqueando}
           onPress={() => router.push("/reporte")}
         />
         <View style={styles.separador} />
@@ -104,6 +144,12 @@ const styles = StyleSheet.create({
   pie: {
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+  errorBiometria: {
+    color: Paleta.rojo,
+    fontSize: 13,
+    marginBottom: 8,
+    textAlign: "center",
   },
   separador: {
     height: 8,
