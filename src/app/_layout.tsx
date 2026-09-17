@@ -35,24 +35,22 @@ function RootNavigator() {
     return null;
   }
 
-  const esInvitado = sesion?.esInvitado === true;
-  const esVecino = sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
+  const esVecino =
+    sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
   const esOperador =
     sesion?.esInvitado === false && sesion.usuario.rol === "operador";
+  const enPublico = !esVecino && !esOperador;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!sesion}>
-        <Stack.Screen name="(auth)" />
+      <Stack.Protected guard={enPublico}>
+        <Stack.Screen name="(publico)" />
       </Stack.Protected>
       <Stack.Protected guard={esVecino}>
         <Stack.Screen name="(tabs)" />
       </Stack.Protected>
       <Stack.Protected guard={esOperador}>
         <Stack.Screen name="(operador)" />
-      </Stack.Protected>
-      <Stack.Protected guard={esInvitado}>
-        <Stack.Screen name="(publico)" />
       </Stack.Protected>
     </Stack>
   );

@@ -1,3 +1,4 @@
+import { Redirect, router } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -6,26 +7,39 @@ import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 
-export default function MapaInvitadoScreen() {
+export default function MapaPublicoScreen() {
   const insets = useSafeAreaInsets();
-  const { cerrarSesion } = useSesion();
+  const { pendienteHuella } = useSesion();
+
+  if (pendienteHuella) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <View style={styles.pantalla}>
       <StatusBar style="dark" />
       <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.titulo}>Mapa de Gualeguaychú</Text>
-        <Text style={styles.subtitulo}>Estás como invitado · solo lectura</Text>
+        <Text style={styles.subtitulo}>Podés mirar los reportes sin registrarte</Text>
       </View>
       <View style={styles.mapa}>
         <Text style={styles.mapaEmoji}>🗺️</Text>
         <Text style={styles.mapaTexto}>
-          El mapa público se conecta acá. Para crear un reporte tenés que
-          iniciar sesión o registrarte.
+          Para enviar un reporte dejá tu nombre, email y teléfono. Esa identidad
+          queda en este dispositivo.
         </Text>
       </View>
       <View style={[styles.pie, { paddingBottom: insets.bottom + 16 }]}>
-        <Boton titulo="Iniciar sesión" onPress={cerrarSesion} />
+        <Boton
+          titulo="Reportar un problema"
+          onPress={() => router.push("/register")}
+        />
+        <View style={styles.separador} />
+        <Boton
+          titulo="Acceso operador"
+          variante="texto"
+          onPress={() => router.push("/login")}
+        />
       </View>
     </View>
   );
@@ -74,5 +88,8 @@ const styles = StyleSheet.create({
   pie: {
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+  separador: {
+    height: 8,
   },
 });

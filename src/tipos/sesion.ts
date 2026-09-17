@@ -8,8 +8,7 @@ export interface Credenciales {
 export interface DatosRegistro {
   nombre: string;
   email: string;
-  telefono: string | null;
-  contrasena: string;
+  telefono: string;
 }
 
 /** Cuerpo de { datos } en login/registro cuando exista la API. */

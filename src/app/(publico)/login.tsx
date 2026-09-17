@@ -18,25 +18,23 @@ import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
 
-export default function LoginScreen() {
+export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const dosColumnas = width >= 768;
   const {
     iniciarSesion,
-    entrarComoInvitado,
     reingresarConHuella,
     pendienteHuella,
     huellaDisponible,
     emailOperador,
+    posponerAccesoOperador,
   } = useSesion();
 
   const [email, setEmail] = useState(emailOperador ?? "");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState<"login" | "invitado" | "huella" | null>(
-    null,
-  );
+  const [cargando, setCargando] = useState<"login" | "huella" | null>(null);
 
   const puedeHuella = pendienteHuella && huellaDisponible;
   const ocupado = cargando !== null;
@@ -72,7 +70,7 @@ export default function LoginScreen() {
       </View>
       <Text style={styles.tituloMarca}>Reporte Ciudadano</Text>
       <Text style={styles.subtituloMarca}>
-        Reportá problemas de la vía pública. Seguimiento en tiempo real.
+        Acceso para operadores municipales.
       </Text>
     </View>
   );
@@ -93,7 +91,9 @@ export default function LoginScreen() {
       >
         <View
           style={[
-            dosColumnas ? styles.marcaColumna : { paddingTop: insets.top, backgroundColor: Paleta.tealDeep },
+            dosColumnas
+              ? styles.marcaColumna
+              : { paddingTop: insets.top, backgroundColor: Paleta.tealDeep },
           ]}
         >
           {marca}
@@ -103,18 +103,19 @@ export default function LoginScreen() {
           style={[
             styles.formulario,
             { paddingTop: dosColumnas ? 48 : 32 },
-            !dosColumnas ? { paddingTop: 32 } : null,
           ]}
         >
           <View style={styles.formInner}>
-            <Text style={styles.tituloForm}>Acceso</Text>
-            <Text style={styles.subtituloForm}>Vecino o Operador Municipal</Text>
+            <Text style={styles.tituloForm}>Operador</Text>
+            <Text style={styles.subtituloForm}>
+              Ingresá con tu cuenta municipal
+            </Text>
 
             <CampoTexto
               etiqueta="Email"
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@email.com"
+              placeholder="tu@gualeguaychu.gov.ar"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -144,15 +145,6 @@ export default function LoginScreen() {
               onPress={onIngresar}
             />
 
-            <View style={styles.separador} />
-
-            <Boton
-              titulo="Registrarse"
-              variante="secundario"
-              disabled={ocupado}
-              onPress={() => router.push("/register")}
-            />
-
             {puedeHuella ? (
               <View style={styles.bloqueHuella}>
                 <Boton
@@ -165,19 +157,19 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
+            <View style={styles.separador} />
             <Boton
-              titulo="Entrar como invitado"
+              titulo="Volver al mapa"
               variante="texto"
-              cargando={cargando === "invitado"}
               disabled={ocupado}
-              onPress={() => manejar("invitado", entrarComoInvitado)}
+              onPress={() => {
+                posponerAccesoOperador();
+                router.replace("/");
+              }}
             />
 
             <View style={styles.ayuda}>
-              <Text style={styles.ayudaTitulo}>Cuentas de prueba</Text>
-              <Text style={styles.ayudaTexto}>
-                Vecino: norma.pereyra@gmail.com / vecino123
-              </Text>
+              <Text style={styles.ayudaTitulo}>Cuenta de prueba</Text>
               <Text style={styles.ayudaTexto}>
                 Operador: jorge.fernandez@gualeguaychu.gov.ar / operador123
               </Text>

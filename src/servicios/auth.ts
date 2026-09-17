@@ -9,7 +9,7 @@ import {
   leerSecreto,
 } from "@/servicios/almacen-seguro";
 import { ErrorServicio } from "@/servicios/error";
-import { DatosRegistro, Sesion, SesionAutenticada, SesionInvitado, Usuario } from "@/tipos";
+import { DatosRegistro, Sesion, SesionAutenticada, Usuario } from "@/tipos";
 
 const CLAVE_SESION = "sesion";
 const delay = (ms: number = 500) =>
@@ -27,18 +27,23 @@ function armarSesion(usuario: Usuario): SesionAutenticada {
   };
 }
 
-async function persistirSesion(sesion: Sesion) {
+async function persistirSesion(sesion: SesionAutenticada) {
   await guardarSecreto(CLAVE_SESION, JSON.stringify(sesion));
 }
 
-async function leerSesionGuardada(): Promise<Sesion | null> {
+async function leerSesionGuardada(): Promise<SesionAutenticada | null> {
   const crudo = await leerSecreto(CLAVE_SESION);
   if (!crudo) {
     return null;
   }
 
   try {
-    return JSON.parse(crudo) as Sesion;
+    const parsed = JSON.parse(crudo) as Sesion;
+    if (parsed.esInvitado || !parsed.usuario) {
+      await borrarSecreto(CLAVE_SESION);
+      return null;
+    }
+    return parsed;
   } catch {
     await borrarSecreto(CLAVE_SESION);
     return null;
@@ -74,7 +79,12 @@ export async function iniciarSesion(
     (item) => item.email.toLowerCase() === emailNormalizado,
   );
 
-  if (!credencial || !usuario || credencial.contrasena !== contrasena) {
+  if (
+    !credencial ||
+    !usuario ||
+    usuario.rol !== "operador" ||
+    credencial.contrasena !== contrasena
+  ) {
     throw new ErrorServicio({
       codigo: "CREDENCIALES_INVALIDAS",
       mensaje: "Email o contraseña incorrectos.",
@@ -91,7 +101,7 @@ export async function registrarVecino(datos: DatosRegistro): Promise<SesionAuten
 
   const nombre = datos.nombre.trim();
   const email = datos.email.trim().toLowerCase();
-  const telefono = datos.telefono?.trim() ? datos.telefono.trim() : null;
+  const telefono = datos.telefono.trim();
 
   if (nombre.length < 2) {
     throw new ErrorServicio({
@@ -107,10 +117,10 @@ export async function registrarVecino(datos: DatosRegistro): Promise<SesionAuten
     });
   }
 
-  if (datos.contrasena.length < 6) {
+  if (telefono.replace(/\D/g, "").length < 8) {
     throw new ErrorServicio({
-      codigo: "CONTRASENA_CORTA",
-      mensaje: "La contraseña tiene que tener al menos 6 caracteres.",
+      codigo: "TELEFONO_INVALIDO",
+      mensaje: "Ingresá un teléfono válido.",
     });
   }
 
@@ -136,20 +146,8 @@ export async function registrarVecino(datos: DatosRegistro): Promise<SesionAuten
   };
 
   usuariosMock.push(nuevo);
-  credencialesMock.push({ email, contrasena: datos.contrasena });
 
   const sesion = armarSesion(nuevo);
-  await persistirSesion(sesion);
-  return sesion;
-}
-
-export async function entrarComoInvitado(): Promise<SesionInvitado> {
-  await delay(300);
-  const sesion: SesionInvitado = {
-    token: null,
-    usuario: null,
-    esInvitado: true,
-  };
   await persistirSesion(sesion);
   return sesion;
 }
@@ -160,7 +158,7 @@ export async function cerrarSesion(): Promise<void> {
 }
 
 export async function recuperarArranque(): Promise<{
-  sesion: Sesion | null;
+  sesion: SesionAutenticada | null;
   pendienteHuella: boolean;
 }> {
   const guardada = await leerSesionGuardada();
@@ -168,7 +166,7 @@ export async function recuperarArranque(): Promise<{
     return { sesion: null, pendienteHuella: false };
   }
 
-  if (!guardada.esInvitado && guardada.usuario.rol === "operador") {
+  if (guardada.usuario.rol === "operador") {
     return { sesion: null, pendienteHuella: true };
   }
 
@@ -187,7 +185,7 @@ export async function dispositivoTieneHuella(): Promise<boolean> {
 
 export async function reingresarConHuella(): Promise<SesionAutenticada> {
   const guardada = await leerSesionGuardada();
-  if (!guardada || guardada.esInvitado || guardada.usuario.rol !== "operador") {
+  if (!guardada || guardada.usuario.rol !== "operador") {
     throw new ErrorServicio({
       codigo: "SIN_SESION_OPERADOR",
       mensaje: "No hay un operador para reingresar con huella.",
@@ -220,7 +218,7 @@ export async function reingresarConHuella(): Promise<SesionAutenticada> {
 
 export async function emailOperadorPendiente(): Promise<string | null> {
   const guardada = await leerSesionGuardada();
-  if (!guardada || guardada.esInvitado || guardada.usuario.rol !== "operador") {
+  if (!guardada || guardada.usuario.rol !== "operador") {
     return null;
   }
   return guardada.usuario.email;

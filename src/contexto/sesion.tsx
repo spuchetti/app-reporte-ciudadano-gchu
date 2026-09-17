@@ -12,7 +12,6 @@ import {
   cerrarSesion as cerrarSesionServicio,
   dispositivoTieneHuella,
   emailOperadorPendiente,
-  entrarComoInvitado as entrarComoInvitadoServicio,
   iniciarSesion as iniciarSesionServicio,
   recuperarArranque,
   registrarVecino,
@@ -28,8 +27,8 @@ type ValorSesion = {
   emailOperador: string | null;
   iniciarSesion: (email: string, contrasena: string) => Promise<void>;
   registrar: (datos: DatosRegistro) => Promise<void>;
-  entrarComoInvitado: () => Promise<void>;
   reingresarConHuella: () => Promise<void>;
+  posponerAccesoOperador: () => void;
   cerrarSesion: () => Promise<void>;
 };
 
@@ -84,16 +83,13 @@ export function SesionProvider({ children }: PropsWithChildren) {
     setEmailOperador(null);
   }, []);
 
-  const entrarComoInvitado = useCallback(async () => {
-    const siguiente = await entrarComoInvitadoServicio();
-    setSesion(siguiente);
-    setPendienteHuella(false);
-    setEmailOperador(null);
-  }, []);
-
   const reingresarConHuella = useCallback(async () => {
     const siguiente = await reingresarConHuellaServicio();
     setSesion(siguiente);
+    setPendienteHuella(false);
+  }, []);
+
+  const posponerAccesoOperador = useCallback(() => {
     setPendienteHuella(false);
   }, []);
 
@@ -113,8 +109,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       emailOperador,
       iniciarSesion,
       registrar,
-      entrarComoInvitado,
       reingresarConHuella,
+      posponerAccesoOperador,
       cerrarSesion,
     }),
     [
@@ -125,8 +121,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       emailOperador,
       iniciarSesion,
       registrar,
-      entrarComoInvitado,
       reingresarConHuella,
+      posponerAccesoOperador,
       cerrarSesion,
     ],
   );

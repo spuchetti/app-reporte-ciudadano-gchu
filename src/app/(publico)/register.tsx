@@ -24,31 +24,23 @@ export default function RegisterScreen() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [contrasena, setContrasena] = useState("");
-  const [confirmacion, setConfirmacion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
   async function onSubmit() {
-    if (contrasena !== confirmacion) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-
     setError(null);
     setCargando(true);
     try {
       await registrar({
         nombre,
         email,
-        telefono: telefono.trim() ? telefono.trim() : null,
-        contrasena,
+        telefono,
       });
     } catch (err) {
       setError(
         esErrorServicio(err)
           ? err.message
-          : "No se pudo crear la cuenta. Intentá de nuevo.",
+          : "No se pudieron guardar tus datos. Intentá de nuevo.",
       );
     } finally {
       setCargando(false);
@@ -72,8 +64,10 @@ export default function RegisterScreen() {
         ]}
       >
         <View style={styles.formInner}>
-          <Text style={styles.titulo}>Crear cuenta</Text>
-          <Text style={styles.subtitulo}>Registro de vecinos de Gualeguaychú</Text>
+          <Text style={styles.titulo}>Tus datos</Text>
+          <Text style={styles.subtitulo}>
+            Los pedimos una vez, antes de enviar tu primer reporte.
+          </Text>
 
           <CampoTexto
             etiqueta="Nombre"
@@ -97,7 +91,7 @@ export default function RegisterScreen() {
             editable={!cargando}
           />
           <CampoTexto
-            etiqueta="Teléfono (opcional)"
+            etiqueta="Teléfono"
             value={telefono}
             onChangeText={setTelefono}
             placeholder="3446-123456"
@@ -106,33 +100,13 @@ export default function RegisterScreen() {
             textContentType="telephoneNumber"
             editable={!cargando}
           />
-          <CampoTexto
-            etiqueta="Contraseña"
-            value={contrasena}
-            onChangeText={setContrasena}
-            placeholder="Mínimo 6 caracteres"
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-            editable={!cargando}
-          />
-          <CampoTexto
-            etiqueta="Confirmar contraseña"
-            value={confirmacion}
-            onChangeText={setConfirmacion}
-            placeholder="Repetí la contraseña"
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-            editable={!cargando}
-          />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Boton titulo="Crear cuenta" cargando={cargando} onPress={onSubmit} />
+          <Boton titulo="Continuar" cargando={cargando} onPress={onSubmit} />
           <View style={styles.separador} />
           <Boton
-            titulo="Ya tengo cuenta"
+            titulo="Volver al mapa"
             variante="texto"
             disabled={cargando}
             onPress={() => router.back()}
