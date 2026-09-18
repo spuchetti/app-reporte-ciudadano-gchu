@@ -1,20 +1,30 @@
-import React, { useState } from "react";
-import { Platform, StyleSheet, Text, View, Pressable, Image } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Image,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import MapView, { Marker, Callout } from "react-native-maps";
+
 import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
-import { reportesMock, tiposReporteMock } from "@/mocks/reportes";
+import { tiposReporteMock } from "@/mocks/reportes";
+import { obtenerReportesPorZona } from "@/servicios/reportes";
+import { Reporte } from "@/tipos";
 
 const coloresEstado: Record<string, string> = {
   recibido: "#F2B705",
   en_revision: "#2E6E9E",
   asignado: "#E8630C",
   resuelto: "#2F9E52",
-  rechazado: "#D64545"
+  rechazado: "#D64545",
 };
 
 export default function HomeVecinoScreen() {
@@ -22,6 +32,11 @@ export default function HomeVecinoScreen() {
   const { sesion, cerrarSesion } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
   const router = useRouter();
+  const zonaId = usuario?.zonaId ?? null;
+
+  const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [region] = useState({
     latitude: -33.0094,
@@ -29,6 +44,55 @@ export default function HomeVecinoScreen() {
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      let activo = true;
+
+      (async () => {
+        if (!zonaId) {
+          if (activo) {
+            setReportes([]);
+            setError(null);
+            setCargando(false);
+          }
+          return;
+        }
+
+        setCargando(true);
+        setError(null);
+        try {
+          const lista = await obtenerReportesPorZona(zonaId);
+          if (activo) {
+            setReportes(lista);
+          }
+        } catch {
+          if (activo) {
+            setError("No se pudieron cargar los reportes de tu zona.");
+            setReportes([]);
+          }
+        } finally {
+          if (activo) {
+            setCargando(false);
+          }
+        }
+      })();
+
+      return () => {
+        activo = false;
+      };
+    }, [zonaId]),
+  );
+
+  const aviso = !zonaId
+    ? "Todavía no tenés una zona asignada."
+    : error
+      ? error
+      : cargando
+        ? "Cargando reportes de tu zona…"
+        : reportes.length === 0
+          ? "No hay reportes en tu zona."
+          : null;
 
   return (
     <View style={styles.pantalla}>
@@ -51,27 +115,27 @@ export default function HomeVecinoScreen() {
 
       <View style={styles.mapaContainer}>
         <MapView style={styles.mapa} initialRegion={region}>
-          {reportesMock.map((reporte) => {
-            const tipo = tiposReporteMock.find(t => t.id === reporte.tipoId);
+          {reportes.map((reporte) => {
+            const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
             const colorPin = coloresEstado[reporte.estado] || Paleta.orange;
-            const fotoPrincipal = reporte.fotos.find(f => f.esPrincipal)?.url;
-            
+            const fotoPrincipal = reporte.fotos.find((f) => f.esPrincipal)?.url;
+
             return (
               <Marker
                 key={reporte.id}
-                coordinate={{ 
-                  latitude: reporte.coordenadas.latitud, 
-                  longitude: reporte.coordenadas.longitud 
+                coordinate={{
+                  latitude: reporte.coordenadas.latitud,
+                  longitude: reporte.coordenadas.longitud,
                 }}
-                pinColor={colorPin} 
+                pinColor={colorPin}
               >
                 <Callout>
                   <View style={styles.burbujaInfo}>
                     {fotoPrincipal ? (
-                      <Image 
-                        source={{ uri: fotoPrincipal }} 
-                        style={styles.miniatura} 
-                        resizeMode="cover" 
+                      <Image
+                        source={{ uri: fotoPrincipal }}
+                        style={styles.miniatura}
+                        resizeMode="cover"
                       />
                     ) : null}
                     <Text style={styles.tituloBurbuja}>
@@ -87,8 +151,16 @@ export default function HomeVecinoScreen() {
           })}
         </MapView>
 
-        <Pressable 
-          style={styles.fab} 
+        {aviso ? (
+          <View style={styles.aviso} accessibilityRole="text">
+            <Text style={styles.avisoTexto}>{aviso}</Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          style={styles.fab}
+          accessibilityRole="button"
+          accessibilityLabel="Generar reporte"
           onPress={() => router.push("/reportar")}
         >
           <Text style={styles.fabTexto}>+</Text>
@@ -121,17 +193,47 @@ const styles = StyleSheet.create({
     color: Paleta.paperRaised,
   },
   avatar: {
-    width: 40, height: 40, backgroundColor: Paleta.orange,
-    borderRadius: 20, alignItems: "center", justifyContent: "center",
+    width: 40,
+    height: 40,
+    backgroundColor: Paleta.orange,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarTexto: { fontSize: 20 },
   mapaContainer: { flex: 1, position: "relative" },
   mapa: { width: "100%", height: "100%" },
+  aviso: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    right: 92,
+    backgroundColor: Paleta.paperRaised,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Paleta.line,
+  },
+  avisoTexto: {
+    fontSize: 13,
+    color: Paleta.inkSoft,
+  },
   fab: {
-    position: "absolute", top: 20, right: 20, backgroundColor: Paleta.orange,
-    width: 60, height: 60, borderRadius: 30, justifyContent: "center",
-    alignItems: "center", elevation: 5, shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3,
+    position: "absolute",
+    top: 20,
+    right: 20,
+    backgroundColor: Paleta.orange,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
   fabTexto: { color: Paleta.paper, fontSize: 35, fontWeight: "bold", lineHeight: 40 },
   botonCerrar: { position: "absolute", alignSelf: "center", width: "80%" },

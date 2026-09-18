@@ -8,7 +8,7 @@ import {
 } from "@/tipos";
 
 const COORDENADAS_CENTRO = { latitud: -33.0156, longitud: -58.5089 };
-const ZONA_POR_DEFECTO = "zon-centro";
+export const ZONA_POR_DEFECTO = "zon-centro";
 
 // Simular delay de red
 const delay = (ms: number = 500) =>
@@ -42,6 +42,9 @@ export const obtenerReportesPorZona = async (
   zonaId: string,
 ): Promise<Reporte[]> => {
   await delay(500);
+  if (!zonaId) {
+    return [];
+  }
   return reportesMock.filter((r) => r.zonaId === zonaId);
 };
 
@@ -64,6 +67,7 @@ export function validarBorradorReporte(borrador: DatosBorradorReporte) {
 export function datosCreacionDesdeBorrador(
   borrador: DatosBorradorReporte,
   autorId: string,
+  zonaId: string = ZONA_POR_DEFECTO,
 ): Omit<Reporte, "id" | "codigo" | "creadoEn"> {
   validarBorradorReporte(borrador);
 
@@ -74,7 +78,7 @@ export function datosCreacionDesdeBorrador(
     fotos: [],
     coordenadas: COORDENADAS_CENTRO,
     direccion: borrador.direccion.trim(),
-    zonaId: ZONA_POR_DEFECTO,
+    zonaId: zonaId || ZONA_POR_DEFECTO,
     estado: "recibido",
     autorId,
     cuadrillaId: null,

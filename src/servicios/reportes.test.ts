@@ -2,7 +2,9 @@ import { reportesMock } from "@/mocks";
 import {
   crearReporte,
   datosCreacionDesdeBorrador,
+  obtenerReportesPorZona,
   validarBorradorReporte,
+  ZONA_POR_DEFECTO,
 } from "@/servicios/reportes";
 
 const reportesIniciales = reportesMock.length;
@@ -64,6 +66,49 @@ describe("servicios/reportes", () => {
     expect(datos.tipoId).toBe("tip-bache");
     expect(datos.direccion).toBe("Rocamora 1240");
     expect(datos.descripcion).toBe("Pozo grande");
+    expect(datos.zonaId).toBe(ZONA_POR_DEFECTO);
+  });
+
+  test("usa la zona del vecino cuando se indica", () => {
+    const datos = datosCreacionDesdeBorrador(
+      {
+        tipoId: "tip-bache",
+        descripcion: "Pozo grande",
+        direccion: "Rocamora 1240",
+      },
+      "usr-nuevo",
+      "zon-norte",
+    );
+
+    expect(datos.zonaId).toBe("zon-norte");
+    expect(datos.autorId).toBe("usr-nuevo");
+  });
+
+  test("obtenerReportesPorZona solo devuelve esa zona", async () => {
+    const norte = await esperar(obtenerReportesPorZona("zon-norte"));
+    const vacia = await esperar(obtenerReportesPorZona(""));
+
+    expect(norte.length).toBeGreaterThan(0);
+    expect(norte.every((item) => item.zonaId === "zon-norte")).toBe(true);
+    expect(vacia).toEqual([]);
+  });
+
+  test("crea el reporte del vecino logueado en su zona", async () => {
+    const payload = datosCreacionDesdeBorrador(
+      {
+        tipoId: "tip-luminaria",
+        descripcion: "Sin luz",
+        direccion: "Belgrano 100",
+      },
+      "usr-norma",
+      "zon-norte",
+    );
+
+    const reporte = await esperar(crearReporte(payload));
+
+    expect(reporte.autorId).toBe("usr-norma");
+    expect(reporte.zonaId).toBe("zon-norte");
+    expect(reporte.estado).toBe("recibido");
   });
 
   test("crea el reporte ligado al vecino después de identificarlo", async () => {
