@@ -22,8 +22,8 @@ import {
   reanudarSesionVigente,
   recuperarArranque,
 } from "@/servicios/auth";
-import { crearReporte, datosCreacionDesdeBorrador, paramsDeTicket } from "@/servicios/reportes";
 import { limpiarBorrador } from "@/servicios/borrador";
+import { crearReporte, datosCreacionDesdeBorrador, paramsDeTicket } from "@/servicios/reportes";
 import {
   DatosBorradorReporte,
   DatosRegistro,

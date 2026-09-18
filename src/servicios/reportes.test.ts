@@ -2,6 +2,7 @@ import { reportesMock } from "@/mocks";
 import {
   crearReporte,
   datosCreacionDesdeBorrador,
+  obtenerReportesPorZona,
   paramsDeTicket,
   validarBorradorReporte,
 } from "@/servicios/reportes";
@@ -86,6 +87,15 @@ describe("servicios/reportes", () => {
     expect(
       zonaParaCoordenadas({ latitud: -33.0123, longitud: -58.5123 }),
     ).toBe("zon-norte");
+  });
+
+  test("obtenerReportesPorZona solo devuelve esa zona", async () => {
+    const norte = await esperar(obtenerReportesPorZona("zon-norte"));
+    const vacia = await esperar(obtenerReportesPorZona(""));
+
+    expect(norte.length).toBeGreaterThan(0);
+    expect(norte.every((item) => item.zonaId === "zon-norte")).toBe(true);
+    expect(vacia).toEqual([]);
   });
 
   test("crea el reporte ligado al vecino después de identificarlo", async () => {

@@ -9,6 +9,7 @@ import {
 } from "@/tipos";
 
 export { COORDENADAS_CENTRO } from "@/servicios/ubicacion";
+export const ZONA_POR_DEFECTO = "zon-centro";
 
 // Simular delay de red
 const delay = (ms: number = 500) =>
@@ -42,6 +43,9 @@ export const obtenerReportesPorZona = async (
   zonaId: string,
 ): Promise<Reporte[]> => {
   await delay(500);
+  if (!zonaId) {
+    return [];
+  }
   return reportesMock.filter((r) => r.zonaId === zonaId);
 };
 
