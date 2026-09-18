@@ -1,7 +1,8 @@
 import React from "react";
-import { Platform, StyleSheet, Text, View, FlatList } from "react-native";
+import { Platform, StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
 
 import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
@@ -18,63 +19,93 @@ const coloresEstado: Record<string, string> = {
 
 export default function BandejaOperadorScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { sesion, cerrarSesion } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
 
   const renderItem = ({ item }: { item: typeof reportesMock[0] }) => {
     const tipo = tiposReporteMock.find((t) => t.id === item.tipoId);
     const colorEstado = coloresEstado[item.estado] || Paleta.inkSoft;
+    const fecha = new Date(item.creadoEn).toLocaleDateString("es-AR");
 
     return (
       <View style={styles.tarjeta}>
-        <View style={styles.tarjetaCabecera}>
-          <Text style={styles.codigo}>{item.codigo}</Text>
-          <View style={[styles.insignia, { backgroundColor: colorEstado }]}>
-            <Text style={styles.insigniaTexto}>
-              {item.estado.replace("_", " ").toUpperCase()}
-            </Text>
+        <View style={styles.tarjetaContenido}>
+          <View style={[styles.iconoContenedor, { backgroundColor: colorEstado }]}>
+            <Text style={styles.icono}>{tipo?.icono}</Text>
+          </View>
+          <View style={styles.infoContenedor}>
+            <View style={styles.filaCabecera}>
+              <Text style={styles.codigo}>{item.codigo}</Text>
+              <View style={[styles.insignia, { backgroundColor: colorEstado + "20" }]}>
+                <Text style={[styles.insigniaTexto, { color: colorEstado }]}>
+                  {item.estado.toUpperCase().replace("_", " ")}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.detallePrincipal}>{tipo?.nombre} • {item.direccion}</Text>
+            <Text style={styles.detalleSecundario}>Autor anónimo • Ingresado: {fecha}</Text>
           </View>
         </View>
-
-        <View style={styles.tarjetaCuerpo}>
-          <Text style={styles.tipo}>
-            {tipo?.icono} {tipo?.nombre}
-          </Text>
-          <Text style={styles.direccion}>📍 {item.direccion}</Text>
-          <Text style={styles.descripcion} numberOfLines={2}>
-            {item.descripcion}
-          </Text>
-        </View>
-
-        <View style={styles.tarjetaPie}>
-          <Text style={styles.fecha}>
-            Ingresado: {new Date(item.creadoEn).toLocaleDateString("es-AR")}
-          </Text>
-          <View style={styles.botonContenedor}>
-            <Boton 
-              titulo="Gestionar" 
-              variante="primario" 
-              onPress={() => console.log(`Gestionar reporte: ${item.id}`)} 
-            />
-          </View>
+        
+        <View style={styles.accionesContenedor}>
+          <TouchableOpacity 
+            style={styles.botonRevisar}
+            onPress={() => router.push(`/(operador)/detalle-operador/${item.id}`)}
+          >
+            <Text style={styles.textoBotonRevisar}>Revisar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.botonAsignar}>
+            <Text style={styles.textoBotonAsignar}>Asignar</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
   };
+
+  const CabeceraLista = () => (
+    <View style={styles.controlesSuperiores}>
+      <View style={styles.buscadorContenedor}>
+        <TextInput 
+          style={styles.inputBusqueda} 
+          placeholder="Buscar reporte..." 
+          placeholderTextColor={Paleta.inkSoft}
+        />
+        <TouchableOpacity style={styles.botonAjustes}>
+          <Text style={styles.iconoAjustes}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.tabsContenedor}>
+        <TouchableOpacity style={styles.tabActivo}>
+          <Text style={styles.textoTabActivo}>Todos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabInactivo}>
+          <Text style={styles.textoTabInactivo}>Pendientes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabInactivo}>
+          <Text style={styles.textoTabInactivo}>Mi zona</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.pantalla}>
       <StatusBar style="light" />
       
       <View style={[styles.cabecera, { paddingTop: Platform.OS === "web" ? 40 : insets.top + 20 }]}>
-        <Text style={styles.titulo}>Bandeja de Gestión</Text>
-        <Text style={styles.nombre}>{usuario?.nombre} - Operador</Text>
+        <Text style={styles.titulo}>Bandeja de gestión</Text>
+        <Text style={styles.subtitulo}>
+          Zona Norte • {reportesMock.length} pendientes
+        </Text>
       </View>
 
       <FlatList
         data={reportesMock}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={CabeceraLista}
         contentContainerStyle={[styles.lista, { paddingBottom: insets.bottom + 20 }]}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
@@ -94,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.paper,
   },
   cabecera: {
-    backgroundColor: Paleta.orange,
+    backgroundColor: "#E8630C",
     paddingHorizontal: 16,
     paddingBottom: 20,
     zIndex: 2,
@@ -103,83 +134,161 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
     fontSize: 24,
     fontWeight: "600",
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
-  nombre: {
+  subtitulo: {
     marginTop: 4,
-    fontSize: 13,
-    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
   },
   lista: {
     padding: 16,
-    gap: 16,
+    gap: 8,
+  },
+  controlesSuperiores: {
+    marginBottom: 8,
+  },
+  buscadorContenedor: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  inputBusqueda: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(18,35,46,0.12)",
+    borderRadius: 6,
+    fontSize: 14,
+    backgroundColor: "#FFFFFF",
+  },
+  botonAjustes: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#E8630C",
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconoAjustes: {
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  tabsContenedor: {
+    flexDirection: "row",
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(18,35,46,0.12)",
+    paddingBottom: 12,
+  },
+  tabActivo: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "#E8630C",
+    borderRadius: 4,
+  },
+  textoTabActivo: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  tabInactivo: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+    borderRadius: 4,
+  },
+  textoTabInactivo: {
+    color: "#E8630C",
+    fontSize: 13,
+    fontWeight: "500",
   },
   tarjeta: {
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
-    padding: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    padding: 12,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
+    borderColor: "rgba(18,35,46,0.12)",
+    marginBottom: 8,
   },
-  tarjetaCabecera: {
+  tarjetaContenido: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  iconoContenedor: {
+    width: 50,
+    height: 50,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  icono: {
+    fontSize: 24,
+  },
+  infoContenedor: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  filaCabecera: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 2,
   },
   codigo: {
-    fontSize: 14,
-    fontWeight: "bold",
+    fontSize: 13,
+    fontWeight: "600",
     color: Paleta.ink,
   },
   insignia: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   insigniaTexto: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
-  tarjetaCuerpo: {
-    marginBottom: 12,
-  },
-  tipo: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Paleta.ink,
-    marginBottom: 4,
-  },
-  direccion: {
-    fontSize: 13,
-    color: Paleta.inkSoft,
-    marginBottom: 8,
-  },
-  descripcion: {
-    fontSize: 14,
-    color: Paleta.ink,
-    lineHeight: 20,
-  },
-  tarjetaPie: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.05)",
-    paddingTop: 12,
-  },
-  fecha: {
+  detallePrincipal: {
     fontSize: 12,
     color: Paleta.inkSoft,
+    marginBottom: 2,
   },
-  botonContenedor: {
-    width: 140,
+  detalleSecundario: {
+    fontSize: 11,
+    color: "#888780",
+  },
+  accionesContenedor: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  botonRevisar: {
+    flex: 1,
+    paddingVertical: 8,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#E8630C",
+    borderRadius: 4,
+    alignItems: "center",
+  },
+  textoBotonRevisar: {
+    color: "#E8630C",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  botonAsignar: {
+    flex: 1,
+    paddingVertical: 8,
+    backgroundColor: "#E8630C",
+    borderRadius: 4,
+    alignItems: "center",
+  },
+  textoBotonAsignar: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
   pieLista: {
     marginTop: 20,
