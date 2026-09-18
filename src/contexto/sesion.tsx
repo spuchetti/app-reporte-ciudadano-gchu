@@ -15,7 +15,12 @@ import {
   recuperarArranque,
   registrarVecino,
 } from "@/servicios/auth";
-import { crearReporte, datosCreacionDesdeBorrador } from "@/servicios/reportes";
+import { ErrorServicio } from "@/servicios/error";
+import {
+  crearReporte,
+  datosCreacionDesdeBorrador,
+  ZONA_POR_DEFECTO,
+} from "@/servicios/reportes";
 import { DatosBorradorReporte, DatosRegistro, Sesion } from "@/tipos";
 
 type ValorSesion = {
@@ -29,6 +34,7 @@ type ValorSesion = {
     datos: DatosRegistro,
     borrador: DatosBorradorReporte,
   ) => Promise<void>;
+  enviarReporte: (borrador: DatosBorradorReporte) => Promise<void>;
   desbloquearConBiometria: () => Promise<void>;
   cerrarSesion: () => Promise<void>;
   cerrarAvisoSesionVencida: () => void;
@@ -80,12 +86,38 @@ export function SesionProvider({ children }: PropsWithChildren) {
   const enviarPrimerReporte = useCallback(
     async (datos: DatosRegistro, borrador: DatosBorradorReporte) => {
       const siguiente = await registrarVecino(datos);
-      await crearReporte(datosCreacionDesdeBorrador(borrador, siguiente.usuario.id));
+      await crearReporte(
+        datosCreacionDesdeBorrador(
+          borrador,
+          siguiente.usuario.id,
+          siguiente.usuario.zonaId ?? ZONA_POR_DEFECTO,
+        ),
+      );
       setSesion(siguiente);
       setSesionVencida(false);
       setPendienteBiometria(false);
     },
     [],
+  );
+
+  const enviarReporte = useCallback(
+    async (borrador: DatosBorradorReporte) => {
+      if (sesion?.esInvitado !== false || sesion.usuario.rol !== "vecino") {
+        throw new ErrorServicio({
+          codigo: "SIN_SESION",
+          mensaje: "Tenés que identificarte para enviar un reporte.",
+        });
+      }
+
+      await crearReporte(
+        datosCreacionDesdeBorrador(
+          borrador,
+          sesion.usuario.id,
+          sesion.usuario.zonaId ?? ZONA_POR_DEFECTO,
+        ),
+      );
+    },
+    [sesion],
   );
 
   const desbloquearConBiometria = useCallback(async () => {
@@ -115,6 +147,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
       iniciarSesion,
       registrar,
       enviarPrimerReporte,
+      enviarReporte,
       desbloquearConBiometria,
       cerrarSesion,
       cerrarAvisoSesionVencida,
@@ -127,6 +160,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
       iniciarSesion,
       registrar,
       enviarPrimerReporte,
+      enviarReporte,
       desbloquearConBiometria,
       cerrarSesion,
       cerrarAvisoSesionVencida,

@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
+import { ZONA_POR_DEFECTO } from "@/servicios/reportes";
 import {
   borrarSecreto,
   guardarSecreto,
@@ -182,7 +183,7 @@ export async function registrarVecino(datos: DatosRegistro): Promise<SesionAuten
     email,
     telefono,
     rol: "vecino",
-    zonaId: null,
+    zonaId: ZONA_POR_DEFECTO,
     avisosActivos: true,
     creadoEn: new Date().toISOString(),
   };
