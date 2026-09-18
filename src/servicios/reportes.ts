@@ -1,5 +1,6 @@
 import { cambiosEstadoMock, reportesMock, tiposReporteMock } from "@/mocks";
 import { ErrorServicio } from "@/servicios/error";
+import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
   CambioDeEstado,
   DatosBorradorReporte,
@@ -7,7 +8,7 @@ import {
   TipoDeReporte,
 } from "@/tipos";
 
-const COORDENADAS_CENTRO = { latitud: -33.0156, longitud: -58.5089 };
+export { COORDENADAS_CENTRO } from "@/servicios/ubicacion";
 export const ZONA_POR_DEFECTO = "zon-centro";
 
 // Simular delay de red
@@ -56,10 +57,34 @@ export function validarBorradorReporte(borrador: DatosBorradorReporte) {
     });
   }
 
+  if (borrador.fotos.length < 1) {
+    throw new ErrorServicio({
+      codigo: "FOTO_OBLIGATORIA",
+      mensaje: "El reporte necesita al menos una foto.",
+    });
+  }
+
+  if (borrador.fotos.length > 2) {
+    throw new ErrorServicio({
+      codigo: "FOTOS_MAXIMAS",
+      mensaje: "Podés adjuntar hasta dos fotos.",
+    });
+  }
+
+  if (
+    !Number.isFinite(borrador.latitud) ||
+    !Number.isFinite(borrador.longitud)
+  ) {
+    throw new ErrorServicio({
+      codigo: "UBICACION_INVALIDA",
+      mensaje: "Marcá la ubicación en el mapa.",
+    });
+  }
+
   if (borrador.direccion.trim().length < 5) {
     throw new ErrorServicio({
       codigo: "DIRECCION_INVALIDA",
-      mensaje: "Ingresá la dirección.",
+      mensaje: "No pudimos obtener la dirección. Mové el pin o usá tu ubicación.",
     });
   }
 }
@@ -67,24 +92,43 @@ export function validarBorradorReporte(borrador: DatosBorradorReporte) {
 export function datosCreacionDesdeBorrador(
   borrador: DatosBorradorReporte,
   autorId: string,
-  zonaId: string = ZONA_POR_DEFECTO,
 ): Omit<Reporte, "id" | "codigo" | "creadoEn"> {
   validarBorradorReporte(borrador);
 
   return {
     tipoId: borrador.tipoId,
     descripcion: borrador.descripcion.trim() || null,
-    audioUrl: null,
-    fotos: [],
-    coordenadas: COORDENADAS_CENTRO,
+    audioUrl: borrador.audioUrl,
+    fotos: borrador.fotos.map((url, indice) => ({
+      id: `foto-local-${indice + 1}`,
+      url,
+      esPrincipal: indice === 0,
+    })),
+    coordenadas: {
+      latitud: borrador.latitud,
+      longitud: borrador.longitud,
+    },
     direccion: borrador.direccion.trim(),
-    zonaId: zonaId || ZONA_POR_DEFECTO,
+    zonaId: zonaParaCoordenadas({
+      latitud: borrador.latitud,
+      longitud: borrador.longitud,
+    }),
     estado: "recibido",
     autorId,
     cuadrillaId: null,
     duplicadoDe: null,
     adhesiones: 0,
     sincronizado: false,
+  };
+}
+
+export function paramsDeTicket(reporte: Reporte) {
+  const tipo = tiposReporteMock.find((item) => item.id === reporte.tipoId);
+  return {
+    codigo: reporte.codigo,
+    tipoNombre: tipo?.nombre ?? "Reporte",
+    area: tipo?.areaResponsable ?? "",
+    direccion: reporte.direccion,
   };
 }
 

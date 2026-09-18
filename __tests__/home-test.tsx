@@ -143,6 +143,6 @@ describe("Home vecino", () => {
       buscarPorLabel(tree!, "Generar reporte").props.onPress();
     });
 
-    expect(mockPush).toHaveBeenCalledWith("/reportar");
+    expect(mockPush).toHaveBeenCalledWith("/reporte/nuevo");
   });
 });

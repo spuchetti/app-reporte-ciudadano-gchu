@@ -32,3 +32,5 @@ export type SesionInvitado = {
 };
 
 export type Sesion = SesionAutenticada | SesionInvitado;
+
+export type MetodoIngreso = "rostro" | "pin" | "datos";

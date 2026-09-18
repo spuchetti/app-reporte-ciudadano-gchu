@@ -161,7 +161,7 @@ export default function HomeVecinoScreen() {
           style={styles.fab}
           accessibilityRole="button"
           accessibilityLabel="Generar reporte"
-          onPress={() => router.push("/reportar")}
+          onPress={() => router.push("/reporte/nuevo")}
         >
           <Text style={styles.fabTexto}>+</Text>
         </Pressable>
