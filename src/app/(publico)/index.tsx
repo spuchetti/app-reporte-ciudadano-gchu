@@ -1,6 +1,7 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
@@ -8,34 +9,44 @@ import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
-import { esErrorServicio } from "@/servicios/error";
+import { COORDENADAS_CENTRO, obtenerReportes } from "@/servicios/reportes";
+import { Reporte } from "@/tipos";
+
+const REGION_GCHU = {
+  latitude: COORDENADAS_CENTRO.latitud,
+  longitude: COORDENADAS_CENTRO.longitud,
+  latitudeDelta: 0.04,
+  longitudeDelta: 0.04,
+};
 
 export default function MapaPublicoScreen() {
   const insets = useSafeAreaInsets();
   const {
     sesionVencida,
+    huboVecino,
     cerrarAvisoSesionVencida,
-    pendienteBiometria,
-    desbloquearConBiometria,
+    olvidarDispositivo,
   } = useSesion();
-  const [desbloqueando, setDesbloqueando] = useState(false);
-  const [errorBiometria, setErrorBiometria] = useState<string | null>(null);
+  const pedirIdentidad = sesionVencida || huboVecino;
+  const [reportes, setReportes] = useState<Reporte[]>([]);
 
-  async function onBiometria() {
-    setErrorBiometria(null);
-    setDesbloqueando(true);
-    try {
-      await desbloquearConBiometria();
-    } catch (err) {
-      setErrorBiometria(
-        esErrorServicio(err)
-          ? err.message
-          : "No se pudo confirmar la identidad.",
-      );
-    } finally {
-      setDesbloqueando(false);
-    }
-  }
+  useEffect(() => {
+    let activo = true;
+
+    obtenerReportes()
+      .then((lista) => {
+        if (activo) {
+          setReportes(lista);
+        }
+      })
+      .catch(() => {
+        // El mapa igual se muestra; los pines quedan vacíos.
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   return (
     <View style={styles.pantalla}>
@@ -55,29 +66,56 @@ export default function MapaPublicoScreen() {
       ) : null}
 
       <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
-        <Text style={styles.mapaEmoji}>🗺️</Text>
+        {Platform.OS === "web" ? (
+          <Text style={styles.mapaWeb}>
+            El mapa con las calles de Gualeguaychú se ve en el celular.
+          </Text>
+        ) : (
+          <MapView
+            style={StyleSheet.absoluteFill}
+            initialRegion={REGION_GCHU}
+            showsUserLocation={false}
+          >
+            {reportes.map((reporte) => (
+              <Marker
+                key={reporte.id}
+                coordinate={{
+                  latitude: reporte.coordenadas.latitud,
+                  longitude: reporte.coordenadas.longitud,
+                }}
+                title={reporte.direccion}
+                description={reporte.codigo}
+              />
+            ))}
+          </MapView>
+        )}
       </View>
       <View style={[styles.pie, { paddingBottom: insets.bottom + 16 }]}>
-        {pendienteBiometria ? (
+        {pedirIdentidad ? (
           <>
-            {errorBiometria ? (
-              <Text style={styles.errorBiometria}>{errorBiometria}</Text>
-            ) : null}
             <Boton
-              titulo="Ingresar con biometría"
-              cargando={desbloqueando}
-              disabled={desbloqueando}
-              onPress={onBiometria}
+              titulo="Identificarme"
+              onPress={() => router.push("/register")}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void olvidarDispositivo();
+              }}
+              style={styles.noSoyYo}
+            >
+              <Text style={styles.noSoyYoTexto}>No soy yo</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Boton
+              titulo="Generar reporte"
+              onPress={() => router.push("/reporte/nuevo")}
             />
             <View style={styles.separador} />
           </>
-        ) : null}
-        <Boton
-          titulo="Generar reporte"
-          disabled={desbloqueando}
-          onPress={() => router.push("/reporte")}
-        />
-        <View style={styles.separador} />
+        )}
         <Boton
           titulo="Acceso operador"
           variante="texto"
@@ -134,22 +172,27 @@ const styles = StyleSheet.create({
   mapa: {
     flex: 1,
     backgroundColor: "#E1F5EE",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    overflow: "hidden",
   },
-  mapaEmoji: {
-    fontSize: 48,
+  mapaWeb: {
+    flex: 1,
+    textAlign: "center",
+    textAlignVertical: "center",
+    padding: 24,
+    fontSize: 14,
+    color: Paleta.inkSoft,
   },
   pie: {
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  errorBiometria: {
-    color: Paleta.rojo,
-    fontSize: 13,
-    marginBottom: 8,
-    textAlign: "center",
+  noSoyYo: {
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  noSoyYoTexto: {
+    fontSize: 14,
+    color: Paleta.inkSoft,
   },
   separador: {
     height: 8,

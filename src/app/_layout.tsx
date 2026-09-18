@@ -1,6 +1,8 @@
 import { DarkTheme, DefaultTheme, SplashScreen, Stack, ThemeProvider } from "expo-router";
 import { useColorScheme } from "react-native";
 
+import { PantallaDesbloqueo } from "@/components/ingreso/pantalla-desbloqueo";
+import { SheetPreferenciaIngreso } from "@/components/ingreso/sheet-preferencia";
 import { SesionProvider, useSesion } from "@/contexto/sesion";
 
 SplashScreen.preventAutoHideAsync();
@@ -13,6 +15,7 @@ export default function RootLayout() {
       <SesionProvider>
         <SplashScreenController />
         <RootNavigator />
+        <SheetPreferenciaIngreso />
       </SesionProvider>
     </ThemeProvider>
   );
@@ -29,10 +32,14 @@ function SplashScreenController() {
 }
 
 function RootNavigator() {
-  const { sesion, isLoading } = useSesion();
+  const { sesion, isLoading, pendienteDesbloqueo, rolToken } = useSesion();
 
   if (isLoading) {
     return null;
+  }
+
+  if (pendienteDesbloqueo && rolToken) {
+    return <PantallaDesbloqueo rol={rolToken} />;
   }
 
   const esVecino =
@@ -52,6 +59,7 @@ function RootNavigator() {
       <Stack.Protected guard={esOperador}>
         <Stack.Screen name="(operador)" />
       </Stack.Protected>
+      <Stack.Screen name="reporte" />
     </Stack>
   );
 }

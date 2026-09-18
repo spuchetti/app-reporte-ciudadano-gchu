@@ -27,11 +27,28 @@ export interface TipoDeReporte {
   areaResponsable: string;
 }
 
-/** Datos del reporte público antes de pedir identidad. */
+/** Datos del reporte listos para enviar (foto y ubicación incluidas). */
 export interface DatosBorradorReporte {
   tipoId: string;
   descripcion: string;
   direccion: string;
+  latitud: number;
+  longitud: number;
+  fotos: string[];
+  audioUrl: string | null;
+}
+
+/** Borrador mientras el vecino recorre los pasos. */
+export interface BorradorEnCurso {
+  tipoId: string;
+  descripcion: string;
+  direccion: string;
+  latitud: number | null;
+  longitud: number | null;
+  fotos: string[];
+  audioUrl: string | null;
+  paso: number;
+  pendienteEnvio: boolean;
 }
 
 export interface CambioDeEstado {

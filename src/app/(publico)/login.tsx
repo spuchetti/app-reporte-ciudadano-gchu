@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
+import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
@@ -22,13 +23,13 @@ export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const dosColumnas = width >= 768;
-  const { iniciarSesion, pendienteBiometria, desbloquearConBiometria } =
-    useSesion();
+  const { iniciarSesion } = useSesion();
+  const desbloqueo = useDesbloqueoAlEntrar("operador", true);
 
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState<"login" | "biometria" | null>(null);
+  const [cargando, setCargando] = useState(false);
 
   async function onIngresar() {
     if (!email.trim() || !contrasena) {
@@ -37,7 +38,7 @@ export default function LoginOperadorScreen() {
     }
 
     setError(null);
-    setCargando("login");
+    setCargando(true);
     try {
       await iniciarSesion(email, contrasena);
     } catch (err) {
@@ -47,23 +48,7 @@ export default function LoginOperadorScreen() {
           : "No se pudo completar el acceso. Intentá de nuevo.",
       );
     } finally {
-      setCargando(null);
-    }
-  }
-
-  async function onBiometria() {
-    setError(null);
-    setCargando("biometria");
-    try {
-      await desbloquearConBiometria();
-    } catch (err) {
-      setError(
-        esErrorServicio(err)
-          ? err.message
-          : "No se pudo confirmar la identidad.",
-      );
-    } finally {
-      setCargando(null);
+      setCargando(false);
     }
   }
 
@@ -140,32 +125,22 @@ export default function LoginOperadorScreen() {
               onSubmitEditing={onIngresar}
             />
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error || desbloqueo.error ? (
+              <Text style={styles.error}>{error ?? desbloqueo.error}</Text>
+            ) : null}
 
             <Boton
               titulo="Ingresar"
-              cargando={cargando === "login"}
-              disabled={cargando !== null}
+              cargando={cargando || desbloqueo.desbloqueando}
+              disabled={cargando || desbloqueo.desbloqueando}
               onPress={onIngresar}
             />
-
-            {pendienteBiometria ? (
-              <View style={styles.bloqueBiometria}>
-                <Boton
-                  titulo="Ingresar con biometría"
-                  variante="secundario"
-                  cargando={cargando === "biometria"}
-                  disabled={cargando !== null}
-                  onPress={onBiometria}
-                />
-              </View>
-            ) : null}
 
             <View style={styles.separador} />
             <Boton
               titulo="Volver al mapa"
               variante="texto"
-              disabled={cargando !== null}
+              disabled={cargando || desbloqueo.desbloqueando}
               onPress={() => router.replace("/")}
             />
 
@@ -265,9 +240,6 @@ const styles = StyleSheet.create({
   },
   separador: {
     height: 12,
-  },
-  bloqueBiometria: {
-    marginTop: 12,
   },
   ayuda: {
     marginTop: 24,

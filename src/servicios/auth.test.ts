@@ -12,10 +12,21 @@ jest.mock("@/servicios/almacen-seguro", () => {
   };
 });
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { executionEnvironment: "bare" },
+}));
+
 jest.mock("expo-local-authentication", () => ({
   hasHardwareAsync: jest.fn(async () => false),
   isEnrolledAsync: jest.fn(async () => false),
+  supportedAuthenticationTypesAsync: jest.fn(async () => []),
   authenticateAsync: jest.fn(async () => ({ success: true })),
+  AuthenticationType: {
+    FINGERPRINT: 1,
+    FACIAL_RECOGNITION: 2,
+    IRIS: 3,
+  },
 }));
 
 import * as LocalAuthentication from "expo-local-authentication";
@@ -25,15 +36,20 @@ import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import {
   cerrarSesion,
-  desbloquearConBiometria,
+  desbloquearConPin,
+  desbloquearConRostro,
   dispositivoTieneBiometria,
+  identificarVecino,
   iniciarSesion,
+  intentarDesbloqueo,
   MENSAJE_SESION_VENCIDA,
+  olvidarDispositivo,
   recuperarArranque,
   registrarVecino,
   TTL_TOKEN_MS,
   validarToken,
 } from "@/servicios/auth";
+import { guardarMetodoIngreso } from "@/servicios/ingreso";
 import { SesionAutenticada, Usuario } from "@/tipos";
 
 const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
@@ -80,6 +96,9 @@ describe("servicios/auth", () => {
     (Platform as { OS: string }).OS = "ios";
     (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(false);
     (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(false);
+    (LocalAuthentication.supportedAuthenticationTypesAsync as jest.Mock).mockResolvedValue(
+      [],
+    );
     (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
       success: true,
     });
@@ -166,15 +185,76 @@ describe("servicios/auth", () => {
     );
   });
 
-  test("rechaza un email ya registrado", async () => {
-    await esperarError(
-      registrarVecino({
-        nombre: "Norma",
+  test("con email y teléfono conocidos reanuda la sesión del vecino", async () => {
+    const sesion = await esperar(
+      identificarVecino({
+        nombre: "Norma Pereyra",
         email: "norma.pereyra@gmail.com",
         telefono: "3446-123456",
       }),
-      "EMAIL_YA_REGISTRADO",
     );
+
+    expect(sesion.usuario.id).toBe("usr-001");
+    expect(sesion.usuario.rol).toBe("vecino");
+    expect(sesion.usuario.zonaId).toBe("zon-norte");
+    expect(sesion.token).toMatch(/^tok-usr-001-/);
+  });
+
+  test("acepta el teléfono con o sin guiones al reingresar", async () => {
+    const sesion = await esperar(
+      identificarVecino({
+        nombre: "Norma",
+        email: "norma.pereyra@gmail.com",
+        telefono: "3446123456",
+      }),
+    );
+
+    expect(sesion.usuario.id).toBe("usr-001");
+  });
+
+  test("no reanuda si el teléfono no coincide", async () => {
+    await esperarError(
+      identificarVecino({
+        nombre: "Norma",
+        email: "norma.pereyra@gmail.com",
+        telefono: "3446-000000",
+      }),
+      "IDENTIDAD_INVALIDA",
+    );
+  });
+
+  test("un operador no entra por identificación de vecino", async () => {
+    await esperarError(
+      identificarVecino({
+        nombre: "Jorge Fernández",
+        email: "jorge.fernandez@gualeguaychu.gov.ar",
+        telefono: "3446-400100",
+      }),
+      "IDENTIDAD_INVALIDA",
+    );
+  });
+
+  test("un vecino vuelve a entrar después de que el token venció", async () => {
+    const primera = await esperar(
+      registrarVecino({
+        nombre: "Ana López",
+        email: "ana.lopez@gchu.test",
+        telefono: "3446-000000",
+      }),
+    );
+    await esperar(cerrarSesion());
+
+    const segunda = await esperar(
+      identificarVecino({
+        nombre: "Ana López",
+        email: "ana.lopez@gchu.test",
+        telefono: "3446-000000",
+      }),
+    );
+
+    expect(segunda.usuario.id).toBe(primera.usuario.id);
+    expect(segunda.token).not.toBe(primera.token);
+    expect(Date.parse(segunda.expiraEn)).toBeGreaterThan(Date.now());
   });
 
   test("sin usuario guardado, el arranque no tiene sesión", async () => {
@@ -182,11 +262,13 @@ describe("servicios/auth", () => {
     expect(arranque).toEqual({
       sesion: null,
       sesionVencida: false,
-      pendienteBiometria: false,
+      sesionBloqueada: false,
+      huboVecino: false,
+      rolToken: null,
     });
   });
 
-  test("al cerrar sesión borra el secreto", async () => {
+  test("al cerrar sesión borra el token y deja el dispositivo marcado como vecino", async () => {
     await esperar(
       registrarVecino({
         nombre: "Ana López",
@@ -196,12 +278,29 @@ describe("servicios/auth", () => {
     );
     await esperar(cerrarSesion());
 
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+    expect(almacen.__memoria.get("huboVecino")).toBe("1");
+
     const arranque = await esperar(recuperarArranque());
-    expect(arranque).toEqual({
-      sesion: null,
-      sesionVencida: false,
-      pendienteBiometria: false,
-    });
+    expect(arranque.sesion).toBeNull();
+    expect(arranque.sesionVencida).toBe(false);
+    expect(arranque.sesionBloqueada).toBe(false);
+    expect(arranque.huboVecino).toBe(true);
+    expect(arranque.rolToken).toBeNull();
+  });
+
+  test("cerrar sesión de operador no marca el dispositivo como vecino", async () => {
+    await esperar(
+      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+    );
+    await esperar(cerrarSesion());
+
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque.huboVecino).toBe(false);
+    expect(arranque.rolToken).toBeNull();
+    expect(arranque.sesion).toBeNull();
+    expect(arranque.sesionBloqueada).toBe(false);
+    expect(almacen.__memoria.has("sesion")).toBe(false);
   });
 
   test("al reabrir, un vecino con token vigente recupera la sesión", async () => {
@@ -215,6 +314,7 @@ describe("servicios/auth", () => {
 
     const arranque = await esperar(recuperarArranque());
     expect(arranque.sesionVencida).toBe(false);
+    expect(arranque.huboVecino).toBe(true);
     expect(arranque.sesion?.esInvitado).toBe(false);
     if (arranque.sesion?.esInvitado === false) {
       expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
@@ -229,6 +329,7 @@ describe("servicios/auth", () => {
 
     const arranque = await esperar(recuperarArranque());
     expect(arranque.sesionVencida).toBe(false);
+    expect(arranque.huboVecino).toBe(false);
     expect(arranque.sesion?.esInvitado).toBe(false);
     if (arranque.sesion?.esInvitado === false) {
       expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
@@ -263,9 +364,30 @@ describe("servicios/auth", () => {
     expect(arranque).toEqual({
       sesion: null,
       sesionVencida: true,
-      pendienteBiometria: false,
+      sesionBloqueada: false,
+      huboVecino: false,
+      rolToken: null,
     });
     expect(almacen.__memoria.has("sesion")).toBe(false);
+  });
+
+  test("si el token de un vecino expiró, avisa y deja el dispositivo marcado", async () => {
+    guardarSesion(
+      sesionDe(usuariosMock[0], {
+        expiraEn: new Date(Date.now() - 1000).toISOString(),
+      }),
+    );
+
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque).toEqual({
+      sesion: null,
+      sesionVencida: true,
+      sesionBloqueada: false,
+      huboVecino: true,
+      rolToken: null,
+    });
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+    expect(almacen.__memoria.get("huboVecino")).toBe("1");
   });
 
   test("si el token es inválido, borra la sesión y avisa que venció", async () => {
@@ -280,7 +402,9 @@ describe("servicios/auth", () => {
     expect(arranque).toEqual({
       sesion: null,
       sesionVencida: true,
-      pendienteBiometria: false,
+      sesionBloqueada: false,
+      huboVecino: false,
+      rolToken: null,
     });
     expect(almacen.__memoria.has("sesion")).toBe(false);
   });
@@ -300,62 +424,65 @@ describe("servicios/auth", () => {
     await assertion;
   });
 
-  test("en web no pide biometría y restaura el token vigente", async () => {
+  test("en web no pide el rostro y restaura el token vigente", async () => {
     (Platform as { OS: string }).OS = "web";
     await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
 
     const arranque = await esperar(recuperarArranque());
-    expect(arranque.pendienteBiometria).toBe(false);
+    expect(arranque.sesionBloqueada).toBe(false);
     expect(arranque.sesion?.esInvitado).toBe(false);
     expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
   });
 
-  test("con biometría enrolada, un token vigente pide confirmación y entra", async () => {
-    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+  test("con rostro enrolado, reabrir sin cerrar sesión no pide el prompt", async () => {
     (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.supportedAuthenticationTypesAsync as jest.Mock).mockResolvedValue(
+      [LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION],
+    );
 
     const creada = await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
     const arranque = await esperar(recuperarArranque());
 
-    expect(LocalAuthentication.authenticateAsync).toHaveBeenCalled();
-    expect(arranque.pendienteBiometria).toBe(false);
+    expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
+    expect(arranque.sesionBloqueada).toBe(false);
     expect(arranque.sesion?.esInvitado).toBe(false);
     if (arranque.sesion?.esInvitado === false) {
       expect(arranque.sesion.usuario.id).toBe(creada.usuario.id);
     }
   });
 
-  test("si cancela la biometría, no borra el token y queda pendiente", async () => {
-    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+  test("después de cerrar sesión, el arranque no entra aunque haya rostro", async () => {
     (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: false,
-      error: "user_cancel",
-    });
+    (LocalAuthentication.supportedAuthenticationTypesAsync as jest.Mock).mockResolvedValue(
+      [LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION],
+    );
 
     await esperar(
       iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
     );
+    await esperar(cerrarSesion());
     const arranque = await esperar(recuperarArranque());
 
     expect(arranque).toEqual({
       sesion: null,
       sesionVencida: false,
-      pendienteBiometria: true,
+      sesionBloqueada: false,
+      huboVecino: false,
+      rolToken: null,
     });
-    expect(almacen.__memoria.has("sesion")).toBe(true);
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+    expect(LocalAuthentication.authenticateAsync).not.toHaveBeenCalled();
   });
 
-  test("desbloquea con biometría un token vigente después de cancelar", async () => {
-    (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(true);
+  test("con el rostro elegido, desbloquea un token vigente sin haber cerrado sesión", async () => {
     (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: false,
-    });
+    (LocalAuthentication.supportedAuthenticationTypesAsync as jest.Mock).mockResolvedValue(
+      [LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION],
+    );
 
     await esperar(
       registrarVecino({
@@ -364,16 +491,61 @@ describe("servicios/auth", () => {
         telefono: "3446-000000",
       }),
     );
-    await esperar(recuperarArranque());
-
-    (LocalAuthentication.authenticateAsync as jest.Mock).mockResolvedValue({
-      success: true,
-    });
-    const sesion = await esperar(desbloquearConBiometria());
+    await esperar(guardarMetodoIngreso("vecino", "rostro"));
+    expect(await esperar(intentarDesbloqueo("vecino"))).toBe("rostro");
+    const sesion = await esperar(desbloquearConRostro("vecino"));
     expect(sesion.usuario.rol).toBe("vecino");
   });
 
-  test("en web no hay biometría disponible", async () => {
+  test("con el código del teléfono elegido, desbloquea el token vigente", async () => {
+    const creada = await esperar(
+      registrarVecino({
+        nombre: "Ana López",
+        email: "ana.desbloqueo@gchu.test",
+        telefono: "3446-000000",
+      }),
+    );
+    await esperar(guardarMetodoIngreso("vecino", "pin"));
+
+    expect(await esperar(intentarDesbloqueo("vecino"))).toBe("pin");
+    const sesion = await esperar(desbloquearConPin("vecino"));
+    expect(sesion.usuario.id).toBe(creada.usuario.id);
+    expect(sesion.token).toBe(creada.token);
+    expect(LocalAuthentication.authenticateAsync).toHaveBeenCalled();
+  });
+
+  test("no desbloquea un operador desde la identificación de vecino", async () => {
+    (LocalAuthentication.isEnrolledAsync as jest.Mock).mockResolvedValue(true);
+    (LocalAuthentication.supportedAuthenticationTypesAsync as jest.Mock).mockResolvedValue(
+      [LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION],
+    );
+
+    await esperar(
+      iniciarSesion("jorge.fernandez@gualeguaychu.gov.ar", "operador123"),
+    );
+
+    await esperarError(desbloquearConRostro("vecino"), "ROL_DISTINTO");
+  });
+
+  test("olvidar el dispositivo borra el rastro de vecino", async () => {
+    await esperar(
+      registrarVecino({
+        nombre: "Ana López",
+        email: "ana.olvidar@gchu.test",
+        telefono: "3446-000000",
+      }),
+    );
+    await esperar(cerrarSesion());
+    await esperar(olvidarDispositivo());
+
+    const arranque = await esperar(recuperarArranque());
+    expect(arranque.huboVecino).toBe(false);
+    expect(arranque.sesion).toBeNull();
+    expect(almacen.__memoria.has("sesion")).toBe(false);
+    expect(almacen.__memoria.has("huboVecino")).toBe(false);
+  });
+
+  test("en web no hay reconocimiento facial", async () => {
     (Platform as { OS: string }).OS = "web";
     await expect(dispositivoTieneBiometria()).resolves.toBe(false);
   });
