@@ -156,7 +156,7 @@ describe("servicios/auth", () => {
     );
 
     expect(sesion.usuario.rol).toBe("vecino");
-    expect(sesion.usuario.zonaId).toBeNull();
+    expect(sesion.usuario.zonaId).toBe("zon-centro");
     expect(sesion.usuario.email).toBe("ana.lopez@gchu.test");
     expect(sesion.usuario.telefono).toBe("3446-000000");
     expect(usuariosMock.some((u) => u.email === "ana.lopez@gchu.test")).toBe(true);
