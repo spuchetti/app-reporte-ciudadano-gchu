@@ -99,7 +99,9 @@
           "faceIDPermission": "Permite usar Face ID para autenticación segura.",
           "touchIDPermission": "Permite usar Touch ID para autenticación segura."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "extra": {
       "router": {
