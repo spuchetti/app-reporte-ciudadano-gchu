@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   KeyboardAvoidingView,
@@ -13,29 +13,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
+import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { borradorListoParaEnviar } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
-
-function textoParam(valor: string | string[] | undefined) {
-  if (Array.isArray(valor)) {
-    return valor[0] ?? "";
-  }
-  return valor ?? "";
-}
 
 export default function DatosVecinoScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{
-    tipoId?: string | string[];
-    descripcion?: string | string[];
-    direccion?: string | string[];
-  }>();
-  const { enviarPrimerReporte } = useSesion();
-
-  const tipoId = textoParam(params.tipoId);
-  const descripcion = textoParam(params.descripcion);
-  const direccion = textoParam(params.direccion);
+  const { enviarPrimerReporte, identificar } = useSesion();
+  const borrador = borradorListoParaEnviar();
+  const esReingreso = !borrador;
+  const desbloqueo = useDesbloqueoAlEntrar("vecino", esReingreso);
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -43,23 +32,24 @@ export default function DatosVecinoScreen() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  if (!tipoId || !direccion) {
-    return <Redirect href="/reporte" />;
-  }
-
   async function onSubmit() {
     setError(null);
     setCargando(true);
     try {
-      await enviarPrimerReporte(
-        { nombre, email, telefono },
-        { tipoId, descripcion, direccion },
-      );
+      const datos = { nombre, email, telefono };
+      if (esReingreso || !borrador) {
+        await identificar(datos);
+        return;
+      }
+
+      await enviarPrimerReporte(datos, borrador);
     } catch (err) {
       setError(
         esErrorServicio(err)
           ? err.message
-          : "No se pudo enviar el reporte. Intentá de nuevo.",
+          : esReingreso
+            ? "No se pudo identificar. Intentá de nuevo."
+            : "No se pudo enviar el reporte. Intentá de nuevo.",
       );
     } finally {
       setCargando(false);
@@ -85,8 +75,9 @@ export default function DatosVecinoScreen() {
         <View style={styles.formInner}>
           <Text style={styles.titulo}>Tus datos</Text>
           <Text style={styles.subtitulo}>
-            Los pedimos para enviar el reporte y avisarte el estado. No hace
-            falta contraseña.
+            {esReingreso
+              ? "Usá el mismo email y teléfono que cuando enviaste un reporte. No hace falta contraseña."
+              : "Los pedimos para enviar el reporte y avisarte el estado. No hace falta contraseña."}
           </Text>
 
           <CampoTexto
@@ -121,14 +112,21 @@ export default function DatosVecinoScreen() {
             editable={!cargando}
           />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error || desbloqueo.error ? (
+            <Text style={styles.error}>{error ?? desbloqueo.error}</Text>
+          ) : null}
 
-          <Boton titulo="Enviar reporte" cargando={cargando} onPress={onSubmit} />
+          <Boton
+            titulo={esReingreso ? "Ingresar" : "Enviar reporte"}
+            cargando={cargando || desbloqueo.desbloqueando}
+            disabled={cargando || desbloqueo.desbloqueando}
+            onPress={onSubmit}
+          />
           <View style={styles.separador} />
           <Boton
-            titulo="Volver al reporte"
+            titulo={esReingreso ? "Volver al mapa" : "Volver al reporte"}
             variante="texto"
-            disabled={cargando}
+            disabled={cargando || desbloqueo.desbloqueando}
             onPress={() => router.back()}
           />
         </View>
