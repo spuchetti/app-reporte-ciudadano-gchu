@@ -25,16 +25,17 @@ import {
   actualizarBorrador,
   borradorListoParaEnviar,
   leerBorrador,
+  marcarAdhesionPendiente,
   marcarPendienteEnvio,
   PASOS_REPORTE,
 } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
 import { obtenerTiposReporte } from "@/servicios/reportes";
-import { Coordenadas, TipoDeReporte } from "@/tipos";
+import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
   const insets = useSafeAreaInsets();
-  const { sesion, enviarReporte } = useSesion();
+  const { sesion, enviarReporte, adherirseAReporte } = useSesion();
   const inicial = leerBorrador();
   const [paso, setPaso] = useState(inicial.paso);
   const [tipoId, setTipoId] = useState(inicial.tipoId);
@@ -47,6 +48,7 @@ export function AsistenteReporte() {
   const [tipos, setTipos] = useState<TipoDeReporte[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [sumando, setSumando] = useState(false);
 
   const vecinoIdentificado =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
@@ -136,6 +138,28 @@ export function AsistenteReporte() {
     setPaso((actual) => actual - 1);
   }
 
+  async function onSumarse(reporte: Reporte) {
+    setError(null);
+    if (!vecinoIdentificado) {
+      marcarAdhesionPendiente(reporte.id);
+      router.push("/register");
+      return;
+    }
+
+    setSumando(true);
+    try {
+      await adherirseAReporte(reporte.id);
+    } catch (err) {
+      setError(
+        esErrorServicio(err)
+          ? err.message
+          : "No se pudo sumar al reporte. Intentá de nuevo.",
+      );
+    } finally {
+      setSumando(false);
+    }
+  }
+
   async function onEnviar() {
     setError(null);
     marcarPendienteEnvio();
@@ -196,10 +220,13 @@ export function AsistenteReporte() {
           {paso === 2 ? <PasoFoto fotos={fotos} onFotos={setFotos} /> : null}
           {paso === 3 ? (
             <PasoUbicacion
+              tipoId={tipoId}
               latitud={latitud}
               longitud={longitud}
               direccion={direccion}
               onUbicacion={onUbicacion}
+              onSumarse={(reporte) => void onSumarse(reporte)}
+              sumando={sumando}
             />
           ) : null}
           {paso === 4 ? (
@@ -226,13 +253,17 @@ export function AsistenteReporte() {
 
           <View style={styles.acciones}>
             {paso < PASOS_REPORTE && puedeAvanzar() ? (
-              <Boton titulo="Continuar" onPress={onSiguiente} />
+              <Boton
+                titulo="Continuar"
+                disabled={sumando}
+                onPress={onSiguiente}
+              />
             ) : null}
             {paso === PASOS_REPORTE ? (
               <Boton
                 titulo="Enviar reporte"
                 cargando={enviando}
-                disabled={enviando}
+                disabled={enviando || sumando}
                 onPress={() => void onEnviar()}
               />
             ) : null}
@@ -242,7 +273,7 @@ export function AsistenteReporte() {
             <Boton
               titulo={paso === 1 ? "Volver" : "Atrás"}
               variante="texto"
-              disabled={enviando}
+              disabled={enviando || sumando}
               onPress={onAtras}
             />
           </View>
