@@ -1,7 +1,7 @@
 import React from "react";
 import { act, create, ReactTestRenderer } from "react-test-renderer";
 import HomeVecinoScreen from "../src/app/(tabs)/index";
-import { obtenerReportesPorZona } from "@/servicios/reportes";
+import { obtenerAvisosDeEstado, obtenerReportesPorZona } from "@/servicios/reportes";
 
 const mockPush = jest.fn();
 
@@ -51,11 +51,27 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 jest.mock("@/servicios/reportes", () => ({
-  obtenerReportesPorZona: jest.fn(),
+  obtenerReportesPorZona: jest.fn(async () => []),
+  obtenerAvisosDeEstado: jest.fn(async () => []),
+  resumenReportesCerca: (cantidad: number) => {
+    if (cantidad <= 0) {
+      return "No hay reportes cerca tuyo";
+    }
+    if (cantidad === 1) {
+      return "Hay 1 reporte cerca tuyo";
+    }
+    return `Hay ${cantidad} reportes cerca tuyo`;
+  },
+  ultimosReportesPublicos: (reportes: unknown[]) => reportes.slice(0, 3),
+  etiquetaEstado: (estado: string) =>
+    ({ en_revision: "en revisión" }[estado] ?? estado),
 }));
 
 const obtenerPorZona = obtenerReportesPorZona as jest.MockedFunction<
   typeof obtenerReportesPorZona
+>;
+const obtenerAvisos = obtenerAvisosDeEstado as jest.MockedFunction<
+  typeof obtenerAvisosDeEstado
 >;
 
 const reporteNorte = {
@@ -101,7 +117,9 @@ describe("Home vecino", () => {
   beforeEach(() => {
     mockPush.mockClear();
     obtenerPorZona.mockReset();
+    obtenerAvisos.mockReset();
     obtenerPorZona.mockResolvedValue([reporteNorte]);
+    obtenerAvisos.mockResolvedValue([]);
   });
 
   test("renderiza la cabecera y el botón de cerrar sesión", async () => {
@@ -133,14 +151,48 @@ describe("Home vecino", () => {
     expect(obtenerPorZona).toHaveBeenCalledWith("zon-norte");
   });
 
-  test("el botón + abre el alta de reporte logueado", async () => {
+  test("muestra cuántos reportes hay cerca y los últimos de la zona", async () => {
+    let tree: ReactTestRenderer;
+    await act(async () => {
+      tree = create(<HomeVecinoScreen />);
+    });
+
+    const texto = arbolComoTexto(tree!.toJSON());
+    expect(texto).toContain("Hay 1 reporte cerca tuyo");
+    expect(texto).toContain("Últimos de tu zona");
+  });
+
+  test("muestra avisos de cambio de estado de sus reportes", async () => {
+    obtenerAvisos.mockResolvedValue([
+      {
+        id: "cambio-008",
+        reporteId: "rep-004",
+        codigo: "GCHU-2026-00448",
+        tipoNombre: "Rama / árbol",
+        estado: "resuelto",
+        comentario: "Rama retirada, vereda despejada",
+        fechaHora: "2026-09-16T10:00:00-03:00",
+      },
+    ]);
+
+    let tree: ReactTestRenderer;
+    await act(async () => {
+      tree = create(<HomeVecinoScreen />);
+    });
+
+    const texto = arbolComoTexto(tree!.toJSON());
+    expect(texto).toContain("Tu reporte de Rama / árbol está resuelto.");
+    expect(obtenerAvisos).toHaveBeenCalledWith("usr-001");
+  });
+
+  test("el botón Reportar problema abre el alta de reporte", async () => {
     let tree: ReactTestRenderer;
     await act(async () => {
       tree = create(<HomeVecinoScreen />);
     });
 
     await act(async () => {
-      buscarPorLabel(tree!, "Generar reporte").props.onPress();
+      buscarPorLabel(tree!, "Reportar problema").props.onPress();
     });
 
     expect(mockPush).toHaveBeenCalledWith("/reporte/nuevo");
