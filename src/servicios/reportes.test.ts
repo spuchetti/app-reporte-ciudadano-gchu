@@ -1,9 +1,13 @@
-import { reportesMock } from "@/mocks";
+import { cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
+  asignarCuadrilla,
   crearReporte,
   datosCreacionDesdeBorrador,
+  obtenerAvisosDeEstado,
   obtenerReportesPorZona,
   paramsDeTicket,
+  resumenReportesCerca,
+  ultimosReportesPublicos,
   validarBorradorReporte,
 } from "@/servicios/reportes";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
@@ -98,6 +102,33 @@ describe("servicios/reportes", () => {
     expect(vacia).toEqual([]);
   });
 
+  test("resume cuántos reportes hay cerca", () => {
+    expect(resumenReportesCerca(0)).toBe("No hay reportes cerca tuyo");
+    expect(resumenReportesCerca(1)).toBe("Hay 1 reporte cerca tuyo");
+    expect(resumenReportesCerca(3)).toBe("Hay 3 reportes cerca tuyo");
+  });
+
+  test("ordena los últimos reportes públicos por fecha", () => {
+    const ultimos = ultimosReportesPublicos(
+      reportesMock.filter((item) => item.zonaId === "zon-norte"),
+      1,
+    );
+
+    expect(ultimos).toHaveLength(1);
+    expect(ultimos[0]?.id).toBe("rep-001");
+  });
+
+  test("obtenerAvisosDeEstado solo trae cambios municipales del vecino", async () => {
+    const avisos = await esperar(obtenerAvisosDeEstado("usr-001"));
+
+    expect(avisos.length).toBeGreaterThan(0);
+    expect(avisos.every((aviso) => ["rep-001", "rep-004"].includes(aviso.reporteId))).toBe(
+      true,
+    );
+    expect(avisos.some((aviso) => aviso.estado === "resuelto")).toBe(true);
+    expect(avisos.some((aviso) => aviso.id === "cambio-001")).toBe(false);
+  });
+
   test("crea el reporte ligado al vecino después de identificarlo", async () => {
     const payload = datosCreacionDesdeBorrador(
       { ...borradorValido, tipoId: "tip-luminaria", descripcion: "" },
@@ -115,5 +146,26 @@ describe("servicios/reportes", () => {
       tipoNombre: "Luminaria",
       direccion: "Rocamora 1240",
     });
+  });
+
+  test("asigna una cuadrilla activa y deja el reporte asignado", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = original.estado;
+    const cuadrillaPrev = original.cuadrillaId;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    const actualizado = await esperar(
+      asignarCuadrilla("rep-001", "cua-02", "usr-100"),
+    );
+
+    expect(actualizado.estado).toBe("asignado");
+    expect(actualizado.cuadrillaId).toBe("cua-02");
+
+    original.estado = estadoPrev;
+    original.cuadrillaId = cuadrillaPrev;
+    cambiosEstadoMock.splice(cambiosPrev);
   });
 });
