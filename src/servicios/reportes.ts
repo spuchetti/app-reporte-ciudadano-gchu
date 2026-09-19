@@ -1,15 +1,59 @@
-import { cambiosEstadoMock, reportesMock, tiposReporteMock } from "@/mocks";
+import {
+  cambiosEstadoMock,
+  cuadrillasMock,
+  reportesMock,
+  tiposReporteMock,
+} from "@/mocks";
 import { ErrorServicio } from "@/servicios/error";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
   CambioDeEstado,
   DatosBorradorReporte,
+  EstadoReporte,
   Reporte,
   TipoDeReporte,
 } from "@/tipos";
 
 export { COORDENADAS_CENTRO } from "@/servicios/ubicacion";
 export const ZONA_POR_DEFECTO = "zon-centro";
+
+const ETIQUETA_ESTADO: Record<EstadoReporte, string> = {
+  recibido: "recibido",
+  en_revision: "en revisión",
+  asignado: "asignado",
+  resuelto: "resuelto",
+  rechazado: "rechazado",
+};
+
+export type AvisoDeEstado = {
+  id: string;
+  reporteId: string;
+  codigo: string;
+  tipoNombre: string;
+  estado: EstadoReporte;
+  comentario: string | null;
+  fechaHora: string;
+};
+
+export function etiquetaEstado(estado: EstadoReporte) {
+  return ETIQUETA_ESTADO[estado];
+}
+
+export function resumenReportesCerca(cantidad: number) {
+  if (cantidad <= 0) {
+    return "No hay reportes cerca tuyo";
+  }
+  if (cantidad === 1) {
+    return "Hay 1 reporte cerca tuyo";
+  }
+  return `Hay ${cantidad} reportes cerca tuyo`;
+}
+
+export function ultimosReportesPublicos(reportes: Reporte[], limite = 3) {
+  return [...reportes]
+    .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
+    .slice(0, limite);
+}
 
 // Simular delay de red
 const delay = (ms: number = 500) =>
@@ -47,6 +91,36 @@ export const obtenerReportesPorZona = async (
     return [];
   }
   return reportesMock.filter((r) => r.zonaId === zonaId);
+};
+
+export const obtenerAvisosDeEstado = async (
+  autorId: string,
+): Promise<AvisoDeEstado[]> => {
+  await delay(300);
+  if (!autorId) {
+    return [];
+  }
+
+  const propios = reportesMock.filter((reporte) => reporte.autorId === autorId);
+  const porId = new Map(propios.map((reporte) => [reporte.id, reporte]));
+
+  return cambiosEstadoMock
+    .filter((cambio) => porId.has(cambio.reporteId) && cambio.operadorId)
+    .sort((a, b) => b.fechaHora.localeCompare(a.fechaHora))
+    .slice(0, 3)
+    .map((cambio) => {
+      const reporte = porId.get(cambio.reporteId)!;
+      const tipo = tiposReporteMock.find((item) => item.id === reporte.tipoId);
+      return {
+        id: cambio.id,
+        reporteId: cambio.reporteId,
+        codigo: reporte.codigo,
+        tipoNombre: tipo?.nombre ?? "Reporte",
+        estado: cambio.estado,
+        comentario: cambio.comentario,
+        fechaHora: cambio.fechaHora,
+      };
+    });
 };
 
 export function validarBorradorReporte(borrador: DatosBorradorReporte) {
@@ -192,4 +266,44 @@ export const actualizarEstado = async (
   cambiosEstadoMock.push(nuevoCambio);
 
   return nuevoCambio;
+};
+
+export const asignarCuadrilla = async (
+  reporteId: string,
+  cuadrillaId: string,
+  operadorId: string,
+): Promise<Reporte> => {
+  await delay(500);
+
+  const reporte = reportesMock.find((item) => item.id === reporteId);
+  if (!reporte) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos ese reporte.",
+    });
+  }
+
+  const cuadrilla = cuadrillasMock.find(
+    (item) => item.id === cuadrillaId && item.activa,
+  );
+  if (!cuadrilla) {
+    throw new ErrorServicio({
+      codigo: "CUADRILLA_INVALIDA",
+      mensaje: "Elegí una cuadrilla activa.",
+    });
+  }
+
+  reporte.cuadrillaId = cuadrilla.id;
+  reporte.estado = "asignado";
+
+  cambiosEstadoMock.push({
+    id: `cambio-${String(cambiosEstadoMock.length + 1).padStart(3, "0")}`,
+    reporteId,
+    estado: "asignado",
+    comentario: `Asignado a ${cuadrilla.nombre}`,
+    operadorId,
+    fechaHora: new Date().toISOString(),
+  });
+
+  return reporte;
 };
