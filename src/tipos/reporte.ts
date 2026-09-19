@@ -49,6 +49,7 @@ export interface BorradorEnCurso {
   audioUrl: string | null;
   paso: number;
   pendienteEnvio: boolean;
+  adherirAId: string | null;
 }
 
 export interface CambioDeEstado {

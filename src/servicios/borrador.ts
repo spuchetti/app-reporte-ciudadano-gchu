@@ -12,6 +12,7 @@ const vacio: BorradorEnCurso = {
   audioUrl: null,
   paso: 1,
   pendienteEnvio: false,
+  adherirAId: null,
 };
 
 let actual: BorradorEnCurso = { ...vacio, fotos: [] };
@@ -41,6 +42,10 @@ export function limpiarBorrador() {
 
 export function marcarPendienteEnvio() {
   actual = { ...actual, pendienteEnvio: true };
+}
+
+export function marcarAdhesionPendiente(reporteId: string) {
+  actual = { ...actual, adherirAId: reporteId };
 }
 
 export function borradorListoParaEnviar(

@@ -21,12 +21,16 @@ export default function ReporteEnviadoScreen() {
     tipoNombre?: string | string[];
     area?: string | string[];
     direccion?: string | string[];
+    modo?: string | string[];
+    adhesiones?: string | string[];
   }>();
 
   const codigo = textoParam(params.codigo) || "GCHU-2026-00000";
   const tipoNombre = textoParam(params.tipoNombre) || "Reporte";
   const area = textoParam(params.area);
   const direccion = textoParam(params.direccion);
+  const sumado = textoParam(params.modo) === "sumado";
+  const adhesiones = textoParam(params.adhesiones);
 
   return (
     <View
@@ -39,9 +43,15 @@ export default function ReporteEnviadoScreen() {
       ]}
     >
       <StatusBar style="dark" />
-      <Text style={styles.titulo}>Reporte enviado</Text>
+      <Text style={styles.titulo}>
+        {sumado ? "Te sumaste al reporte" : "Reporte enviado"}
+      </Text>
       <Text style={styles.subtitulo}>
-        Guardá este número de seguimiento. Con él vas a poder ver el estado.
+        {sumado
+          ? adhesiones
+            ? `Cuantos más vecinos se suman, más arriba va. Ya hay ${adhesiones} adhesiones.`
+            : "Cuantos más vecinos se suman, más arriba va en la lista de Obras."
+          : "Guardá este número de seguimiento. Con él vas a poder ver el estado."}
       </Text>
       <TicketReporte
         codigo={codigo}

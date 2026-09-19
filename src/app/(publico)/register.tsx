@@ -16,14 +16,15 @@ import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
-import { borradorListoParaEnviar } from "@/servicios/borrador";
+import { borradorListoParaEnviar, leerBorrador } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
 
 export default function DatosVecinoScreen() {
   const insets = useSafeAreaInsets();
-  const { enviarPrimerReporte, identificar } = useSesion();
+  const { enviarPrimerReporte, adherirPrimerReporte, identificar } = useSesion();
+  const adhesionId = leerBorrador().adherirAId;
   const borrador = borradorListoParaEnviar();
-  const esReingreso = !borrador;
+  const esReingreso = !adhesionId && !borrador;
   const desbloqueo = useDesbloqueoAlEntrar("vecino", esReingreso);
 
   const [nombre, setNombre] = useState("");
@@ -37,6 +38,10 @@ export default function DatosVecinoScreen() {
     setCargando(true);
     try {
       const datos = { nombre, email, telefono };
+      if (adhesionId) {
+        await adherirPrimerReporte(datos, adhesionId);
+        return;
+      }
       if (esReingreso || !borrador) {
         await identificar(datos);
         return;
@@ -77,7 +82,9 @@ export default function DatosVecinoScreen() {
           <Text style={styles.subtitulo}>
             {esReingreso
               ? "Usá el mismo email y teléfono que cuando enviaste un reporte. No hace falta contraseña."
-              : "Los pedimos para enviar el reporte y avisarte el estado. No hace falta contraseña."}
+              : adhesionId
+                ? "Los pedimos para sumarte al reporte y avisarte el estado. No hace falta contraseña."
+                : "Los pedimos para enviar el reporte y avisarte el estado. No hace falta contraseña."}
           </Text>
 
           <CampoTexto
@@ -117,7 +124,7 @@ export default function DatosVecinoScreen() {
           ) : null}
 
           <Boton
-            titulo={esReingreso ? "Ingresar" : "Enviar reporte"}
+            titulo={esReingreso ? "Ingresar" : adhesionId ? "Sumarme al reporte" : "Enviar reporte"}
             cargando={cargando || desbloqueo.desbloqueando}
             disabled={cargando || desbloqueo.desbloqueando}
             onPress={onSubmit}
