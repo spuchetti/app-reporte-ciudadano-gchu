@@ -1,6 +1,7 @@
 import { cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
   asignarCuadrilla,
+  adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
   obtenerAvisosDeEstado,
@@ -167,5 +168,27 @@ describe("servicios/reportes", () => {
     original.estado = estadoPrev;
     original.cuadrillaId = cuadrillaPrev;
     cambiosEstadoMock.splice(cambiosPrev);
+  });
+
+  test("permite sumarse a un reporte ajeno y no duplica la adhesión", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const adhesionesPrev = original.adhesiones;
+
+    const primera = await esperar(adherirAReporte("rep-001", "usr-002"));
+    const segunda = await esperar(adherirAReporte("rep-001", "usr-002"));
+
+    expect(primera.adhesiones).toBe(adhesionesPrev + 1);
+    expect(segunda.adhesiones).toBe(adhesionesPrev + 1);
+
+    original.adhesiones = adhesionesPrev;
+  });
+
+  test("rechaza sumarse al propio reporte", async () => {
+    await expect(adherirAReporte("rep-001", "usr-001")).rejects.toMatchObject({
+      codigo: "REPORTE_PROPIO",
+    });
   });
 });

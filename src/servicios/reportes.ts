@@ -307,3 +307,37 @@ export const asignarCuadrilla = async (
 
   return reporte;
 };
+
+const vecinosAdheridos = new Map<string, Set<string>>();
+
+export const adherirAReporte = async (
+  reporteId: string,
+  vecinoId: string,
+): Promise<Reporte> => {
+  const reporte = reportesMock.find((item) => item.id === reporteId);
+  if (!reporte) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos ese reporte.",
+    });
+  }
+
+  if (reporte.autorId === vecinoId) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_PROPIO",
+      mensaje: "Ese reporte ya lo cargaste vos.",
+    });
+  }
+
+  await delay(400);
+
+  const adheridos = vecinosAdheridos.get(reporteId) ?? new Set<string>();
+  if (adheridos.has(vecinoId)) {
+    return reporte;
+  }
+
+  adheridos.add(vecinoId);
+  vecinosAdheridos.set(reporteId, adheridos);
+  reporte.adhesiones += 1;
+  return reporte;
+};

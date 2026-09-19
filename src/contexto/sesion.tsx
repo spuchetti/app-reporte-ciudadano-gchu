@@ -23,7 +23,12 @@ import {
   recuperarArranque,
 } from "@/servicios/auth";
 import { limpiarBorrador } from "@/servicios/borrador";
-import { crearReporte, datosCreacionDesdeBorrador, paramsDeTicket } from "@/servicios/reportes";
+import {
+  adherirAReporte,
+  crearReporte,
+  datosCreacionDesdeBorrador,
+  paramsDeTicket,
+} from "@/servicios/reportes";
 import {
   DatosBorradorReporte,
   DatosRegistro,
@@ -49,6 +54,11 @@ type ValorSesion = {
     borrador: DatosBorradorReporte,
   ) => Promise<Reporte>;
   enviarReporte: (borrador: DatosBorradorReporte) => Promise<Reporte>;
+  adherirseAReporte: (reporteId: string) => Promise<Reporte>;
+  adherirPrimerReporte: (
+    datos: DatosRegistro,
+    reporteId: string,
+  ) => Promise<Reporte>;
   identificar: (datos: DatosRegistro) => Promise<void>;
   intentarDesbloqueoAlEntrar: (rol: Rol) => Promise<"rostro" | "pin" | "formulario">;
   desbloquearConRostro: (rol: Rol) => Promise<void>;
@@ -185,6 +195,42 @@ export function SesionProvider({ children }: PropsWithChildren) {
     [sesion],
   );
 
+  const irATicket = (reporte: Reporte, modo: "enviado" | "sumado") => {
+    router.replace({
+      pathname: "/reporte/enviado",
+      params: {
+        ...paramsDeTicket(reporte),
+        modo,
+        adhesiones: String(reporte.adhesiones),
+      },
+    });
+  };
+
+  const adherirseAReporte = useCallback(
+    async (reporteId: string) => {
+      if (!sesion || sesion.esInvitado !== false || sesion.usuario.rol !== "vecino") {
+        throw new Error("Tenés que identificarte para sumarte al reporte.");
+      }
+      const reporte = await adherirAReporte(reporteId, sesion.usuario.id);
+      limpiarBorrador();
+      irATicket(reporte, "sumado");
+      return reporte;
+    },
+    [sesion],
+  );
+
+  const adherirPrimerReporte = useCallback(
+    async (datos: DatosRegistro, reporteId: string) => {
+      const siguiente = await identificarVecino(datos);
+      const reporte = await adherirAReporte(reporteId, siguiente.usuario.id);
+      limpiarBorrador();
+      await despuesDeEntrar(siguiente, "vecino");
+      irATicket(reporte, "sumado");
+      return reporte;
+    },
+    [despuesDeEntrar],
+  );
+
   const intentarDesbloqueoAlEntrar = useCallback(async (rol: Rol) => {
     return intentarDesbloqueo(rol);
   }, []);
@@ -286,6 +332,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       registrar,
       enviarPrimerReporte,
       enviarReporte,
+      adherirseAReporte,
+      adherirPrimerReporte,
       identificar,
       intentarDesbloqueoAlEntrar,
       desbloquearConRostro,
@@ -310,6 +358,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       registrar,
       enviarPrimerReporte,
       enviarReporte,
+      adherirseAReporte,
+      adherirPrimerReporte,
       identificar,
       intentarDesbloqueoAlEntrar,
       desbloquearConRostro,
