@@ -56,7 +56,7 @@ export function ultimosReportesPublicos(reportes: Reporte[], limite = 3) {
 }
 
 // Simular delay de red
-const delay = (ms: number = 500) =>
+export const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Obtener todos los reportes

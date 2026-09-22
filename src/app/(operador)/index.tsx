@@ -37,6 +37,7 @@ import {
   obtenerReportes,
 } from "@/servicios/reportes";
 import { EstadoReporte, Reporte } from "@/tipos";
+import HeaderOperador from "@/components/ui/headerOperador";
 
 const COLORES_ESTADO: Record<EstadoReporte, string> = {
   recibido: Paleta.amarillo,
@@ -139,12 +140,7 @@ export default function BandejaOperadorScreen() {
     <View style={styles.pantalla}>
       <StatusBar style="light" />
 
-      <View
-        style={[
-          styles.cabecera,
-          { paddingTop: Platform.OS === "web" ? 48 : insets.top + 16 },
-        ]}
-      >
+      <HeaderOperador style={styles.cabecera}>
         <View style={styles.cabeceraTexto}>
           <Text style={styles.titulo}>Bandeja</Text>
           <Text style={styles.subtitulo}>
@@ -159,6 +155,16 @@ export default function BandejaOperadorScreen() {
           hitSlop={8}
         >
           <Text style={styles.salir}>Cerrar sesión</Text>
+        </Pressable>
+      </HeaderOperador>
+
+
+      <View style={[styles.controles, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+        <Pressable
+          onPress={() => router.push({ pathname: "/zonas" })}
+          style={styles.botonZonas}
+        >
+          <Text style={styles.tabTexto}>Zonas y cuadrillas</Text>
         </Pressable>
       </View>
 
@@ -611,4 +617,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Paleta.paperRaised,
   },
+  botonZonas: {
+    borderColor: Paleta.orange,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8
+  }
 });
