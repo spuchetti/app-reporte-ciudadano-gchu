@@ -24,6 +24,22 @@ export function puedeAsignar(estado: EstadoReporte) {
   return esPendiente(estado);
 }
 
+export const ESTADOS_GESTION: EstadoReporte[] = [
+  "en_revision",
+  "resuelto",
+  "rechazado",
+];
+
+export function puedeGestionar(reporte: Pick<Reporte, "estado" | "duplicadoDe">) {
+  return esPendiente(reporte.estado) && reporte.duplicadoDe === null;
+}
+
+export function reportesParaDuplicar(reportes: Reporte[], reporteId: string) {
+  return reportes
+    .filter((item) => item.id !== reporteId && item.duplicadoDe === null)
+    .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+}
+
 export function nombreZona(zonaId: string) {
   return zonasMock.find((zona) => zona.id === zonaId)?.nombre ?? "Zona";
 }
@@ -126,14 +142,17 @@ export function filtrarReportesBandeja({
     .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
 }
 
+export function nombreCuadrilla(cuadrillaId: string) {
+  return (
+    cuadrillasMock.find((cuadrilla) => cuadrilla.id === cuadrillaId)?.nombre ??
+    "Cuadrilla"
+  );
+}
+
 export function cuadrillasParaReporte(zonaId: string): Cuadrilla[] {
-  const deZona = cuadrillasMock.filter(
+  return cuadrillasMock.filter(
     (cuadrilla) => cuadrilla.activa && cuadrilla.zonaId === zonaId,
   );
-  if (deZona.length > 0) {
-    return deZona;
-  }
-  return cuadrillasMock.filter((cuadrilla) => cuadrilla.activa);
 }
 
 export function resumenFiltros({
