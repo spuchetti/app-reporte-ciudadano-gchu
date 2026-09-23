@@ -48,9 +48,13 @@ jest.mock("@/components/operador/sheet-asignar", () => ({
 
 jest.mock("@/servicios/reportes", () => ({
   obtenerReportes: jest.fn(async () => []),
+  obtenerTiposReporte: jest.fn(async () => [
+    { id: "tip-bache", nombre: "Bache", icono: "🚧", color: "#E8630C", areaResponsable: "Obras" },
+  ]),
   asignarCuadrilla: jest.fn(),
   etiquetaEstado: (estado: string) =>
     ({ en_revision: "en revisión" }[estado] ?? estado),
+  delay: () => Promise.resolve(),
 }));
 
 const obtenerLista = obtenerReportes as jest.MockedFunction<typeof obtenerReportes>;
@@ -69,6 +73,7 @@ const reporteNorte: Reporte = {
   autorId: "usr-001",
   cuadrillaId: null,
   duplicadoDe: null,
+  fotoArreglo: null,
   adhesiones: 0,
   creadoEn: "2026-09-16T12:00:00-03:00",
   sincronizado: true,
