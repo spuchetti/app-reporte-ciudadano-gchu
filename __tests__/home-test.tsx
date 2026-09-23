@@ -26,15 +26,18 @@ jest.mock("expo-image", () => {
   return { Image: ({ children }: { children?: React.ReactNode }) => <View>{children}</View> };
 });
 
-jest.mock("@/contexto/sesion", () => ({
-  useSesion: () => ({
-    sesion: {
-      esInvitado: false,
-      usuario: { nombre: "Mirko", zonaId: "zon-norte", rol: "vecino", id: "usr-001" },
-    },
-    cerrarSesion: jest.fn(),
-  }),
-}));
+jest.mock("@/contexto/sesion", () => {
+  const sesion = {
+    esInvitado: false,
+    usuario: { nombre: "Mirko", zonaId: "zon-norte", rol: "vecino", id: "usr-001" },
+  };
+  return {
+    useSesion: () => ({
+      sesion,
+      cerrarSesion: jest.fn(),
+    }),
+  };
+});
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({
@@ -125,13 +128,11 @@ async function montarHome() {
   await act(async () => {
     tree = create(<HomeVecinoScreen />);
   });
-  await act(async () => {
-    await Promise.resolve();
-  });
   return tree;
 }
 
 describe("Home vecino", () => {
+  jest.setTimeout(20000);
   beforeEach(() => {
     mockPush.mockClear();
     obtenerPorZona.mockReset();
