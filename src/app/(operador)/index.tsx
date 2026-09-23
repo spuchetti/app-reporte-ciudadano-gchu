@@ -15,8 +15,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
-import { tiposReporteMock } from "@/mocks/reportes";
-import { zonasMock } from "@/mocks/zonas";
 import {
   ESTADOS_BANDEJA,
   filtrarReportesBandeja,
@@ -35,8 +33,11 @@ import {
   asignarCuadrilla,
   etiquetaEstado,
   obtenerReportes,
+  obtenerTiposReporte,
 } from "@/servicios/reportes";
+import { obtenerZonas } from "@/servicios/zonas";
 import { EstadoReporte, Reporte } from "@/tipos";
+import HeaderOperador from "@/components/ui/headerOperador";
 
 const COLORES_ESTADO: Record<EstadoReporte, string> = {
   recibido: Paleta.amarillo,
@@ -71,13 +72,21 @@ export default function BandejaOperadorScreen() {
   const [asignandoId, setAsignandoId] = useState<string | null>(null);
   const [errorAsignar, setErrorAsignar] = useState<string | null>(null);
   const [asignando, setAsignando] = useState(false);
+  const [opcionesZona, setOpcionesZona] = useState<{ id: string; etiqueta: string }[]>([]);
+  const [opcionesTipo, setOpcionesTipo] = useState<{ id: string; etiqueta: string }[]>([]);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const lista = await obtenerReportes();
+      const [lista, zonas, tipos] = await Promise.all([
+        obtenerReportes(),
+        obtenerZonas(),
+        obtenerTiposReporte(),
+      ]);
       setReportes(lista);
+      setOpcionesZona(zonas.map((zona) => ({ id: zona.id, etiqueta: zona.nombre })));
+      setOpcionesTipo(tipos.map((tipo) => ({ id: tipo.id, etiqueta: tipo.nombre })));
     } catch {
       setError("No se pudieron cargar los reportes.");
       setReportes([]);
@@ -139,12 +148,7 @@ export default function BandejaOperadorScreen() {
     <View style={styles.pantalla}>
       <StatusBar style="light" />
 
-      <View
-        style={[
-          styles.cabecera,
-          { paddingTop: Platform.OS === "web" ? 48 : insets.top + 16 },
-        ]}
-      >
+      <HeaderOperador style={styles.cabecera}>
         <View style={styles.cabeceraTexto}>
           <Text style={styles.titulo}>Bandeja</Text>
           <Text style={styles.subtitulo}>
@@ -152,15 +156,25 @@ export default function BandejaOperadorScreen() {
             {visibles.length === 1 ? "reporte" : "reportes"}
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar sesión"
-          onPress={cerrarSesion}
-          hitSlop={8}
-        >
-          <Text style={styles.salir}>Cerrar sesión</Text>
-        </Pressable>
-      </View>
+        <View style={styles.accionesCabecera}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Zonas y cuadrillas"
+            onPress={() => router.push("/zonas")}
+            hitSlop={8}
+          >
+            <Text style={styles.salir}>Zonas y cuadrillas</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
+            onPress={cerrarSesion}
+            hitSlop={8}
+          >
+            <Text style={styles.salir}>Cerrar sesión</Text>
+          </Pressable>
+        </View>
+      </HeaderOperador>
 
       <View style={styles.controles}>
         <TextInput
@@ -213,16 +227,13 @@ export default function BandejaOperadorScreen() {
           <View style={styles.filtrosPanel}>
             <GrupoChips
               titulo="Zona"
-              opciones={zonasMock.map((zona) => ({ id: zona.id, etiqueta: zona.nombre }))}
+              opciones={opcionesZona}
               valor={zonaId}
               onCambiar={setZonaId}
             />
             <GrupoChips
               titulo="Tipo"
-              opciones={tiposReporteMock.map((tipo) => ({
-                id: tipo.id,
-                etiqueta: tipo.nombre,
-              }))}
+              opciones={opcionesTipo}
               valor={tipoId}
               onCambiar={setTipoId}
             />
@@ -414,10 +425,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "rgba(255,255,255,0.85)",
   },
+  accionesCabecera: {
+    alignItems: "flex-end",
+    gap: 10,
+  },
   salir: {
     fontSize: 13,
     fontWeight: "600",
     color: Paleta.paperRaised,
+    textAlign: "right",
   },
   controles: {
     backgroundColor: Paleta.paperRaised,
