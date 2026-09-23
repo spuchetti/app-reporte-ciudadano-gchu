@@ -29,7 +29,7 @@ jest.mock("expo-router", () => ({
     ReactLib.useEffect(() => {
       const cleanup = callback();
       return typeof cleanup === "function" ? cleanup : undefined;
-    }, [callback]);
+    }, []);
   },
 }));
 
