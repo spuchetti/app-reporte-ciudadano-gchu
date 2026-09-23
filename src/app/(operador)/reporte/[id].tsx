@@ -13,22 +13,29 @@ import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
+import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
+import { SheetEstado } from "@/components/operador/sheet-estado";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
   nombreAutor,
+  nombreCuadrilla,
   nombreTipo,
   nombreZona,
-  puedeAsignar,
+  puedeGestionar,
+  reportesParaDuplicar,
   textoFotos,
 } from "@/servicios/bandeja";
 import { esErrorServicio } from "@/servicios/error";
 import {
+  actualizarEstado,
   asignarCuadrilla,
   etiquetaEstado,
+  marcarDuplicado,
   obtenerCambiosEstado,
   obtenerReportePorId,
+  obtenerReportes,
 } from "@/servicios/reportes";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
 
@@ -47,11 +54,18 @@ export default function DetalleOperadorScreen() {
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
 
   const [reporte, setReporte] = useState<Reporte | null>(null);
+  const [catalogo, setCatalogo] = useState<Reporte[]>([]);
   const [cambios, setCambios] = useState<CambioDeEstado[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mostrarAsignar, setMostrarAsignar] = useState(false);
   const [asignando, setAsignando] = useState(false);
   const [errorAsignar, setErrorAsignar] = useState<string | null>(null);
+  const [mostrarEstado, setMostrarEstado] = useState(false);
+  const [guardandoEstado, setGuardandoEstado] = useState(false);
+  const [errorEstado, setErrorEstado] = useState<string | null>(null);
+  const [mostrarDuplicado, setMostrarDuplicado] = useState(false);
+  const [guardandoDuplicado, setGuardandoDuplicado] = useState(false);
+  const [errorDuplicado, setErrorDuplicado] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     if (!id) {
@@ -59,9 +73,10 @@ export default function DetalleOperadorScreen() {
       return;
     }
     try {
-      const [item, historial] = await Promise.all([
+      const [item, historial, lista] = await Promise.all([
         obtenerReportePorId(id),
         obtenerCambiosEstado(id),
+        obtenerReportes(),
       ]);
       if (!item) {
         setError("No encontramos ese reporte.");
@@ -69,6 +84,7 @@ export default function DetalleOperadorScreen() {
         return;
       }
       setReporte(item);
+      setCatalogo(lista);
       setCambios(
         [...historial].sort((a, b) => b.fechaHora.localeCompare(a.fechaHora)),
       );
@@ -83,6 +99,54 @@ export default function DetalleOperadorScreen() {
       void cargar();
     }, [cargar]),
   );
+
+  async function onCambiarEstado(
+    nuevoEstado: EstadoReporte,
+    comentario: string,
+    fotoArregloUrl: string | null,
+  ) {
+    if (!reporte || !usuario) {
+      return;
+    }
+    setGuardandoEstado(true);
+    setErrorEstado(null);
+    try {
+      await actualizarEstado(
+        reporte.id,
+        nuevoEstado,
+        comentario,
+        usuario.id,
+        fotoArregloUrl,
+      );
+      setMostrarEstado(false);
+      await cargar();
+    } catch (err) {
+      setErrorEstado(
+        esErrorServicio(err) ? err.message : "No se pudo cambiar el estado.",
+      );
+    } finally {
+      setGuardandoEstado(false);
+    }
+  }
+
+  async function onMarcarDuplicado(originalId: string) {
+    if (!reporte || !usuario) {
+      return;
+    }
+    setGuardandoDuplicado(true);
+    setErrorDuplicado(null);
+    try {
+      await marcarDuplicado(reporte.id, originalId, usuario.id);
+      setMostrarDuplicado(false);
+      await cargar();
+    } catch (err) {
+      setErrorDuplicado(
+        esErrorServicio(err) ? err.message : "No se pudo marcar el duplicado.",
+      );
+    } finally {
+      setGuardandoDuplicado(false);
+    }
+  }
 
   async function onAsignar(cuadrillaId: string) {
     if (!reporte || !usuario) {
@@ -110,6 +174,11 @@ export default function DetalleOperadorScreen() {
 
   const color = reporte ? COLORES_ESTADO[reporte.estado] : Paleta.inkSoft;
   const foto = reporte?.fotos.find((item) => item.esPrincipal)?.url;
+  const originales = reporte ? reportesParaDuplicar(catalogo, reporte.id) : [];
+  const codigoOriginal = reporte?.duplicadoDe
+    ? catalogo.find((item) => item.id === reporte.duplicadoDe)?.codigo ?? reporte.duplicadoDe
+    : null;
+  const gestionable = reporte ? puedeGestionar(reporte) : false;
 
   return (
     <View style={styles.pantalla}>
@@ -162,26 +231,69 @@ export default function DetalleOperadorScreen() {
             <Text style={styles.meta}>
               {`${nombreAutor(reporte.autorId)} · ${textoFotos(reporte.fotos.length)}`}
             </Text>
+            {reporte.cuadrillaId ? (
+              <Text style={styles.meta}>{nombreCuadrilla(reporte.cuadrillaId)}</Text>
+            ) : null}
+            {codigoOriginal ? (
+              <Text style={styles.meta}>{`Duplicado de ${codigoOriginal}`}</Text>
+            ) : null}
 
             {reporte.descripcion ? (
               <Text style={styles.descripcion}>{reporte.descripcion}</Text>
             ) : null}
 
-            {puedeAsignar(reporte.estado) ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Asignar ${reporte.codigo}`}
-                onPress={() => {
-                  setErrorAsignar(null);
-                  setMostrarAsignar(true);
-                }}
-                style={({ pressed }) => [
-                  styles.botonAsignar,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={styles.botonAsignarTexto}>Asignar</Text>
-              </Pressable>
+            {reporte.fotoArreglo ? (
+              <View style={styles.arreglo}>
+                <Text style={styles.historialTitulo}>Foto del arreglo</Text>
+                <Image source={{ uri: reporte.fotoArreglo.url }} style={styles.foto} />
+              </View>
+            ) : null}
+
+            {gestionable ? (
+              <View style={styles.acciones}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Cambiar estado de ${reporte.codigo}`}
+                  onPress={() => {
+                    setErrorEstado(null);
+                    setMostrarEstado(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.botonSecundario,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.botonSecundarioTexto}>Cambiar estado</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Marcar duplicado ${reporte.codigo}`}
+                  onPress={() => {
+                    setErrorDuplicado(null);
+                    setMostrarDuplicado(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.botonSecundario,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.botonSecundarioTexto}>Marcar duplicado</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Asignar ${reporte.codigo}`}
+                  onPress={() => {
+                    setErrorAsignar(null);
+                    setMostrarAsignar(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.botonAsignar,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.botonAsignarTexto}>Asignar</Text>
+                </Pressable>
+              </View>
             ) : null}
 
             {cambios.length > 0 ? (
@@ -206,6 +318,35 @@ export default function DetalleOperadorScreen() {
         )}
       </ScrollView>
 
+      <SheetEstado
+        visible={mostrarEstado}
+        estadoActual={reporte?.estado ?? null}
+        guardando={guardandoEstado}
+        error={errorEstado}
+        onCerrar={() => {
+          if (!guardandoEstado) {
+            setMostrarEstado(false);
+          }
+        }}
+        onConfirmar={(estado, comentario, fotoArregloUrl) => {
+          void onCambiarEstado(estado, comentario, fotoArregloUrl);
+        }}
+      />
+      <SheetDuplicado
+        visible={mostrarDuplicado}
+        opciones={originales}
+        nombreDe={(item) => nombreTipo(item.tipoId)}
+        guardando={guardandoDuplicado}
+        error={errorDuplicado}
+        onCerrar={() => {
+          if (!guardandoDuplicado) {
+            setMostrarDuplicado(false);
+          }
+        }}
+        onElegir={(originalId) => {
+          void onMarcarDuplicado(originalId);
+        }}
+      />
       <SheetAsignar
         visible={mostrarAsignar}
         zonaId={reporte?.zonaId ?? null}
@@ -282,8 +423,27 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: Paleta.ink,
   },
-  botonAsignar: {
+  arreglo: {
+    gap: 8,
+  },
+  acciones: {
     marginTop: 8,
+    gap: 8,
+  },
+  botonSecundario: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Paleta.orange,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  botonSecundarioTexto: {
+    color: Paleta.orange,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  botonAsignar: {
     minHeight: 48,
     borderRadius: 12,
     backgroundColor: Paleta.orange,
