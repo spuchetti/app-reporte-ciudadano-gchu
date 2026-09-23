@@ -1,8 +1,10 @@
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import MapView, { Marker } from "react-native-maps";
 
+import { MapView, Marker } from "@/components/mapa";
 import { Paleta } from "@/constants/theme";
+import { nombreZona } from "@/servicios/bandeja";
+import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { TipoDeReporte } from "@/tipos";
 
 type Props = {
@@ -24,6 +26,10 @@ export function PasoConfirmacion({
   descripcion,
   audioUrl,
 }: Props) {
+  const zona = nombreZona(
+    zonaParaCoordenadas({ latitud, longitud }),
+  );
+
   return (
     <View style={styles.caja}>
       {fotos[0] ? (
@@ -34,26 +40,22 @@ export function PasoConfirmacion({
       </Text>
       {tipo ? <Text style={styles.area}>{tipo.areaResponsable}</Text> : null}
       <View style={styles.mapa}>
-        {Platform.OS === "web" ? (
-          <Text style={styles.mapaWeb}>{direccion}</Text>
-        ) : (
-          <MapView
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-            region={{
-              latitude: latitud,
-              longitude: longitud,
-              latitudeDelta: 0.006,
-              longitudeDelta: 0.006,
-            }}
-          >
-            <Marker
-              coordinate={{ latitude: latitud, longitude: longitud }}
-            />
-          </MapView>
-        )}
+        <MapView
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+          mensaje={direccion}
+          region={{
+            latitude: latitud,
+            longitude: longitud,
+            latitudeDelta: 0.006,
+            longitudeDelta: 0.006,
+          }}
+        >
+          <Marker coordinate={{ latitude: latitud, longitude: longitud }} />
+        </MapView>
       </View>
       <Text style={styles.direccion}>{direccion}</Text>
+      <Text style={styles.zona}>{zona}</Text>
       {descripcion.trim() ? (
         <Text style={styles.descripcion}>{descripcion.trim()}</Text>
       ) : null}
@@ -91,16 +93,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#E1F5EE",
   },
-  mapaWeb: {
-    flex: 1,
-    padding: 16,
-    textAlign: "center",
-    color: Paleta.inkSoft,
-  },
   direccion: {
     fontSize: 14,
     fontWeight: "600",
     color: Paleta.ink,
+  },
+  zona: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Paleta.tealDeep,
   },
   descripcion: {
     fontSize: 14,

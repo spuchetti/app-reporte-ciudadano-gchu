@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { nombreTipo } from "@/servicios/bandeja";
@@ -143,48 +143,43 @@ export function PasoUbicacion({
       </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.mapa} accessibilityLabel="Mapa para marcar el problema">
-        {Platform.OS === "web" ? (
-          <Text style={styles.mapaWeb}>
-            El mapa con el pin se ve en el celular. En la web usamos el centro de la ciudad.
-          </Text>
-        ) : (
-          <MapView
-            key={mapaClave}
-            style={StyleSheet.absoluteFill}
-            initialRegion={{
+        <MapView
+          key={mapaClave}
+          style={StyleSheet.absoluteFill}
+          mensaje="El mapa con el pin se ve en el celular. En la web usamos el centro de la ciudad."
+          initialRegion={{
+            latitude: coords.latitud,
+            longitude: coords.longitud,
+            latitudeDelta: 0.008,
+            longitudeDelta: 0.008,
+          }}
+        >
+          {cercanos.map(({ reporte }) => (
+            <Marker
+              key={reporte.id}
+              coordinate={{
+                latitude: reporte.coordenadas.latitud,
+                longitude: reporte.coordenadas.longitud,
+              }}
+              pinColor={COLORES_ESTADO[reporte.estado]}
+              title={nombreTipo(reporte.tipoId)}
+              description={reporte.direccion}
+            />
+          ))}
+          <Marker
+            coordinate={{
               latitude: coords.latitud,
               longitude: coords.longitud,
-              latitudeDelta: 0.008,
-              longitudeDelta: 0.008,
             }}
-          >
-            {cercanos.map(({ reporte }) => (
-              <Marker
-                key={reporte.id}
-                coordinate={{
-                  latitude: reporte.coordenadas.latitud,
-                  longitude: reporte.coordenadas.longitud,
-                }}
-                pinColor={COLORES_ESTADO[reporte.estado]}
-                title={nombreTipo(reporte.tipoId)}
-                description={reporte.direccion}
-              />
-            ))}
-            <Marker
-              coordinate={{
-                latitude: coords.latitud,
-                longitude: coords.longitud,
-              }}
-              draggable
-              onDragEnd={(evento) => {
-                aplicarCoords({
-                  latitud: evento.nativeEvent.coordinate.latitude,
-                  longitud: evento.nativeEvent.coordinate.longitude,
-                });
-              }}
-            />
-          </MapView>
-        )}
+            draggable
+            onDragEnd={(evento) => {
+              aplicarCoords({
+                latitud: evento.nativeEvent.coordinate.latitude,
+                longitud: evento.nativeEvent.coordinate.longitude,
+              });
+            }}
+          />
+        </MapView>
       </View>
       <Text style={styles.pista}>Arrastrá el pin si hay que corregir el punto.</Text>
 
@@ -268,13 +263,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#E1F5EE",
     marginBottom: 8,
-  },
-  mapaWeb: {
-    flex: 1,
-    padding: 24,
-    textAlign: "center",
-    fontSize: 14,
-    color: Paleta.inkSoft,
   },
   pista: {
     fontSize: 13,

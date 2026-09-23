@@ -11,8 +11,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
-import MapView, { Marker, Callout } from "react-native-maps";
 
+import { MapView, Marker, Callout } from "@/components/mapa";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
@@ -162,48 +162,42 @@ export default function HomeVecinoScreen() {
       </View>
 
       <View style={styles.mapaContainer} accessibilityLabel="Mapa de reportes">
-        {Platform.OS === "web" ? (
-          <Text style={styles.mapaWeb}>
-            El mapa con las calles de Gualeguaychú se ve en el celular.
-          </Text>
-        ) : (
-          <MapView style={styles.mapa} initialRegion={region}>
-            {reportes.map((reporte) => {
-              const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
-              const pin = colorEstado(reporte.estado);
-              const fotoPrincipal = reporte.fotos.find((f) => f.esPrincipal)?.url;
+        <MapView style={styles.mapa} initialRegion={region}>
+          {reportes.map((reporte) => {
+            const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
+            const pin = colorEstado(reporte.estado);
+            const fotoPrincipal = reporte.fotos.find((f) => f.esPrincipal)?.url;
 
-              return (
-                <Marker
-                  key={reporte.id}
-                  coordinate={{
-                    latitude: reporte.coordenadas.latitud,
-                    longitude: reporte.coordenadas.longitud,
-                  }}
-                  pinColor={pin}
-                >
-                  <Callout>
-                    <View style={styles.burbujaInfo}>
-                      {fotoPrincipal ? (
-                        <Image
-                          source={{ uri: fotoPrincipal }}
-                          style={styles.miniatura}
-                          resizeMode="cover"
-                        />
-                      ) : null}
-                      <Text style={styles.tituloBurbuja}>
-                        {`${tipo?.icono || "📌"} ${tipo?.nombre || "Reporte"}`}
-                      </Text>
-                      <Text style={styles.textoBurbuja} numberOfLines={3}>
-                        {reporte.descripcion || reporte.direccion}
-                      </Text>
-                    </View>
-                  </Callout>
-                </Marker>
-              );
-            })}
-          </MapView>
-        )}
+            return (
+              <Marker
+                key={reporte.id}
+                coordinate={{
+                  latitude: reporte.coordenadas.latitud,
+                  longitude: reporte.coordenadas.longitud,
+                }}
+                pinColor={pin}
+              >
+                <Callout>
+                  <View style={styles.burbujaInfo}>
+                    {fotoPrincipal ? (
+                      <Image
+                        source={{ uri: fotoPrincipal }}
+                        style={styles.miniatura}
+                        resizeMode="cover"
+                      />
+                    ) : null}
+                    <Text style={styles.tituloBurbuja}>
+                      {`${tipo?.icono || "📌"} ${tipo?.nombre || "Reporte"}`}
+                    </Text>
+                    <Text style={styles.textoBurbuja} numberOfLines={3}>
+                      {reporte.descripcion || reporte.direccion}
+                    </Text>
+                  </View>
+                </Callout>
+              </Marker>
+            );
+          })}
+        </MapView>
 
         <View
           style={[
@@ -355,14 +349,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   mapa: { width: "100%", height: "100%" },
-  mapaWeb: {
-    flex: 1,
-    textAlign: "center",
-    textAlignVertical: "center",
-    padding: 24,
-    fontSize: 14,
-    color: Paleta.inkSoft,
-  },
   resumen: {
     position: "absolute",
     top: 12,
