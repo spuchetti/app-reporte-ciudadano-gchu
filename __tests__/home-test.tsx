@@ -88,6 +88,7 @@ const reporteNorte = {
   autorId: "usr-001",
   cuadrillaId: null,
   duplicadoDe: null,
+  fotoArreglo: null,
   adhesiones: 0,
   creadoEn: "2026-09-01T10:00:00-03:00",
   sincronizado: true,

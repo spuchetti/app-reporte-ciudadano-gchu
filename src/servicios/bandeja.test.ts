@@ -1,8 +1,10 @@
 import { reportesMock } from "@/mocks";
 import {
+  cuadrillasParaReporte,
   esPendiente,
   filtrarReportesBandeja,
   haceTiempo,
+  reportesParaDuplicar,
   textoFotos,
 } from "@/servicios/bandeja";
 
@@ -14,6 +16,15 @@ const filtrosVacios = {
 };
 
 describe("servicios/bandeja", () => {
+  test("no ofrece el mismo reporte ni un duplicado como original", () => {
+    const conDuplicado = reportesMock.map((item) =>
+      item.id === "rep-002" ? { ...item, duplicadoDe: "rep-001" } : item,
+    );
+    const lista = reportesParaDuplicar(conDuplicado, "rep-001");
+    expect(lista.some((item) => item.id === "rep-001")).toBe(false);
+    expect(lista.some((item) => item.id === "rep-002")).toBe(false);
+  });
+
   test("distingue pendientes de cerrados", () => {
     expect(esPendiente("recibido")).toBe(true);
     expect(esPendiente("asignado")).toBe(true);
@@ -88,5 +99,15 @@ describe("servicios/bandeja", () => {
     });
 
     expect(lista.map((item) => item.id)).toEqual(["rep-004"]);
+  });
+
+  test("solo ofrece cuadrillas activas de la zona del reporte", () => {
+    const norte = cuadrillasParaReporte("zon-norte");
+    const este = cuadrillasParaReporte("zon-este");
+    const sur = cuadrillasParaReporte("zon-sur");
+
+    expect(norte.map((item) => item.id)).toEqual(["cua-01", "cua-02"]);
+    expect(este).toEqual([]);
+    expect(sur.map((item) => item.id)).toEqual(["cua-03"]);
   });
 });
