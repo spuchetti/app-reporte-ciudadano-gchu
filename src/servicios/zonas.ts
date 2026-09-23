@@ -1,25 +1,47 @@
 import { cuadrillasMock, zonasMock } from "@/mocks";
-import { delay } from "./reportes";
 import { Cuadrilla, Zona } from "@/tipos";
 
-export interface ZonaCuadrilla extends Zona {
-    cuadrillas: Cuadrilla[]
-    cuadrillasActivas: number
-    cuadrillasInactivas: number
+import { delay } from "./reportes";
+
+export interface ZonaConCuadrillas {
+  zona: Zona;
+  cuadrillas: Cuadrilla[];
 }
 
-export async function obtenerZonas() {
-    await delay(600)
-    const cuadrillas = cuadrillasMock
-    return zonasMock.map(zona => {
-        const cuadrillasZonas = cuadrillas.filter(cuadrilla => cuadrilla.zonaId == zona.id)
-        const activas = cuadrillasZonas.filter(cuadrilla => cuadrilla.activa).length
-        const inactivas = cuadrillasZonas.filter(cuadrilla => !cuadrilla.activa).length
-        return {
-            ...zona,
-            cuadrillas: cuadrillasZonas,
-            cuadrillasActivas: Number(activas),
-            cuadrillasInactivas: Number(inactivas)
-        }
-    })
+function copiarZona(zona: Zona): Zona {
+  return {
+    ...zona,
+    limite: zona.limite.map((punto) => ({ ...punto })),
+  };
+}
+
+function copiarCuadrilla(cuadrilla: Cuadrilla): Cuadrilla {
+  return { ...cuadrilla };
+}
+
+export async function obtenerZonas(): Promise<Zona[]> {
+  await delay(600);
+  return zonasMock.map(copiarZona);
+}
+
+export async function obtenerCuadrillas(): Promise<Cuadrilla[]> {
+  await delay(600);
+  return cuadrillasMock.map(copiarCuadrilla);
+}
+
+export async function obtenerCuadrillasPorZona(zonaId: string): Promise<Cuadrilla[]> {
+  await delay(600);
+  return cuadrillasMock
+    .filter((cuadrilla) => cuadrilla.zonaId === zonaId)
+    .map(copiarCuadrilla);
+}
+
+export async function zonasConCuadrillas(): Promise<ZonaConCuadrillas[]> {
+  await delay(600);
+  return zonasMock.map((zona) => ({
+    zona: copiarZona(zona),
+    cuadrillas: cuadrillasMock
+      .filter((cuadrilla) => cuadrilla.zonaId === zona.id)
+      .map(copiarCuadrilla),
+  }));
 }

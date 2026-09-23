@@ -1,10 +1,10 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
+import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
 import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
@@ -166,31 +166,25 @@ export default function MapaPublicoScreen() {
       ) : null}
 
       <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
-        {Platform.OS === "web" ? (
-          <Text style={styles.mapaWeb}>
-            El mapa con las calles de Gualeguaychú se ve en el celular.
-          </Text>
-        ) : (
-          <MapView
-            key={origen ? `${origen.latitud}-${origen.longitud}` : "ciudad"}
-            style={StyleSheet.absoluteFill}
-            initialRegion={region}
-            showsUserLocation
-          >
-            {visibles.map((reporte) => (
-              <Marker
-                key={reporte.id}
-                coordinate={{
-                  latitude: reporte.coordenadas.latitud,
-                  longitude: reporte.coordenadas.longitud,
-                }}
-                pinColor={COLORES_ESTADO[reporte.estado]}
-                title={`${etiquetaEstadoPublico(reporte.estado)} · ${reporte.codigo}`}
-                description={reporte.direccion}
-              />
-            ))}
-          </MapView>
-        )}
+        <MapView
+          key={origen ? `${origen.latitud}-${origen.longitud}` : "ciudad"}
+          style={StyleSheet.absoluteFill}
+          initialRegion={region}
+          showsUserLocation
+        >
+          {visibles.map((reporte) => (
+            <Marker
+              key={reporte.id}
+              coordinate={{
+                latitude: reporte.coordenadas.latitud,
+                longitude: reporte.coordenadas.longitud,
+              }}
+              pinColor={COLORES_ESTADO[reporte.estado]}
+              title={`${etiquetaEstadoPublico(reporte.estado)} · ${reporte.codigo}`}
+              description={reporte.direccion}
+            />
+          ))}
+        </MapView>
 
         <View style={styles.resumen} accessibilityRole="text">
           <Text style={styles.resumenTexto}>{resumen}</Text>
@@ -414,14 +408,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#E1F5EE",
     overflow: "hidden",
-  },
-  mapaWeb: {
-    flex: 1,
-    textAlign: "center",
-    textAlignVertical: "center",
-    padding: 24,
-    fontSize: 14,
-    color: Paleta.inkSoft,
   },
   resumen: {
     position: "absolute",
