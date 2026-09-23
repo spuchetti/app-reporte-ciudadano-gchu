@@ -14,6 +14,7 @@ export interface Reporte {
   autorId: string;
   cuadrillaId: string | null;
   duplicadoDe: string | null;
+  fotoArreglo: Foto | null;
   adhesiones: number;
   creadoEn: string;
   sincronizado: boolean;

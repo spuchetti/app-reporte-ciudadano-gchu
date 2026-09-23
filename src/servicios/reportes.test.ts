@@ -1,9 +1,11 @@
 import { cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
+  actualizarEstado,
   asignarCuadrilla,
   adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
+  marcarDuplicado,
   obtenerAvisosDeEstado,
   obtenerReportesPorZona,
   paramsDeTicket,
@@ -168,6 +170,171 @@ describe("servicios/reportes", () => {
     original.estado = estadoPrev;
     original.cuadrillaId = cuadrillaPrev;
     cambiosEstadoMock.splice(cambiosPrev);
+  });
+
+  test("rechaza una cuadrilla de otra zona", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = original.estado;
+    const cuadrillaPrev = original.cuadrillaId;
+
+    const rechazo = expect(
+      asignarCuadrilla("rep-001", "cua-03", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "CUADRILLA_OTRA_ZONA" });
+    await jest.runAllTimersAsync();
+    await rechazo;
+
+    expect(original.estado).toBe(estadoPrev);
+    expect(original.cuadrillaId).toBe(cuadrillaPrev);
+  });
+
+  test("rechaza una cuadrilla inactiva", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-003");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = original.estado;
+    const cuadrillaPrev = original.cuadrillaId;
+
+    const rechazo = expect(
+      asignarCuadrilla("rep-003", "cua-05", "usr-101"),
+    ).rejects.toMatchObject({ codigo: "CUADRILLA_INVALIDA" });
+    await jest.runAllTimersAsync();
+    await rechazo;
+
+    expect(original.estado).toBe(estadoPrev);
+    expect(original.cuadrillaId).toBe(cuadrillaPrev);
+  });
+
+  test("cambia el estado y deja el motivo en el historial", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = original.estado;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    try {
+      const actualizado = await esperar(
+        actualizarEstado("rep-001", "en_revision", "Se deriva a Obras", "usr-100"),
+      );
+      expect(actualizado.estado).toBe("en_revision");
+      expect(cambiosEstadoMock.at(-1)).toMatchObject({
+        reporteId: "rep-001",
+        estado: "en_revision",
+        comentario: "Se deriva a Obras",
+        operadorId: "usr-100",
+      });
+    } finally {
+      original.estado = estadoPrev;
+      cambiosEstadoMock.splice(cambiosPrev);
+    }
+  });
+
+  test("exige la foto del arreglo para resolver", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = original.estado;
+    const fotoPrev = original.fotoArreglo;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    const rechazo = expect(
+      actualizarEstado("rep-001", "resuelto", "Bache tapado", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "FOTO_ARREGLO_OBLIGATORIA" });
+    await jest.runAllTimersAsync();
+    await rechazo;
+    expect(original.estado).toBe(estadoPrev);
+
+    try {
+      const actualizado = await esperar(
+        actualizarEstado(
+          "rep-001",
+          "resuelto",
+          "Bache tapado",
+          "usr-100",
+          "file://arreglo.jpg",
+        ),
+      );
+      expect(actualizado.estado).toBe("resuelto");
+      expect(actualizado.fotoArreglo?.url).toBe("file://arreglo.jpg");
+    } finally {
+      original.estado = estadoPrev;
+      original.fotoArreglo = fotoPrev;
+      cambiosEstadoMock.splice(cambiosPrev);
+    }
+  });
+
+  test("no cambia un reporte ya cerrado ni acepta un motivo vacío", async () => {
+    const cerrado = expect(
+      actualizarEstado("rep-004", "en_revision", "Reabrir", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "REPORTE_CERRADO" });
+    await jest.runAllTimersAsync();
+    await cerrado;
+
+    const sinMotivo = expect(
+      actualizarEstado("rep-001", "en_revision", "  ", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "MOTIVO_OBLIGATORIO" });
+    await jest.runAllTimersAsync();
+    await sinMotivo;
+    expect(reportesMock.find((item) => item.id === "rep-001")?.estado).toBe("recibido");
+  });
+
+  test("marca un reporte como duplicado del original y lo cierra", async () => {
+    const copia = reportesMock.find((item) => item.id === "rep-002");
+    if (!copia) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const estadoPrev = copia.estado;
+    const duplicadoPrev = copia.duplicadoDe;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    try {
+      const actualizado = await esperar(
+        marcarDuplicado("rep-002", "rep-001", "usr-100"),
+      );
+      expect(actualizado.duplicadoDe).toBe("rep-001");
+      expect(actualizado.estado).toBe("rechazado");
+      expect(cambiosEstadoMock.at(-1)?.comentario).toBe("Duplicado de GCHU-2026-00412");
+    } finally {
+      copia.estado = estadoPrev;
+      copia.duplicadoDe = duplicadoPrev;
+      cambiosEstadoMock.splice(cambiosPrev);
+    }
+  });
+
+  test("rechaza duplicado de sí mismo o de otro duplicado", async () => {
+    const propio = expect(
+      marcarDuplicado("rep-001", "rep-001", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "DUPLICADO_PROPIO" });
+    await jest.runAllTimersAsync();
+    await propio;
+
+    const copia = reportesMock.find((item) => item.id === "rep-002");
+    const tercero = reportesMock.find((item) => item.id === "rep-003");
+    if (!copia || !tercero) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const copiaEstado = copia.estado;
+    const copiaDuplicado = copia.duplicadoDe;
+    const cambiosPrev = cambiosEstadoMock.length;
+    copia.duplicadoDe = "rep-001";
+
+    try {
+      const rechazo = expect(
+        marcarDuplicado("rep-003", "rep-002", "usr-100"),
+      ).rejects.toMatchObject({ codigo: "DUPLICADO_DE_DUPLICADO" });
+      await jest.runAllTimersAsync();
+      await rechazo;
+      expect(tercero.duplicadoDe).toBeNull();
+    } finally {
+      copia.estado = copiaEstado;
+      copia.duplicadoDe = copiaDuplicado;
+      cambiosEstadoMock.splice(cambiosPrev);
+    }
   });
 
   test("permite sumarse a un reporte ajeno y no duplica la adhesión", async () => {

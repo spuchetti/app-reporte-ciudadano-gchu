@@ -4,6 +4,7 @@ import {
   reportesMock,
   tiposReporteMock,
 } from "@/mocks";
+import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio } from "@/servicios/error";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
@@ -56,7 +57,7 @@ export function ultimosReportesPublicos(reportes: Reporte[], limite = 3) {
 }
 
 // Simular delay de red
-const delay = (ms: number = 500) =>
+export const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Obtener todos los reportes
@@ -191,6 +192,7 @@ export function datosCreacionDesdeBorrador(
     autorId,
     cuadrillaId: null,
     duplicadoDe: null,
+    fotoArreglo: null,
     adhesiones: 0,
     sincronizado: false,
   };
@@ -239,33 +241,125 @@ export const obtenerCambiosEstado = async (
   return cambiosEstadoMock.filter((c) => c.reporteId === reporteId);
 };
 
+function registrarCambio(
+  reporteId: string,
+  estado: EstadoReporte,
+  comentario: string,
+  operadorId: string,
+) {
+  const cambio: CambioDeEstado = {
+    id: `cambio-${String(cambiosEstadoMock.length + 1).padStart(3, "0")}`,
+    reporteId,
+    estado,
+    comentario,
+    operadorId,
+    fechaHora: new Date().toISOString(),
+  };
+  cambiosEstadoMock.push(cambio);
+  return cambio;
+}
+
+function reporteAbierto(reporteId: string) {
+  const reporte = reportesMock.find((item) => item.id === reporteId);
+  if (!reporte) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos ese reporte.",
+    });
+  }
+  if (!esPendiente(reporte.estado) || reporte.duplicadoDe) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_CERRADO",
+      mensaje: "Este reporte ya está cerrado.",
+    });
+  }
+  return reporte;
+}
+
 // Actualizar estado de un reporte
 export const actualizarEstado = async (
   reporteId: string,
   nuevoEstado: Reporte["estado"],
   comentario: string,
   operadorId: string,
-): Promise<CambioDeEstado> => {
+  fotoArregloUrl: string | null = null,
+): Promise<Reporte> => {
   await delay(600);
 
-  // Buscar el reporte y actualizar su estado
-  const reporte = reportesMock.find((r) => r.id === reporteId);
-  if (reporte) {
-    reporte.estado = nuevoEstado;
+  const reporte = reporteAbierto(reporteId);
+  const motivo = comentario.trim();
+  if (motivo.length < 3) {
+    throw new ErrorServicio({
+      codigo: "MOTIVO_OBLIGATORIO",
+      mensaje: "Escribí por qué cambia el estado.",
+    });
   }
 
-  const nuevoCambio: CambioDeEstado = {
-    id: `cambio-${String(cambiosEstadoMock.length + 1).padStart(3, "0")}`,
+  if (!ESTADOS_GESTION.includes(nuevoEstado) || nuevoEstado === reporte.estado) {
+    throw new ErrorServicio({
+      codigo: "ESTADO_INVALIDO",
+      mensaje: "Elegí un estado distinto al actual.",
+    });
+  }
+
+  if (nuevoEstado === "resuelto" && !fotoArregloUrl) {
+    throw new ErrorServicio({
+      codigo: "FOTO_ARREGLO_OBLIGATORIA",
+      mensaje: "Subí la foto del arreglo para cerrar el reporte.",
+    });
+  }
+
+  reporte.estado = nuevoEstado;
+  if (nuevoEstado === "resuelto" && fotoArregloUrl) {
+    reporte.fotoArreglo = {
+      id: `foto-arreglo-${reporte.id}`,
+      url: fotoArregloUrl,
+      esPrincipal: true,
+    };
+  }
+
+  registrarCambio(reporteId, nuevoEstado, motivo, operadorId);
+  return reporte;
+};
+
+export const marcarDuplicado = async (
+  reporteId: string,
+  originalId: string,
+  operadorId: string,
+): Promise<Reporte> => {
+  await delay(500);
+
+  if (reporteId === originalId) {
+    throw new ErrorServicio({
+      codigo: "DUPLICADO_PROPIO",
+      mensaje: "Un reporte no puede ser duplicado de sí mismo.",
+    });
+  }
+
+  const reporte = reporteAbierto(reporteId);
+  const original = reportesMock.find((item) => item.id === originalId);
+  if (!original) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos el reporte original.",
+    });
+  }
+  if (original.duplicadoDe) {
+    throw new ErrorServicio({
+      codigo: "DUPLICADO_DE_DUPLICADO",
+      mensaje: "Elegí el reporte original, no otro duplicado.",
+    });
+  }
+
+  reporte.duplicadoDe = original.id;
+  reporte.estado = "rechazado";
+  registrarCambio(
     reporteId,
-    estado: nuevoEstado,
-    comentario,
+    "rechazado",
+    `Duplicado de ${original.codigo}`,
     operadorId,
-    fechaHora: new Date().toISOString(),
-  };
-
-  cambiosEstadoMock.push(nuevoCambio);
-
-  return nuevoCambio;
+  );
+  return reporte;
 };
 
 export const asignarCuadrilla = async (
@@ -283,13 +377,18 @@ export const asignarCuadrilla = async (
     });
   }
 
-  const cuadrilla = cuadrillasMock.find(
-    (item) => item.id === cuadrillaId && item.activa,
-  );
-  if (!cuadrilla) {
+  const cuadrilla = cuadrillasMock.find((item) => item.id === cuadrillaId);
+  if (!cuadrilla || !cuadrilla.activa) {
     throw new ErrorServicio({
       codigo: "CUADRILLA_INVALIDA",
       mensaje: "Elegí una cuadrilla activa.",
+    });
+  }
+
+  if (cuadrilla.zonaId !== reporte.zonaId) {
+    throw new ErrorServicio({
+      codigo: "CUADRILLA_OTRA_ZONA",
+      mensaje: "La cuadrilla no pertenece a la zona del reporte.",
     });
   }
 

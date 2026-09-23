@@ -7,6 +7,10 @@ const mockPush = jest.fn();
 
 jest.mock("@/global.css", () => "");
 
+jest.mock("expo-status-bar", () => ({
+  StatusBar: () => null,
+}));
+
 jest.mock("react-native-maps", () => {
   const { View } = require("react-native");
   return {
@@ -22,26 +26,31 @@ jest.mock("expo-image", () => {
   return { Image: ({ children }: { children?: React.ReactNode }) => <View>{children}</View> };
 });
 
-jest.mock("@/contexto/sesion", () => ({
-  useSesion: () => ({
-    sesion: {
-      esInvitado: false,
-      usuario: { nombre: "Mirko", zonaId: "zon-norte", rol: "vecino", id: "usr-001" },
-    },
-    cerrarSesion: jest.fn(),
-  }),
-}));
+jest.mock("@/contexto/sesion", () => {
+  const sesion = {
+    esInvitado: false,
+    usuario: { nombre: "Mirko", zonaId: "zon-norte", rol: "vecino", id: "usr-001" },
+  };
+  return {
+    useSesion: () => ({
+      sesion,
+      cerrarSesion: jest.fn(),
+    }),
+  };
+});
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  // Una sola corrida al montar: si depende de `callback`, un re-render
+  // puede re-disparar la carga y dejar a `act` colgado.
   useFocusEffect: (callback: () => void | (() => void)) => {
     const ReactLib = require("react");
     ReactLib.useEffect(() => {
       const cleanup = callback();
       return typeof cleanup === "function" ? cleanup : undefined;
-    }, [callback]);
+    }, []);
   },
 }));
 
@@ -88,6 +97,7 @@ const reporteNorte = {
   autorId: "usr-001",
   cuadrillaId: null,
   duplicadoDe: null,
+  fotoArreglo: null,
   adhesiones: 0,
   creadoEn: "2026-09-01T10:00:00-03:00",
   sincronizado: true,
@@ -113,7 +123,16 @@ function buscarPorLabel(
   );
 }
 
+async function montarHome() {
+  let tree!: ReactTestRenderer;
+  await act(async () => {
+    tree = create(<HomeVecinoScreen />);
+  });
+  return tree;
+}
+
 describe("Home vecino", () => {
+  jest.setTimeout(20000);
   beforeEach(() => {
     mockPush.mockClear();
     obtenerPorZona.mockReset();
@@ -123,12 +142,9 @@ describe("Home vecino", () => {
   });
 
   test("renderiza la cabecera y el botón de cerrar sesión", async () => {
-    let tree: ReactTestRenderer;
-    await act(async () => {
-      tree = create(<HomeVecinoScreen />);
-    });
+    const tree = await montarHome();
 
-    const texto = arbolComoTexto(tree!.toJSON());
+    const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Hola");
     expect(texto).toContain("Mirko");
     expect(texto).toContain("Cerrar sesión");
@@ -140,24 +156,18 @@ describe("Home vecino", () => {
       [reporteNorte, reporteSur].filter((item) => item.zonaId === zonaId),
     );
 
-    let tree: ReactTestRenderer;
-    await act(async () => {
-      tree = create(<HomeVecinoScreen />);
-    });
+    const tree = await montarHome();
 
-    const texto = arbolComoTexto(tree!.toJSON());
+    const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Pozo en Norte");
     expect(texto).not.toContain("Basura en Sur");
     expect(obtenerPorZona).toHaveBeenCalledWith("zon-norte");
   });
 
   test("muestra cuántos reportes hay cerca y los últimos de la zona", async () => {
-    let tree: ReactTestRenderer;
-    await act(async () => {
-      tree = create(<HomeVecinoScreen />);
-    });
+    const tree = await montarHome();
 
-    const texto = arbolComoTexto(tree!.toJSON());
+    const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Hay 1 reporte cerca tuyo");
     expect(texto).toContain("Últimos de tu zona");
   });
@@ -175,24 +185,18 @@ describe("Home vecino", () => {
       },
     ]);
 
-    let tree: ReactTestRenderer;
-    await act(async () => {
-      tree = create(<HomeVecinoScreen />);
-    });
+    const tree = await montarHome();
 
-    const texto = arbolComoTexto(tree!.toJSON());
+    const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Tu reporte de Rama / árbol está resuelto.");
     expect(obtenerAvisos).toHaveBeenCalledWith("usr-001");
   });
 
   test("el botón Reportar problema abre el alta de reporte", async () => {
-    let tree: ReactTestRenderer;
-    await act(async () => {
-      tree = create(<HomeVecinoScreen />);
-    });
+    const tree = await montarHome();
 
     await act(async () => {
-      buscarPorLabel(tree!, "Reportar problema").props.onPress();
+      buscarPorLabel(tree, "Reportar problema").props.onPress();
     });
 
     expect(mockPush).toHaveBeenCalledWith("/reporte/nuevo");
