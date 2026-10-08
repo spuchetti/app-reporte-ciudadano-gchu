@@ -13,7 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
-import { Paleta } from "@/constants/theme";
+import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   ESTADOS_BANDEJA,
@@ -271,13 +271,13 @@ export default function BandejaOperadorScreen() {
             return (
               <View key={item.id} style={styles.tarjeta}>
                 <View style={styles.tarjetaCuerpo}>
-                  <View style={[styles.icono, { backgroundColor: `${color}22` }]}>
+                  <View style={[styles.icono, { backgroundColor: fondoSuave(color) }]}>
                     <Text style={styles.iconoTexto}>{iconoTipo(item.tipoId)}</Text>
                   </View>
                   <View style={styles.tarjetaInfo}>
                     <View style={styles.tarjetaCabecera}>
                       <Text style={styles.codigo}>{item.codigo}</Text>
-                      <View style={[styles.insignia, { backgroundColor: `${color}22` }]}>
+                      <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
                         <Text style={[styles.insigniaTexto, { color }]}>
                           {etiquetaEstado(item.estado)}
                         </Text>
