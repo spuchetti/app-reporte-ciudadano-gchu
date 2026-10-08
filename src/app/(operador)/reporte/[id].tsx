@@ -15,7 +15,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
-import { Paleta } from "@/constants/theme";
+import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
@@ -212,7 +212,7 @@ export default function DetalleOperadorScreen() {
           <Text style={styles.vacio}>{error ?? "Cargando…"}</Text>
         ) : (
           <>
-            <View style={[styles.insignia, { backgroundColor: `${color}22` }]}>
+            <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
               <Text style={[styles.insigniaTexto, { color }]}>
                 {etiquetaEstado(reporte.estado)}
               </Text>
