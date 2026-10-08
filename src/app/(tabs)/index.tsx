@@ -13,7 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { MapView, Marker, Callout } from "@/components/mapa";
-import { Paleta } from "@/constants/theme";
+import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { zonasMock } from "@/mocks/zonas";
@@ -267,7 +267,7 @@ export default function HomeVecinoScreen() {
                         {reporte.descripcion || reporte.direccion}
                       </Text>
                     </View>
-                    <View style={[styles.insignia, { backgroundColor: `${estado}22` }]}>
+                    <View style={[styles.insignia, { backgroundColor: fondoSuave(estado) }]}>
                       <Text style={[styles.insigniaTexto, { color: estado }]}>
                         {etiquetaEstado(reporte.estado)}
                       </Text>

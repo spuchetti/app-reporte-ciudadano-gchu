@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { fondoSuave, Paleta } from "@/constants/theme";
 import { Cuadrilla, Zona } from "@/tipos";
 
 const COLORES_ZONA: Record<string, string> = {
@@ -158,10 +158,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   chipActiva: {
-    backgroundColor: `${Paleta.verde}22`,
+    backgroundColor: fondoSuave(Paleta.verde),
   },
   chipInactiva: {
-    backgroundColor: `${Paleta.rojo}22`,
+    backgroundColor: fondoSuave(Paleta.rojo),
   },
   chipTexto: {
     fontSize: 12,
