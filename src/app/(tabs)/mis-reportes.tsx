@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  Pressable,
   ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
   RefreshControl,
   StyleSheet,
-  Platform,
+  Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useFocusEffect } from 'expo-router';
 
 import { Boton } from '@/components/ui/boton';
 import { Paleta, fondoSuave } from '@/constants/theme';
@@ -183,7 +183,7 @@ export default function MisReportesScreen() {
           }
           ListEmptyComponent={
             <View style={styles.vacioCaja}>
-              <Text style={styles.vacioTitulo}>No tenés reclamos activos</Text>
+              <Text style={styles.vacioTitulo}>No tenés reclamos cargados</Text>
               <Text style={styles.vacioSubtitulo}>
                 Los reclamos que cargues van a aparecer acá para que sigas el avance del trabajo.
               </Text>
