@@ -21,6 +21,7 @@ import {
   etiquetaEstado,
   obtenerAvisosDeEstado,
   obtenerReportesPorZona,
+  obtenerMisReportes,
   resumenReportesCerca,
   ultimosReportesPublicos,
   type AvisoDeEstado,
@@ -56,6 +57,7 @@ export default function HomeVecinoScreen() {
     zonasMock.find((zona) => zona.id === zonaId)?.nombre ?? "Tu zona";
 
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [misReportes, setMisReportes] = useState<Reporte[]>([]);
   const [avisos, setAvisos] = useState<AvisoDeEstado[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,7 @@ export default function HomeVecinoScreen() {
           if (activo) {
             setReportes([]);
             setAvisos([]);
+            setMisReportes([]);
             setError(null);
             setCargando(false);
           }
@@ -85,19 +88,22 @@ export default function HomeVecinoScreen() {
         setCargando(true);
         setError(null);
         try {
-          const [lista, cambios] = await Promise.all([
+          const [lista, cambios, propios] = await Promise.all([
             obtenerReportesPorZona(zonaId),
             autorId ? obtenerAvisosDeEstado(autorId) : Promise.resolve([]),
+            autorId ? obtenerMisReportes(autorId) : Promise.resolve([]),
           ]);
           if (activo) {
             setReportes(lista);
             setAvisos(cambios);
+            setMisReportes(propios);
           }
         } catch {
           if (activo) {
             setError("No se pudieron cargar los reportes de tu zona.");
             setReportes([]);
             setAvisos([]);
+            setMisReportes([]);
           }
         } finally {
           if (activo) {
@@ -124,6 +130,19 @@ export default function HomeVecinoScreen() {
       : cargando
         ? "Cargando reportes de tu zona…"
         : resumenReportesCerca(reportes.length);
+
+  const resumenMisReportes = useMemo(() => {
+    const total = misReportes.length;
+    const enCurso = misReportes.filter(
+      (r) => 
+        r.estado === "recibido" || 
+        r.estado === "en_revision" || 
+        r.estado === "asignado"
+    ).length;
+
+    const textoTotal = total === 1 ? "1 reclamo" : `${total} reclamos`;
+    return `${textoTotal} · ${enCurso} en curso`;
+  }, [misReportes]);
 
   return (
     <View style={styles.pantalla}>
@@ -214,6 +233,24 @@ export default function HomeVecinoScreen() {
 
       <View style={[styles.panel, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={styles.manija} />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ir a mis reportes"
+          onPress={() => router.push("/(tabs)/mis-reportes")}
+          style={({ pressed }) => [
+            styles.tarjetaMisReportes,
+            pressed && styles.tarjetaMisReportesPresionada,
+          ]}
+        >
+          <View style={styles.textoMisReportes}>
+            <Text style={styles.tituloMisReportes}>Mis reportes</Text>
+            <Text style={styles.subtituloMisReportes}>
+              {resumenMisReportes}
+            </Text>
+          </View>
+          <Text style={styles.flechaMisReportes}>›</Text>
+        </Pressable>
 
         <ScrollView
           style={styles.panelLista}
@@ -397,8 +434,42 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.line,
     marginBottom: 4,
   },
+    tarjetaMisReportes: {
+    backgroundColor: Paleta.paperRaised,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Paleta.teal,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginVertical: 4,
+  },
+  tarjetaMisReportesPresionada: {
+    opacity: 0.85,
+    backgroundColor: `${Paleta.teal}11`,
+  },
+  textoMisReportes: {
+    gap: 2,
+  },
+  tituloMisReportes: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Paleta.ink,
+  },
+  subtituloMisReportes: {
+    fontSize: 13,
+    color: Paleta.inkSoft,
+  },
+  flechaMisReportes: {
+    fontSize: 22,
+    color: Paleta.teal,
+    fontWeight: "600",
+  },
+
   panelLista: {
-    maxHeight: 200,
+    maxHeight: 180,
   },
   panelListaContenido: {
     gap: 16,
