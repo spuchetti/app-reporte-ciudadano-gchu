@@ -62,6 +62,7 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("@/servicios/reportes", () => ({
   obtenerReportesPorZona: jest.fn(async () => []),
   obtenerAvisosDeEstado: jest.fn(async () => []),
+  obtenerMisReportes: jest.fn(async () => []),
   resumenReportesCerca: (cantidad: number) => {
     if (cantidad <= 0) {
       return "No hay reportes cerca tuyo";
