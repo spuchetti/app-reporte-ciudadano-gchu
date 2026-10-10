@@ -440,3 +440,10 @@ export const adherirAReporte = async (
   reporte.adhesiones += 1;
   return reporte;
 };
+
+export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  return reportesMock
+    .filter((rep) => rep.autorId === usuarioId)
+    .sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
+}

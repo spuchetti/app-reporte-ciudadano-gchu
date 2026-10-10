@@ -22,6 +22,12 @@ export const Paleta = {
   line: 'rgba(18,35,46,0.12)',
 } as const;
 
+const ALFA_FONDO = '22';
+
+export function fondoSuave(color: string) {
+  return `${color}${ALFA_FONDO}`;
+}
+
 export const Colors = {
   light: {
     text: '#000000',

@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import TarjetaZona from "@/components/operador/tarjeta-zona";
 import Cargando from "@/components/ui/cargando";
 import HeaderOperador from "@/components/ui/headerOperador";
-import { Paleta } from "@/constants/theme";
+import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { ZonaConCuadrillas, zonasConCuadrillas } from "@/servicios/zonas";
 
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: Paleta.rojo,
     textAlign: "center",
-    backgroundColor: `${Paleta.rojo}22`,
+    backgroundColor: fondoSuave(Paleta.rojo),
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
