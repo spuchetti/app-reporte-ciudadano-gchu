@@ -23,6 +23,7 @@ import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
+  nombreCuadrilla,
   nombreTipo,
   puedeGestionar,
   reportesParaDuplicar,
@@ -133,7 +134,7 @@ export default function DetalleReclamoScreen() {
       setReporte(item);
       setCatalogo(lista);
       setHistorial(
-        [...cambios].sort((a, b) => b.fechaHora.localeCompare(a.fechaHora)),
+        [...cambios].sort((a, b) => a.fechaHora.localeCompare(b.fechaHora)),
       );
       setError(null);
     } catch {
@@ -328,7 +329,9 @@ export default function DetalleReclamoScreen() {
                 <Text style={styles.descripcion}>{reporte.descripcion}</Text>
               ) : null}
               {reporte.cuadrillaId ? (
-                <Text style={styles.meta}>Asignado a una cuadrilla</Text>
+                <Text style={styles.meta}>
+                  {`Asignado a ${nombreCuadrilla(reporte.cuadrillaId)}`}
+                </Text>
               ) : null}
               {codigoOriginal ? (
                 <Text style={styles.meta}>{`Duplicado de ${codigoOriginal}`}</Text>
