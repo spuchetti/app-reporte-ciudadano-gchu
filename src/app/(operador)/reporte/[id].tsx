@@ -86,7 +86,7 @@ export default function DetalleOperadorScreen() {
       setReporte(item);
       setCatalogo(lista);
       setCambios(
-        [...historial].sort((a, b) => b.fechaHora.localeCompare(a.fechaHora)),
+        [...historial].sort((a, b) => a.fechaHora.localeCompare(b.fechaHora)),
       );
       setError(null);
     } catch {
@@ -303,34 +303,43 @@ export default function DetalleOperadorScreen() {
                   Historial de avance del reporte
                 </Text>
                 <View style={styles.listaHistorial}>
-                  {cambios.map((cambio, index) => (
-                    <View key={cambio.id} style={styles.itemTimeline}>
-                      <View style={styles.columnaIndicador}>
-                        <View
-                          style={[
-                            styles.marcaHistorial,
-                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
-                          ]}
-                        />
-                        {index < cambios.length - 1 ? (
-                          <View style={styles.lineaHistorial} />
-                        ) : null}
-                      </View>
-                      <View style={styles.columnaContenido}>
-                        <View style={styles.filaTituloFecha}>
-                          <Text style={styles.cambioEstado}>
-                            {etiquetaEstado(cambio.estado)}
-                          </Text>
-                          <Text style={styles.cambioFecha}>
-                            {haceTiempo(cambio.fechaHora)}
-                          </Text>
+                  {cambios.map((cambio, index) => {
+                    const esActual = index === cambios.length - 1;
+                    return (
+                      <View key={cambio.id} style={styles.itemTimeline}>
+                        <View style={styles.columnaIndicador}>
+                          <View
+                            style={[
+                              styles.marcaHistorial,
+                              esActual && styles.marcaHistorialActual,
+                              { backgroundColor: COLORES_ESTADO[cambio.estado] },
+                            ]}
+                          />
+                          {index < cambios.length - 1 ? (
+                            <View style={styles.lineaHistorial} />
+                          ) : null}
                         </View>
-                        {cambio.comentario ? (
-                          <Text style={styles.cambioTexto}>{cambio.comentario}</Text>
-                        ) : null}
+                        <View style={styles.columnaContenido}>
+                          <View style={styles.filaTituloFecha}>
+                            <Text
+                              style={[
+                                styles.cambioEstado,
+                                esActual && styles.cambioEstadoActual,
+                              ]}
+                            >
+                              {etiquetaEstado(cambio.estado)}
+                            </Text>
+                            <Text style={styles.cambioFecha}>
+                              {haceTiempo(cambio.fechaHora)}
+                            </Text>
+                          </View>
+                          {cambio.comentario ? (
+                            <Text style={styles.cambioTexto}>{cambio.comentario}</Text>
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             ) : null}
@@ -509,10 +518,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
     zIndex: 2,
   },
+  marcaHistorialActual: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginTop: 1,
+  },
   lineaHistorial: {
     position: "absolute",
     top: 14,
     bottom: -16,
+    left: 6,
     width: 2,
     backgroundColor: Paleta.line,
     zIndex: 1,
@@ -530,6 +546,9 @@ const styles = StyleSheet.create({
     color: Paleta.ink,
     fontSize: 14,
     fontWeight: "700",
+  },
+  cambioEstadoActual: {
+    fontSize: 16,
   },
   cambioTexto: {
     color: Paleta.inkSoft,
