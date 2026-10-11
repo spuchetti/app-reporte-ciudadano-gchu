@@ -398,41 +398,51 @@ export default function DetalleReclamoScreen() {
               <Text style={styles.tituloSeccion}>Historial de avance del reporte</Text>
               {historial.length > 0 ? (
                 <View style={styles.listaHistorial}>
-                  {historial.map((cambio, index) => (
-                    <View key={cambio.id} style={styles.itemTimeline}>
-                      <View style={styles.columnaIndicador}>
-                        <View
-                          style={[
-                            styles.marcaHistorial,
-                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
-                          ]}
-                        />
-                        {index < historial.length - 1 ? (
-                          <View style={styles.lineaHistorial} />
-                        ) : null}
-                      </View>
-                      <View style={styles.columnaContenido}>
-                        <View style={styles.filaTituloFecha}>
-                          <Text style={styles.cambioEstado}>
-                            {etiquetaEstado(cambio.estado)}
-                          </Text>
-                          <Text style={styles.cambioFecha}>
-                            {fechaHoraLegible(cambio.fechaHora)}
-                          </Text>
-                        </View>
-                        {cambio.comentario ? (
-                          <Text
+                  {historial.map((cambio, index) => {
+                    const esActual = index === historial.length - 1;
+                    return (
+                      <View key={cambio.id} style={styles.itemTimeline}>
+                        <View style={styles.columnaIndicador}>
+                          <View
                             style={[
-                              styles.cambioTexto,
-                              cambio.estado === "rechazado" && styles.comentarioRechazado,
+                              styles.marcaHistorial,
+                              esActual && styles.marcaHistorialActual,
+                              { backgroundColor: COLORES_ESTADO[cambio.estado] },
                             ]}
-                          >
-                            {cambio.comentario}
-                          </Text>
-                        ) : null}
+                          />
+                          {index < historial.length - 1 ? (
+                            <View style={styles.lineaHistorial} />
+                          ) : null}
+                        </View>
+                        <View style={styles.columnaContenido}>
+                          <View style={styles.filaTituloFecha}>
+                            <Text
+                              style={[
+                                styles.cambioEstado,
+                                esActual && styles.cambioEstadoActual,
+                              ]}
+                            >
+                              {etiquetaEstado(cambio.estado)}
+                            </Text>
+                            <Text style={styles.cambioFecha}>
+                              {fechaHoraLegible(cambio.fechaHora)}
+                            </Text>
+                          </View>
+                          {cambio.comentario ? (
+                            <Text
+                              style={[
+                                styles.cambioTexto,
+                                cambio.estado === "rechazado" &&
+                                  styles.comentarioRechazado,
+                              ]}
+                            >
+                              {cambio.comentario}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               ) : (
                 <Text style={styles.meta}>
@@ -620,10 +630,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
     zIndex: 2,
   },
+  marcaHistorialActual: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginTop: 1,
+  },
   lineaHistorial: {
     position: "absolute",
     top: 14,
     bottom: -16,
+    left: 6,
     width: 2,
     backgroundColor: Paleta.line,
     zIndex: 1,
@@ -641,6 +658,9 @@ const styles = StyleSheet.create({
     color: Paleta.ink,
     fontSize: 14,
     fontWeight: "700",
+  },
+  cambioEstadoActual: {
+    fontSize: 16,
   },
   cambioFecha: {
     color: Paleta.inkSoft,
