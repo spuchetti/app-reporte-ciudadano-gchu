@@ -60,6 +60,7 @@ function RootNavigator() {
         <Stack.Screen name="(operador)" />
       </Stack.Protected>
       <Stack.Screen name="reporte" />
+      <Stack.Screen name="reclamo/[id]" />
     </Stack>
   );
 }
