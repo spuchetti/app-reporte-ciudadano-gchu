@@ -200,6 +200,13 @@ export default function DetalleOperadorScreen() {
         <Text style={styles.titulo} numberOfLines={1}>
           {reporte?.codigo ?? "Reporte"}
         </Text>
+        {reporte ? (
+          <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
+            <Text style={[styles.insigniaTexto, { color }]}>
+              {etiquetaEstado(reporte.estado)}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <ScrollView
@@ -212,12 +219,6 @@ export default function DetalleOperadorScreen() {
           <Text style={styles.vacio}>{error ?? "Cargando…"}</Text>
         ) : (
           <>
-            <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
-              <Text style={[styles.insigniaTexto, { color }]}>
-                {etiquetaEstado(reporte.estado)}
-              </Text>
-            </View>
-
             {foto ? (
               <Image source={{ uri: foto }} style={styles.foto} />
             ) : null}
@@ -298,20 +299,39 @@ export default function DetalleOperadorScreen() {
 
             {cambios.length > 0 ? (
               <View style={styles.historial}>
-                <Text style={styles.historialTitulo}>Historial</Text>
-                {cambios.map((cambio) => (
-                  <View key={cambio.id} style={styles.cambio}>
-                    <Text style={styles.cambioEstado}>
-                      {etiquetaEstado(cambio.estado)}
-                    </Text>
-                    {cambio.comentario ? (
-                      <Text style={styles.cambioTexto}>{cambio.comentario}</Text>
-                    ) : null}
-                    <Text style={styles.cambioFecha}>
-                      {haceTiempo(cambio.fechaHora)}
-                    </Text>
-                  </View>
-                ))}
+                <Text style={styles.historialTitulo}>
+                  Historial de avance del reporte
+                </Text>
+                <View style={styles.listaHistorial}>
+                  {cambios.map((cambio, index) => (
+                    <View key={cambio.id} style={styles.itemTimeline}>
+                      <View style={styles.columnaIndicador}>
+                        <View
+                          style={[
+                            styles.marcaHistorial,
+                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
+                          ]}
+                        />
+                        {index < cambios.length - 1 ? (
+                          <View style={styles.lineaHistorial} />
+                        ) : null}
+                      </View>
+                      <View style={styles.columnaContenido}>
+                        <View style={styles.filaTituloFecha}>
+                          <Text style={styles.cambioEstado}>
+                            {etiquetaEstado(cambio.estado)}
+                          </Text>
+                          <Text style={styles.cambioFecha}>
+                            {haceTiempo(cambio.fechaHora)}
+                          </Text>
+                        </View>
+                        {cambio.comentario ? (
+                          <Text style={styles.cambioTexto}>{cambio.comentario}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
               </View>
             ) : null}
           </>
@@ -459,8 +479,8 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   historial: {
-    marginTop: 12,
-    gap: 8,
+    gap: 10,
+    marginTop: 4,
   },
   historialTitulo: {
     fontSize: 11,
@@ -469,25 +489,55 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: Paleta.inkSoft,
   },
-  cambio: {
-    backgroundColor: Paleta.paperRaised,
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Paleta.line,
+  itemTimeline: {
+    flexDirection: "row",
+    gap: 12,
+    paddingBottom: 16,
+  },
+  listaHistorial: {
+    gap: 0,
+  },
+  columnaIndicador: {
+    width: 14,
+    alignItems: "center",
+    position: "relative",
+  },
+  marcaHistorial: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+    zIndex: 2,
+  },
+  lineaHistorial: {
+    position: "absolute",
+    top: 14,
+    bottom: -16,
+    width: 2,
+    backgroundColor: Paleta.line,
+    zIndex: 1,
+  },
+  columnaContenido: {
+    flex: 1,
     gap: 4,
   },
+  filaTituloFecha: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   cambioEstado: {
-    fontSize: 13,
-    fontWeight: "700",
     color: Paleta.ink,
+    fontSize: 14,
+    fontWeight: "700",
   },
   cambioTexto: {
-    fontSize: 13,
     color: Paleta.inkSoft,
+    fontSize: 14,
+    lineHeight: 20,
   },
   cambioFecha: {
-    fontSize: 12,
     color: Paleta.inkSoft,
+    fontSize: 12,
   },
 });

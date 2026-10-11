@@ -2,6 +2,7 @@
   "expo": {
     "name": "app-reporte-ciudadano-gchu",
     "slug": "app-reporte-ciudadano-gchu",
+    "scheme": "app-reporte-ciudadano-gchu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

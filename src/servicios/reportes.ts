@@ -19,11 +19,11 @@ export { COORDENADAS_CENTRO } from "@/servicios/ubicacion";
 export const ZONA_POR_DEFECTO = "zon-centro";
 
 const ETIQUETA_ESTADO: Record<EstadoReporte, string> = {
-  recibido: "recibido",
-  en_revision: "en revisión",
-  asignado: "asignado",
-  resuelto: "resuelto",
-  rechazado: "rechazado",
+  recibido: "Recibido",
+  en_revision: "En revisión",
+  asignado: "Asignado",
+  resuelto: "Resuelto",
+  rechazado: "Rechazado",
 };
 
 export type AvisoDeEstado = {
