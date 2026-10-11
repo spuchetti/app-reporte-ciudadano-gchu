@@ -273,6 +273,7 @@ export default function DetalleReclamoScreen() {
             <Text numberOfLines={1} style={styles.codigo}>
               {reporte?.codigo ?? "Seguimiento"}
             </Text>
+            {reporte ? <ChipEstado estado={reporte.estado} /> : null}
           </View>
           {reporte?.codigo ? (
             <View
@@ -317,7 +318,6 @@ export default function DetalleReclamoScreen() {
         ) : (
           <>
             <View style={styles.panelPrincipal}>
-              <ChipEstado estado={reporte.estado} />
               <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
               <Text style={styles.direccion}>{reporte.direccion}</Text>
               <Text style={styles.meta}>{haceTiempo(reporte.creadoEn)}</Text>
@@ -392,36 +392,45 @@ export default function DetalleReclamoScreen() {
             ) : null}
 
             <View style={styles.historial}>
-              <Text style={styles.tituloSeccion}>Historial</Text>
+              <Text style={styles.tituloSeccion}>Historial de avance del reporte</Text>
               {historial.length > 0 ? (
-                historial.map((cambio) => (
-                  <View key={cambio.id} style={styles.cambio}>
-                    <View style={styles.filaEstado}>
-                      <View
-                        style={[
-                          styles.marcaHistorial,
-                          { backgroundColor: COLORES_ESTADO[cambio.estado] },
-                        ]}
-                      />
-                      <Text style={styles.cambioEstado}>
-                        {etiquetaEstado(cambio.estado)}
-                      </Text>
+                <View style={styles.listaHistorial}>
+                  {historial.map((cambio, index) => (
+                    <View key={cambio.id} style={styles.itemTimeline}>
+                      <View style={styles.columnaIndicador}>
+                        <View
+                          style={[
+                            styles.marcaHistorial,
+                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
+                          ]}
+                        />
+                        {index < historial.length - 1 ? (
+                          <View style={styles.lineaHistorial} />
+                        ) : null}
+                      </View>
+                      <View style={styles.columnaContenido}>
+                        <View style={styles.filaTituloFecha}>
+                          <Text style={styles.cambioEstado}>
+                            {etiquetaEstado(cambio.estado)}
+                          </Text>
+                          <Text style={styles.cambioFecha}>
+                            {fechaHoraLegible(cambio.fechaHora)}
+                          </Text>
+                        </View>
+                        {cambio.comentario ? (
+                          <Text
+                            style={[
+                              styles.cambioTexto,
+                              cambio.estado === "rechazado" && styles.comentarioRechazado,
+                            ]}
+                          >
+                            {cambio.comentario}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
-                    <Text style={styles.cambioFecha}>
-                      {fechaHoraLegible(cambio.fechaHora)}
-                    </Text>
-                    {cambio.comentario ? (
-                      <Text
-                        style={[
-                          styles.cambioTexto,
-                          cambio.estado === "rechazado" && styles.comentarioRechazado,
-                        ]}
-                      >
-                        {cambio.comentario}
-                      </Text>
-                    ) : null}
-                  </View>
-                ))
+                  ))}
+                </View>
               ) : (
                 <Text style={styles.meta}>
                   Todavía no hay movimientos registrados.
@@ -501,7 +510,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   eyebrow: {
-    color: "rgba(255,255,255,0.76)",
+    color: Paleta.paperRaised,
+    opacity: 0.76,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -587,23 +597,42 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
-  cambio: {
-    backgroundColor: Paleta.paperRaised,
-    borderColor: Paleta.line,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    gap: 5,
-  },
-  filaEstado: {
+  itemTimeline: {
     flexDirection: "row",
+    gap: 12,
+    paddingBottom: 16,
+  },
+  listaHistorial: {
+    gap: 0,
+  },
+  columnaIndicador: {
+    width: 14,
     alignItems: "center",
-    gap: 8,
+    position: "relative",
   },
   marcaHistorial: {
-    width: 9,
-    height: 9,
+    width: 10,
+    height: 10,
     borderRadius: 5,
+    marginTop: 4,
+    zIndex: 2,
+  },
+  lineaHistorial: {
+    position: "absolute",
+    top: 14,
+    bottom: -16,
+    width: 2,
+    backgroundColor: Paleta.line,
+    zIndex: 1,
+  },
+  columnaContenido: {
+    flex: 1,
+    gap: 4,
+  },
+  filaTituloFecha: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   cambioEstado: {
     color: Paleta.ink,

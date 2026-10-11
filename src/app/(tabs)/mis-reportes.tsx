@@ -128,8 +128,8 @@ export default function MisReportesScreen() {
     return `${textoTotal} · ${enCurso} en curso`;
   }, [reportes]);
 
-  const irAlDetalle = (id: string) => {
-    router.push(`/(tabs)/reclamo/${id}`);
+  const irAlDetalle = (id: Reporte['id']) => {
+    router.push(`/reclamo/${id}`);
   };
 
   return (
@@ -220,7 +220,8 @@ const styles = StyleSheet.create({
   },
   cabeceraSubtitulo: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: Paleta.paperRaised,
+    opacity: 0.85,
   },
   centrado: {
     flex: 1,
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     overflow: 'hidden',
     elevation: 2,
-    shadowColor: '#12232E',
+    shadowColor: Paleta.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
