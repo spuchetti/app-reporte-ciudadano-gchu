@@ -341,9 +341,15 @@ describe("servicios/reportes", () => {
     if (!copia) {
       throw new Error("faltaba el reporte de prueba");
     }
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte original");
+    }
     const estadoPrev = copia.estado;
     const duplicadoPrev = copia.duplicadoDe;
     const cambiosPrev = cambiosEstadoMock.length;
+    const adhesionesPrev = original.adhesiones;
+    const adhesionesCantidadPrev = adhesionesMock.length;
 
     try {
       const actualizado = await esperar(
@@ -352,10 +358,16 @@ describe("servicios/reportes", () => {
       expect(actualizado.duplicadoDe).toBe("rep-001");
       expect(actualizado.estado).toBe("rechazado");
       expect(cambiosEstadoMock.at(-1)?.comentario).toBe("Duplicado de GCHU-2026-00412");
+      expect(original.adhesiones).toBe(adhesionesPrev + 1);
+      expect(
+        adhesionesDelReporte("rep-001").filter((item) => item.usuarioId === copia.autorId),
+      ).toHaveLength(1);
     } finally {
       copia.estado = estadoPrev;
       copia.duplicadoDe = duplicadoPrev;
       cambiosEstadoMock.splice(cambiosPrev);
+      adhesionesMock.splice(adhesionesCantidadPrev);
+      original.adhesiones = adhesionesPrev;
     }
   });
 
