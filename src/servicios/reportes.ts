@@ -404,6 +404,7 @@ export const marcarDuplicado = async (
 
   reporte.duplicadoDe = original.id;
   reporte.estado = "rechazado";
+  sumarAdhesion(original, reporte.autorId);
   registrarCambio(
     reporteId,
     "rechazado",
@@ -508,6 +509,16 @@ function contarAdhesiones(reporteId: string) {
   return adhesionesDelReporte(reporteId).length;
 }
 
+function sumarAdhesion(reporte: Reporte, usuarioId: string) {
+  adhesionesMock.push({
+    id: `adh-${String(adhesionesMock.length + 1).padStart(3, "0")}`,
+    reporteId: reporte.id,
+    usuarioId,
+    creadoEn: new Date().toISOString(),
+  });
+  reporte.adhesiones = contarAdhesiones(reporte.id);
+}
+
 export const adherirAReporte = async (
   reporteId: string,
   vecinoId: string,
@@ -537,13 +548,7 @@ export const adherirAReporte = async (
     return reporte;
   }
 
-  adhesionesMock.push({
-    id: `adh-${String(adhesionesMock.length + 1).padStart(3, "0")}`,
-    reporteId,
-    usuarioId: vecinoId,
-    creadoEn: new Date().toISOString(),
-  });
-  reporte.adhesiones = contarAdhesiones(reporteId);
+  sumarAdhesion(reporte, vecinoId);
   return reporte;
 };
 
