@@ -21,6 +21,7 @@ export default function ReporteEnviadoScreen() {
     tipoNombre?: string | string[];
     area?: string | string[];
     direccion?: string | string[];
+    estado?: string | string[];
     modo?: string | string[];
     adhesiones?: string | string[];
   }>();
@@ -29,6 +30,8 @@ export default function ReporteEnviadoScreen() {
   const tipoNombre = textoParam(params.tipoNombre) || "Reporte";
   const area = textoParam(params.area);
   const direccion = textoParam(params.direccion);
+  const estado = textoParam(params.estado);
+  const provisorio = codigo.startsWith("LOCAL-");
   const sumado = textoParam(params.modo) === "sumado";
   const adhesiones = textoParam(params.adhesiones);
 
@@ -51,13 +54,16 @@ export default function ReporteEnviadoScreen() {
           ? adhesiones
             ? `Cuantos más vecinos se suman, más arriba va. Ya hay ${adhesiones} adhesiones.`
             : "Cuantos más vecinos se suman, más arriba va en la lista de Obras."
-          : "Guardá este número de seguimiento. Con él vas a poder ver el estado."}
+          : provisorio
+            ? "Este número es del dispositivo. Cuando haya señal, lo reemplazamos por el código del municipio."
+            : "Guardá este número de seguimiento. Con él vas a poder ver el estado."}
       </Text>
       <TicketReporte
         codigo={codigo}
         tipoNombre={tipoNombre}
         area={area}
         direccion={direccion}
+        estado={estado || undefined}
       />
       <View style={styles.acciones}>
         <Boton titulo="Ir al inicio" onPress={() => router.replace("/(tabs)")} />

@@ -17,7 +17,11 @@ import { Boton } from '@/components/ui/boton';
 import { Paleta, fondoSuave } from '@/constants/theme';
 import { useSesion } from '@/contexto/sesion';
 import { haceTiempo, nombreTipo } from '@/servicios/bandeja';
-import { etiquetaEstado, obtenerMisReportes } from '@/servicios/reportes';
+import {
+  etiquetaParaVecino,
+  obtenerMisReportes,
+  sincronizarPendientes,
+} from '@/servicios/reportes';
 import { EstadoReporte, Reporte } from '@/tipos';
 
 const COLORES_ESTADO: Record<EstadoReporte, string> = {
@@ -34,21 +38,28 @@ interface TarjetaReporteProps {
 }
 
 function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
-  const colorEstado = COLORES_ESTADO[reporte.estado] ?? Paleta.inkSoft;
+  const pendiente = !reporte.sincronizado;
+  const colorEstado = pendiente
+    ? Paleta.inkSoft
+    : COLORES_ESTADO[reporte.estado] ?? Paleta.inkSoft;
   const tituloTipo = nombreTipo(reporte.tipoId);
+  const estado = etiquetaParaVecino(reporte);
 
   return (
     <Pressable
       style={({ pressed }) => [styles.tarjeta, pressed && styles.tarjetaPresionada]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Reclamo de ${tituloTipo}, estado ${etiquetaEstado(reporte.estado)}`}
+      accessibilityLabel={`Reclamo ${reporte.codigo}, estado ${estado}`}
     >
 
       <View style={[styles.barraLateral, { backgroundColor: colorEstado }]} />
       
       <View style={styles.tarjetaContenido}>
         <View style={styles.cuerpoTexto}>
+          <Text style={styles.codigo} numberOfLines={1}>
+            {reporte.codigo}
+          </Text>
           <Text style={styles.tipoTitulo} numberOfLines={1}>
             {tituloTipo}
           </Text>
@@ -62,8 +73,11 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
 
         <View style={styles.tarjetaDerecha}>
           <View style={[styles.insigniaEstado, { backgroundColor: fondoSuave(colorEstado) }]}>
-            <Text style={[styles.textoInsigniaEstado, { color: colorEstado }]}>
-              {etiquetaEstado(reporte.estado)}
+            <Text
+              numberOfLines={3}
+              style={[styles.textoInsigniaEstado, { color: colorEstado }]}
+            >
+              {estado}
             </Text>
           </View>
           <Text style={styles.flechaDetalle}>›</Text>
@@ -102,6 +116,9 @@ export default function MisReportesScreen() {
     setError(null);
 
     try {
+      if (esRecarga) {
+        await sincronizarPendientes();
+      }
       const data = await obtenerMisReportes(autorId);
       setReportes(data);
     } catch {
@@ -291,6 +308,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  codigo: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: Paleta.tealDeep,
+  },
   tipoTitulo: {
     fontSize: 16,
     fontWeight: '700',
@@ -311,6 +334,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   insigniaEstado: {
+    maxWidth: 118,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
@@ -318,6 +342,7 @@ const styles = StyleSheet.create({
   textoInsigniaEstado: {
     fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   flechaDetalle: {
     fontSize: 20,

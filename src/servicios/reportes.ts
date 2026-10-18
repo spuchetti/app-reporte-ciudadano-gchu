@@ -41,6 +41,40 @@ export function etiquetaEstado(estado: EstadoReporte) {
   return ETIQUETA_ESTADO[estado];
 }
 
+export const ETIQUETA_PENDIENTE_SYNC = "Pendiente de sincronización";
+
+export function etiquetaParaVecino(
+  reporte: Pick<Reporte, "estado" | "sincronizado">,
+) {
+  if (!reporte.sincronizado) {
+    return ETIQUETA_PENDIENTE_SYNC;
+  }
+  return etiquetaEstado(reporte.estado);
+}
+
+function codigoProvisorio() {
+  const usados = new Set(reportesMock.map((reporte) => reporte.codigo));
+  let codigo = "";
+  do {
+    codigo = `LOCAL-${Math.floor(Math.random() * 0xffffff)
+      .toString(16)
+      .toUpperCase()
+      .padStart(6, "0")}`;
+  } while (usados.has(codigo));
+  return codigo;
+}
+
+function codigoDefinitivo() {
+  const usados = new Set(reportesMock.map((reporte) => reporte.codigo));
+  let secuencia = reportesMock.filter((reporte) => reporte.sincronizado).length + 1;
+  let codigo = "";
+  do {
+    codigo = `GCHU-2026-${String(secuencia).padStart(5, "0")}`;
+    secuencia += 1;
+  } while (usados.has(codigo));
+  return codigo;
+}
+
 export function resumenReportesCerca(cantidad: number) {
   if (cantidad <= 0) {
     return "No hay reportes cerca tuyo";
@@ -64,7 +98,7 @@ export const delay = (ms: number = 500) =>
 // Obtener todos los reportes
 export const obtenerReportes = async (): Promise<Reporte[]> => {
   await delay(600);
-  return [...reportesMock];
+  return reportesMock.filter((reporte) => reporte.sincronizado);
 };
 
 // Obtener un reporte por ID
@@ -92,7 +126,7 @@ export const obtenerReportesPorZona = async (
   if (!zonaId) {
     return [];
   }
-  return reportesMock.filter((r) => r.zonaId === zonaId);
+  return reportesMock.filter((r) => r.zonaId === zonaId && r.sincronizado);
 };
 
 export const obtenerAvisosDeEstado = async (
@@ -206,6 +240,7 @@ export function paramsDeTicket(reporte: Reporte) {
     tipoNombre: tipo?.nombre ?? "Reporte",
     area: tipo?.areaResponsable ?? "",
     direccion: reporte.direccion,
+    estado: etiquetaParaVecino(reporte),
   };
 }
 
@@ -218,8 +253,9 @@ export const crearReporte = async (
   const nuevoReporte: Reporte = {
     ...reporte,
     id: `rep-${String(reportesMock.length + 1).padStart(3, "0")}`,
-    codigo: `GCHU-2026-${String(reportesMock.length + 1).padStart(5, "0")}`,
+    codigo: codigoProvisorio(),
     creadoEn: new Date().toISOString(),
+    sincronizado: false,
   };
 
   // En un mock, agregamos al array (en la vida real, esto sería una API)
@@ -227,6 +263,18 @@ export const crearReporte = async (
 
   return nuevoReporte;
 };
+
+export async function sincronizarPendientes(): Promise<Reporte[]> {
+  await delay(500);
+
+  return reportesMock
+    .filter((reporte) => !reporte.sincronizado)
+    .map((reporte) => {
+      reporte.codigo = codigoDefinitivo();
+      reporte.sincronizado = true;
+      return reporte;
+    });
+}
 
 // Obtener tipos de reporte
 export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
