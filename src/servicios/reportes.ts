@@ -373,6 +373,10 @@ export const actualizarEstado = async (
   return reporte;
 };
 
+export function textoDuplicado(originalId: string) {
+  return `Reclamo duplicado de este: ${originalId}`;
+}
+
 export const marcarDuplicado = async (
   reporteId: string,
   originalId: string,
@@ -408,7 +412,7 @@ export const marcarDuplicado = async (
   registrarCambio(
     reporteId,
     "rechazado",
-    `Duplicado de ${original.codigo}`,
+    textoDuplicado(original.id),
     operadorId,
   );
   return reporte;
