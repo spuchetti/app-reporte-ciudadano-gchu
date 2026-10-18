@@ -357,7 +357,9 @@ describe("servicios/reportes", () => {
       );
       expect(actualizado.duplicadoDe).toBe("rep-001");
       expect(actualizado.estado).toBe("rechazado");
-      expect(cambiosEstadoMock.at(-1)?.comentario).toBe("Duplicado de GCHU-2026-00412");
+      expect(cambiosEstadoMock.at(-1)?.comentario).toBe(
+        "Reclamo duplicado de este: rep-001",
+      );
       expect(original.adhesiones).toBe(adhesionesPrev + 1);
       expect(
         adhesionesDelReporte("rep-001").filter((item) => item.usuarioId === copia.autorId),

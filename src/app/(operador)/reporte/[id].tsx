@@ -38,6 +38,7 @@ import {
   obtenerCambiosEstado,
   obtenerReportePorId,
   obtenerReportes,
+  textoDuplicado,
 } from "@/servicios/reportes";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
 
@@ -200,9 +201,6 @@ export default function DetalleOperadorScreen() {
   const color = reporte ? COLORES_ESTADO[reporte.estado] : Paleta.inkSoft;
   const foto = reporte?.fotos.find((item) => item.esPrincipal)?.url;
   const originales = reporte ? reportesParaDuplicar(catalogo, reporte.id) : [];
-  const codigoOriginal = reporte?.duplicadoDe
-    ? catalogo.find((item) => item.id === reporte.duplicadoDe)?.codigo ?? reporte.duplicadoDe
-    : null;
   const gestionable = reporte ? puedeGestionar(reporte) : false;
 
   return (
@@ -260,13 +258,15 @@ export default function DetalleOperadorScreen() {
             {reporte.cuadrillaId ? (
               <Text style={styles.meta}>{nombreCuadrilla(reporte.cuadrillaId)}</Text>
             ) : null}
-            {codigoOriginal && reporte.duplicadoDe ? (
+            {reporte.duplicadoDe ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Abrir el reporte original ${codigoOriginal}`}
+                accessibilityLabel={textoDuplicado(reporte.duplicadoDe)}
                 onPress={() => router.push(`/(operador)/reporte/${reporte.duplicadoDe}`)}
               >
-                <Text style={styles.enlaceOriginal}>{`Duplicado de ${codigoOriginal}`}</Text>
+                <Text style={styles.enlaceOriginal}>
+                  {textoDuplicado(reporte.duplicadoDe)}
+                </Text>
               </Pressable>
             ) : null}
 
