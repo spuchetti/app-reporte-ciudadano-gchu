@@ -44,6 +44,35 @@ describe("servicios/mapa", () => {
     );
   });
 
+  test("un duplicado no cuenta como reclamo separado", () => {
+    const original = reportesMock[0];
+    const duplicado = {
+      ...original,
+      id: "rep-dup",
+      codigo: "GCHU-DUP",
+      estado: "rechazado" as const,
+      duplicadoDe: original.id,
+    };
+    const lista = [...reportesMock, duplicado];
+
+    const filtrados = filtrarReportesMapa({
+      reportes: lista,
+      tipoId: null,
+      estados: ["rechazado"],
+      origen: null,
+      soloCerca: false,
+    });
+    const cerca = reportesDentroDeRadio({
+      reportes: lista,
+      origen: original.coordenadas,
+      radioMetros: 10,
+    });
+
+    expect(filtrados.some((item) => item.id === "rep-dup")).toBe(false);
+    expect(cerca.some((item) => item.reporte.id === "rep-dup")).toBe(false);
+    expect(cerca.some((item) => item.reporte.id === original.id)).toBe(true);
+  });
+
   test("filtra el mapa público por tipo y estado", () => {
     const filtrados = filtrarReportesMapa({
       reportes: reportesMock,

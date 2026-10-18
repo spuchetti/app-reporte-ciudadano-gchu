@@ -118,9 +118,14 @@ export default function HomeVecinoScreen() {
     }, [autorId, zonaId]),
   );
 
-  const ultimos = useMemo(
-    () => ultimosReportesPublicos(reportes, 3),
+  const enMapa = useMemo(
+    () => reportes.filter((reporte) => reporte.duplicadoDe === null),
     [reportes],
+  );
+
+  const ultimos = useMemo(
+    () => ultimosReportesPublicos(enMapa, 3),
+    [enMapa],
   );
 
   const resumen = !zonaId
@@ -129,7 +134,7 @@ export default function HomeVecinoScreen() {
       ? error
       : cargando
         ? "Cargando reportes de tu zona…"
-        : resumenReportesCerca(reportes.length);
+        : resumenReportesCerca(enMapa.length);
 
   const resumenMisReportes = useMemo(() => {
     const total = misReportes.length;
@@ -182,7 +187,7 @@ export default function HomeVecinoScreen() {
 
       <View style={styles.mapaContainer} accessibilityLabel="Mapa de reportes">
         <MapView style={styles.mapa} initialRegion={region}>
-          {reportes.map((reporte) => {
+          {enMapa.map((reporte) => {
             const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
             const pin = colorEstado(reporte.estado);
             const fotoPrincipal = reporte.fotos.find((f) => f.esPrincipal)?.url;
