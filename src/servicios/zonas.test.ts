@@ -5,7 +5,7 @@ import {
   obtenerZonas,
   zonasConCuadrillas,
 } from "@/servicios/zonas";
-import { zonaParaCoordenadas } from "@/servicios/ubicacion";
+import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 
 async function esperar<T>(promesa: Promise<T>): Promise<T> {
   const pendiente = promesa;
@@ -73,7 +73,7 @@ describe("servicios/zonas", () => {
     expect(segunda[0]?.activa).toBe(original?.activa);
   });
 
-  test("asigna la zona según el pin y usa Centro si queda afuera", () => {
+  test("asigna la zona del polígono, la cercana, o fuera de zona", () => {
     expect(zonaParaCoordenadas({ latitud: -33.0123, longitud: -58.5123 })).toBe(
       "zon-norte",
     );
@@ -86,8 +86,11 @@ describe("servicios/zonas", () => {
     expect(zonaParaCoordenadas({ latitud: -33.03, longitud: -58.48 })).toBe(
       "zon-este",
     );
+    expect(zonaParaCoordenadas({ latitud: -33.012, longitud: -58.532 })).toBe(
+      "zon-norte",
+    );
     expect(zonaParaCoordenadas({ latitud: -32.9, longitud: -58.4 })).toBe(
-      "zon-centro",
+      ZONA_FUERA,
     );
   });
 });

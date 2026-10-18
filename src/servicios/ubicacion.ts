@@ -5,6 +5,8 @@ import { zonasMock } from "@/mocks";
 import { Coordenadas } from "@/tipos";
 
 export const COORDENADAS_CENTRO = { latitud: -33.0156, longitud: -58.5089 };
+export const ZONA_FUERA = "zon-fuera";
+export const RADIO_ZONA_CERCANA_M = 500;
 
 export function formatearDireccionGeo(
   direccion: Location.LocationGeocodedAddress,
@@ -74,9 +76,51 @@ function puntoEnPoligono(punto: Coordenadas, limite: Coordenadas[]) {
   return dentro;
 }
 
+const METROS_POR_GRADO = 111_320;
+
+function metrosAlPoligono(punto: Coordenadas, limite: Coordenadas[]) {
+  const cos = Math.cos((punto.latitud * Math.PI) / 180);
+  let minimo = Infinity;
+
+  for (let i = 0; i < limite.length; i += 1) {
+    const a = limite[i];
+    const b = limite[(i + 1) % limite.length];
+    const ax = (a.longitud - punto.longitud) * METROS_POR_GRADO * cos;
+    const ay = (a.latitud - punto.latitud) * METROS_POR_GRADO;
+    const bx = (b.longitud - punto.longitud) * METROS_POR_GRADO * cos;
+    const by = (b.latitud - punto.latitud) * METROS_POR_GRADO;
+    const abx = bx - ax;
+    const aby = by - ay;
+    const largo = abx * abx + aby * aby;
+    const avance =
+      largo === 0 ? 0 : Math.max(0, Math.min(1, (-ax * abx - ay * aby) / largo));
+    const distancia = Math.hypot(ax + avance * abx, ay + avance * aby);
+    if (distancia < minimo) {
+      minimo = distancia;
+    }
+  }
+
+  return minimo;
+}
+
 export function zonaParaCoordenadas(coordenadas: Coordenadas): string {
-  const zona = zonasMock.find((item) =>
+  const dentro = zonasMock.find((item) =>
     puntoEnPoligono(coordenadas, item.limite),
   );
-  return zona?.id ?? "zon-centro";
+  if (dentro) {
+    return dentro.id;
+  }
+
+  let cercana: { id: string; metros: number } | null = null;
+  for (const zona of zonasMock) {
+    const metros = metrosAlPoligono(coordenadas, zona.limite);
+    if (!cercana || metros < cercana.metros) {
+      cercana = { id: zona.id, metros };
+    }
+  }
+
+  if (cercana && cercana.metros <= RADIO_ZONA_CERCANA_M) {
+    return cercana.id;
+  }
+  return ZONA_FUERA;
 }

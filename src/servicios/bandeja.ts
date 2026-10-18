@@ -4,6 +4,7 @@ import {
   usuariosMock,
   zonasMock,
 } from "@/mocks";
+import { ZONA_FUERA } from "@/servicios/ubicacion";
 import { Cuadrilla, EstadoReporte, Reporte } from "@/tipos";
 
 export type PestanaBandeja = "todos" | "pendientes" | "mi_zona";
@@ -41,6 +42,9 @@ export function reportesParaDuplicar(reportes: Reporte[], reporteId: string) {
 }
 
 export function nombreZona(zonaId: string) {
+  if (zonaId === ZONA_FUERA) {
+    return "Fuera de zona";
+  }
   return zonasMock.find((zona) => zona.id === zonaId)?.nombre ?? "Zona";
 }
 
@@ -150,9 +154,15 @@ export function nombreCuadrilla(cuadrillaId: string) {
 }
 
 export function cuadrillasParaReporte(zonaId: string): Cuadrilla[] {
-  return cuadrillasMock.filter(
-    (cuadrilla) => cuadrilla.activa && cuadrilla.zonaId === zonaId,
-  );
+  return cuadrillasMock.filter((cuadrilla) => {
+    if (!cuadrilla.activa) {
+      return false;
+    }
+    if (zonaId === ZONA_FUERA) {
+      return true;
+    }
+    return cuadrilla.zonaId === zonaId;
+  });
 }
 
 export function resumenFiltros({

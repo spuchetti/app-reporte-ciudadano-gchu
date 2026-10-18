@@ -110,4 +110,15 @@ describe("servicios/bandeja", () => {
     expect(este).toEqual([]);
     expect(sur.map((item) => item.id)).toEqual(["cua-03"]);
   });
+
+  test("fuera de zona ofrece todas las cuadrillas activas", () => {
+    const fuera = cuadrillasParaReporte("zon-fuera");
+
+    expect(fuera.map((item) => item.id)).toEqual([
+      "cua-01",
+      "cua-02",
+      "cua-03",
+      "cua-04",
+    ]);
+  });
 });
