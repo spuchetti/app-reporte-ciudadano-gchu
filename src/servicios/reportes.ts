@@ -1,4 +1,5 @@
 import {
+  adhesionesMock,
   cambiosEstadoMock,
   cuadrillasMock,
   reportesMock,
@@ -9,6 +10,7 @@ import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio } from "@/servicios/error";
 import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
+  Adhesion,
   CambioDeEstado,
   DatosBorradorReporte,
   EstadoReporte,
@@ -498,7 +500,13 @@ export const asignarCuadrilla = async (
   return reporte;
 };
 
-const vecinosAdheridos = new Map<string, Set<string>>();
+export function adhesionesDelReporte(reporteId: string): Adhesion[] {
+  return adhesionesMock.filter((item) => item.reporteId === reporteId);
+}
+
+function contarAdhesiones(reporteId: string) {
+  return adhesionesDelReporte(reporteId).length;
+}
 
 export const adherirAReporte = async (
   reporteId: string,
@@ -521,16 +529,37 @@ export const adherirAReporte = async (
 
   await delay(400);
 
-  const adheridos = vecinosAdheridos.get(reporteId) ?? new Set<string>();
-  if (adheridos.has(vecinoId)) {
+  const yaSumado = adhesionesMock.some(
+    (item) => item.reporteId === reporteId && item.usuarioId === vecinoId,
+  );
+  if (yaSumado) {
+    reporte.adhesiones = contarAdhesiones(reporteId);
     return reporte;
   }
 
-  adheridos.add(vecinoId);
-  vecinosAdheridos.set(reporteId, adheridos);
-  reporte.adhesiones += 1;
+  adhesionesMock.push({
+    id: `adh-${String(adhesionesMock.length + 1).padStart(3, "0")}`,
+    reporteId,
+    usuarioId: vecinoId,
+    creadoEn: new Date().toISOString(),
+  });
+  reporte.adhesiones = contarAdhesiones(reporteId);
   return reporte;
 };
+
+export async function obtenerReportesAdheridos(
+  usuarioId: string,
+): Promise<Reporte[]> {
+  await delay(400);
+  const ids = new Set(
+    adhesionesMock
+      .filter((item) => item.usuarioId === usuarioId)
+      .map((item) => item.reporteId),
+  );
+  return reportesMock
+    .filter((reporte) => ids.has(reporte.id))
+    .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+}
 
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
   await new Promise((resolve) => setTimeout(resolve, 400));
