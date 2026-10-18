@@ -17,6 +17,7 @@ import QRCode from "react-native-qrcode-svg";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
+import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
 import { Paleta } from "@/constants/theme";
@@ -32,6 +33,7 @@ import { esErrorServicio } from "@/servicios/error";
 import {
   actualizarEstado,
   asignarCuadrilla,
+  corregirZona,
   etiquetaEstado,
   marcarDuplicado,
   obtenerCambiosEstado,
@@ -100,6 +102,9 @@ export default function DetalleReclamoScreen() {
   const [mostrarAsignar, setMostrarAsignar] = useState(false);
   const [asignando, setAsignando] = useState(false);
   const [errorAsignar, setErrorAsignar] = useState<string | null>(null);
+  const [mostrarZona, setMostrarZona] = useState(false);
+  const [corrigiendoZona, setCorrigiendoZona] = useState(false);
+  const [errorZona, setErrorZona] = useState<string | null>(null);
   const pantallaActiva = useRef(true);
   const secuenciaCarga = useRef(0);
 
@@ -213,6 +218,26 @@ export default function DetalleReclamoScreen() {
       }
     } finally {
       if (pantallaActiva.current) setGuardandoDuplicado(false);
+    }
+  }
+
+  async function onCorregirZona(zonaId: string) {
+    if (!reporte || !usuario || usuario.rol !== "operador") return;
+    setCorrigiendoZona(true);
+    setErrorZona(null);
+    try {
+      await corregirZona(reporte.id, zonaId, usuario.id);
+      if (!pantallaActiva.current) return;
+      setMostrarZona(false);
+      await cargar();
+    } catch (err) {
+      if (pantallaActiva.current) {
+        setErrorZona(
+          esErrorServicio(err) ? err.message : "No se pudo corregir la zona.",
+        );
+      }
+    } finally {
+      if (pantallaActiva.current) setCorrigiendoZona(false);
     }
   }
 
@@ -383,6 +408,15 @@ export default function DetalleReclamoScreen() {
                   }}
                 />
                 <Boton
+                  titulo="Corregir zona"
+                  variante="secundario"
+                  onPress={() => {
+                    impactoLigero();
+                    setErrorZona(null);
+                    setMostrarZona(true);
+                  }}
+                />
+                <Boton
                   titulo="Asignar"
                   variante="primario"
                   onPress={() => {
@@ -477,6 +511,17 @@ export default function DetalleReclamoScreen() {
         }}
         onElegir={(originalId) => {
           void onMarcarDuplicado(originalId);
+        }}
+      />
+      <SheetZona
+        visible={mostrarZona}
+        guardando={corrigiendoZona}
+        error={errorZona}
+        onCerrar={() => {
+          if (!corrigiendoZona) setMostrarZona(false);
+        }}
+        onElegir={(zonaId) => {
+          void onCorregirZona(zonaId);
         }}
       />
       <SheetAsignar

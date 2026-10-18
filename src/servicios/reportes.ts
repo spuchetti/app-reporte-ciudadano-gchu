@@ -3,10 +3,11 @@ import {
   cuadrillasMock,
   reportesMock,
   tiposReporteMock,
+  zonasMock,
 } from "@/mocks";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio } from "@/servicios/error";
-import { zonaParaCoordenadas } from "@/servicios/ubicacion";
+import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
   CambioDeEstado,
   DatosBorradorReporte,
@@ -362,6 +363,46 @@ export const marcarDuplicado = async (
   return reporte;
 };
 
+export const corregirZona = async (
+  reporteId: string,
+  zonaId: string,
+  operadorId: string,
+): Promise<Reporte> => {
+  await delay(400);
+
+  const reporte = reportesMock.find((item) => item.id === reporteId);
+  if (!reporte) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos ese reporte.",
+    });
+  }
+
+  const zona = zonasMock.find((item) => item.id === zonaId);
+  if (!zona) {
+    throw new ErrorServicio({
+      codigo: "ZONA_INVALIDA",
+      mensaje: "Elegí una de las cuatro zonas.",
+    });
+  }
+
+  reporte.zonaId = zona.id;
+  if (reporte.cuadrillaId) {
+    const cuadrilla = cuadrillasMock.find((item) => item.id === reporte.cuadrillaId);
+    if (!cuadrilla || cuadrilla.zonaId !== zona.id) {
+      reporte.cuadrillaId = null;
+    }
+  }
+
+  registrarCambio(
+    reporteId,
+    reporte.estado,
+    `Zona corregida a ${zona.nombre}`,
+    operadorId,
+  );
+  return reporte;
+};
+
 export const asignarCuadrilla = async (
   reporteId: string,
   cuadrillaId: string,
@@ -385,7 +426,9 @@ export const asignarCuadrilla = async (
     });
   }
 
-  if (cuadrilla.zonaId !== reporte.zonaId) {
+  if (reporte.zonaId === ZONA_FUERA) {
+    reporte.zonaId = cuadrilla.zonaId;
+  } else if (cuadrilla.zonaId !== reporte.zonaId) {
     throw new ErrorServicio({
       codigo: "CUADRILLA_OTRA_ZONA",
       mensaje: "La cuadrilla no pertenece a la zona del reporte.",
