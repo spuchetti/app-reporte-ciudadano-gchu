@@ -1,9 +1,11 @@
-import { cambiosEstadoMock, reportesMock } from "@/mocks";
+import { adhesionesMock, cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
   actualizarEstado,
   asignarCuadrilla,
   corregirZona,
   adherirAReporte,
+  adhesionesDelReporte,
+  obtenerReportesAdheridos,
   crearReporte,
   datosCreacionDesdeBorrador,
   ETIQUETA_PENDIENTE_SYNC,
@@ -400,8 +402,30 @@ describe("servicios/reportes", () => {
 
     expect(primera.adhesiones).toBe(adhesionesPrev + 1);
     expect(segunda.adhesiones).toBe(adhesionesPrev + 1);
+    expect(
+      adhesionesDelReporte("rep-001").filter((item) => item.usuarioId === "usr-002"),
+    ).toHaveLength(1);
 
-    original.adhesiones = adhesionesPrev;
+    const suyos = await esperar(obtenerReportesAdheridos("usr-002"));
+    expect(suyos.some((item) => item.id === "rep-001")).toBe(true);
+
+    const indice = adhesionesMock.findIndex(
+      (item) => item.reporteId === "rep-001" && item.usuarioId === "usr-002",
+    );
+    if (indice >= 0) {
+      adhesionesMock.splice(indice, 1);
+    }
+    original.adhesiones = adhesionesDelReporte("rep-001").length;
+  });
+
+  test("lista quién se sumó y los reportes de ese vecino", async () => {
+    const delReporte = adhesionesDelReporte("rep-004");
+
+    expect(delReporte.map((item) => item.usuarioId)).toEqual(["usr-002", "usr-003"]);
+    expect(delReporte.every((item) => item.reporteId === "rep-004")).toBe(true);
+
+    const suyos = await esperar(obtenerReportesAdheridos("usr-003"));
+    expect(suyos.map((item) => item.id).sort()).toEqual(["rep-001", "rep-004"]);
   });
 
   test("rechaza sumarse al propio reporte", async () => {
