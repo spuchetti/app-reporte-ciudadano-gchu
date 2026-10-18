@@ -235,8 +235,14 @@ export default function DetalleOperadorScreen() {
             {reporte.cuadrillaId ? (
               <Text style={styles.meta}>{nombreCuadrilla(reporte.cuadrillaId)}</Text>
             ) : null}
-            {codigoOriginal ? (
-              <Text style={styles.meta}>{`Duplicado de ${codigoOriginal}`}</Text>
+            {codigoOriginal && reporte.duplicadoDe ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir el reporte original ${codigoOriginal}`}
+                onPress={() => router.push(`/(operador)/reporte/${reporte.duplicadoDe}`)}
+              >
+                <Text style={styles.enlaceOriginal}>{`Duplicado de ${codigoOriginal}`}</Text>
+              </Pressable>
             ) : null}
 
             {reporte.descripcion ? (
@@ -445,6 +451,11 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 13,
     color: Paleta.inkSoft,
+  },
+  enlaceOriginal: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Paleta.teal,
   },
   descripcion: {
     marginTop: 4,
