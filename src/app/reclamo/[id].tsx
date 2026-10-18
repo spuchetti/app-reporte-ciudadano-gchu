@@ -24,6 +24,7 @@ import { Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
+  nombreAutor,
   nombreCuadrilla,
   nombreTipo,
   puedeGestionar,
@@ -31,6 +32,7 @@ import {
 } from "@/servicios/bandeja";
 import { esErrorServicio } from "@/servicios/error";
 import {
+  adhesionesDelReporte,
   actualizarEstado,
   asignarCuadrilla,
   corregirZona,
@@ -353,6 +355,13 @@ export default function DetalleReclamoScreen() {
               <Text style={styles.adhesiones}>
                 {`${reporte.adhesiones} vecinos se sumaron`}
               </Text>
+              {adhesionesDelReporte(reporte.id).length > 0 ? (
+                <Text style={styles.meta}>
+                  {adhesionesDelReporte(reporte.id)
+                    .map((item) => nombreAutor(item.usuarioId))
+                    .join(", ")}
+                </Text>
+              ) : null}
               {reporte.descripcion ? (
                 <Text style={styles.descripcion}>{reporte.descripcion}</Text>
               ) : null}
