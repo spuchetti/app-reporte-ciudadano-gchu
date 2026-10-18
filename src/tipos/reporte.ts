@@ -53,6 +53,13 @@ export interface BorradorEnCurso {
   adherirAId: string | null;
 }
 
+export interface Adhesion {
+  id: string;
+  reporteId: string;
+  usuarioId: string;
+  creadoEn: string;
+}
+
 export interface CambioDeEstado {
   id: string;
   reporteId: string;

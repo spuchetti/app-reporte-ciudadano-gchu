@@ -20,6 +20,7 @@ import { haceTiempo, nombreTipo } from '@/servicios/bandeja';
 import {
   etiquetaParaVecino,
   obtenerMisReportes,
+  obtenerReportesAdheridos,
   sincronizarPendientes,
 } from '@/servicios/reportes';
 import { EstadoReporte, Reporte } from '@/tipos';
@@ -34,10 +35,11 @@ const COLORES_ESTADO: Record<EstadoReporte, string> = {
 
 interface TarjetaReporteProps {
   reporte: Reporte;
+  sumado?: boolean;
   onPress: () => void;
 }
 
-function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
+function TarjetaReporte({ reporte, sumado = false, onPress }: TarjetaReporteProps) {
   const pendiente = !reporte.sincronizado;
   const colorEstado = pendiente
     ? Paleta.inkSoft
@@ -66,6 +68,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
           <Text style={styles.direccion} numberOfLines={1}>
             {reporte.direccion}
           </Text>
+          {sumado ? <Text style={styles.sumado}>Te sumaste</Text> : null}
           <Text style={styles.antiguedad}>
             {haceTiempo(reporte.creadoEn)}
           </Text>
@@ -97,6 +100,7 @@ export default function MisReportesScreen() {
   const autorId = usuario?.id ?? null;
 
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [adheridos, setAdheridos] = useState<Reporte[]>([]);
   const [cargando, setCargando] = useState<boolean>(true);
   const [recargando, setRecargando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +108,7 @@ export default function MisReportesScreen() {
   const cargarDatos = useCallback(async (esRecarga = false) => {
     if (!autorId) {
       setReportes([]);
+      setAdheridos([]);
       setCargando(false);
       return;
     }
@@ -119,10 +124,15 @@ export default function MisReportesScreen() {
       if (esRecarga) {
         await sincronizarPendientes();
       }
-      const data = await obtenerMisReportes(autorId);
+      const [data, sumados] = await Promise.all([
+        obtenerMisReportes(autorId),
+        obtenerReportesAdheridos(autorId),
+      ]);
       setReportes(data);
+      setAdheridos(sumados);
     } catch {
       setError('No pudimos cargar tus reclamos. Verificá la conexión y volvé a intentar.');
+      setAdheridos([]);
     } finally {
       setCargando(false);
       setRecargando(false);
@@ -144,6 +154,26 @@ export default function MisReportesScreen() {
     const textoTotal = total === 1 ? '1 reclamo' : `${total} reclamos`;
     return `${textoTotal} · ${enCurso} en curso`;
   }, [reportes]);
+
+  const filas = useMemo(() => {
+    const entradas: (
+      | { clave: string; titulo: string }
+      | { clave: string; reporte: Reporte; sumado: boolean }
+    )[] = [];
+    if (reportes.length > 0) {
+      entradas.push({ clave: "titulo-propios", titulo: "Tus reclamos" });
+      for (const reporte of reportes) {
+        entradas.push({ clave: reporte.id, reporte, sumado: false });
+      }
+    }
+    if (adheridos.length > 0) {
+      entradas.push({ clave: "titulo-adheridos", titulo: "Te sumaste" });
+      for (const reporte of adheridos) {
+        entradas.push({ clave: `adh-${reporte.id}`, reporte, sumado: true });
+      }
+    }
+    return entradas;
+  }, [adheridos, reportes]);
 
   const irAlDetalle = (id: Reporte['id']) => {
     router.push(`/reclamo/${id}`);
@@ -180,15 +210,23 @@ export default function MisReportesScreen() {
         </View>
       ) : (
         <FlatList
-          data={reportes}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TarjetaReporte reporte={item} onPress={() => irAlDetalle(item.id)} />
-          )}
+          data={filas}
+          keyExtractor={(item) => item.clave}
+          renderItem={({ item }) =>
+            "titulo" in item ? (
+              <Text style={styles.seccion}>{item.titulo}</Text>
+            ) : (
+              <TarjetaReporte
+                reporte={item.reporte}
+                sumado={item.sumado}
+                onPress={() => irAlDetalle(item.reporte.id)}
+              />
+            )
+          }
           contentContainerStyle={[
             styles.listaContenido,
             { paddingBottom: Math.max(insets.bottom, 24) + 16 },
-            reportes.length === 0 && styles.listaVacia,
+            filas.length === 0 && styles.listaVacia,
           ]}
           refreshControl={
             <RefreshControl
@@ -322,6 +360,17 @@ const styles = StyleSheet.create({
   direccion: {
     fontSize: 13,
     color: Paleta.inkSoft,
+  },
+  sumado: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Paleta.teal,
+  },
+  seccion: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Paleta.inkSoft,
+    marginTop: 4,
   },
   antiguedad: {
     fontSize: 12,
