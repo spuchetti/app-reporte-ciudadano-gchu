@@ -100,7 +100,6 @@
           "touchIDPermission": "Permite usar Touch ID para autenticación segura."
         }
       ],
-      "expo-image",
       "expo-web-browser"
     ],
     "extra": {
