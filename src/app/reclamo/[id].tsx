@@ -333,8 +333,17 @@ export default function DetalleReclamoScreen() {
                   {`Asignado a ${nombreCuadrilla(reporte.cuadrillaId)}`}
                 </Text>
               ) : null}
-              {codigoOriginal ? (
-                <Text style={styles.meta}>{`Duplicado de ${codigoOriginal}`}</Text>
+              {codigoOriginal && reporte.duplicadoDe ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir el reporte original ${codigoOriginal}`}
+                  onPress={() => {
+                    impactoLigero();
+                    router.push(`/reclamo/${reporte.duplicadoDe}`);
+                  }}
+                >
+                  <Text style={styles.enlaceOriginal}>{`Duplicado de ${codigoOriginal}`}</Text>
+                </Pressable>
               ) : null}
             </View>
 
@@ -577,6 +586,11 @@ const styles = StyleSheet.create({
   meta: {
     color: Paleta.inkSoft,
     fontSize: 13,
+  },
+  enlaceOriginal: {
+    color: Paleta.teal,
+    fontSize: 14,
+    fontWeight: "700",
   },
   descripcion: {
     color: Paleta.ink,
