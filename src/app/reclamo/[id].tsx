@@ -42,6 +42,7 @@ import {
   obtenerCambiosEstado,
   obtenerReportePorId,
   obtenerReportes,
+  textoDuplicado,
 } from "@/servicios/reportes";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
 
@@ -268,10 +269,6 @@ export default function DetalleReclamoScreen() {
 
   const fotoOriginal =
     reporte?.fotos.find((foto) => foto.esPrincipal)?.url ?? reporte?.fotos[0]?.url;
-  const codigoOriginal = reporte?.duplicadoDe
-    ? catalogo.find((item) => item.id === reporte.duplicadoDe)?.codigo ??
-      reporte.duplicadoDe
-    : null;
   const puedeGestionarReporte =
     usuario?.rol === "operador" && reporte ? puedeGestionar(reporte) : false;
   const opcionesDuplicado = reporte
@@ -370,16 +367,18 @@ export default function DetalleReclamoScreen() {
                   {`Asignado a ${nombreCuadrilla(reporte.cuadrillaId)}`}
                 </Text>
               ) : null}
-              {codigoOriginal && reporte.duplicadoDe ? (
+              {reporte.duplicadoDe ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Abrir el reporte original ${codigoOriginal}`}
+                  accessibilityLabel={textoDuplicado(reporte.duplicadoDe)}
                   onPress={() => {
                     impactoLigero();
                     router.push(`/reclamo/${reporte.duplicadoDe}`);
                   }}
                 >
-                  <Text style={styles.enlaceOriginal}>{`Duplicado de ${codigoOriginal}`}</Text>
+                  <Text style={styles.enlaceOriginal}>
+                    {textoDuplicado(reporte.duplicadoDe)}
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
