@@ -6,9 +6,13 @@ import {
   adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
+  ETIQUETA_PENDIENTE_SYNC,
+  etiquetaParaVecino,
   marcarDuplicado,
   obtenerAvisosDeEstado,
+  obtenerReportes,
   obtenerReportesPorZona,
+  sincronizarPendientes,
   paramsDeTicket,
   resumenReportesCerca,
   ultimosReportesPublicos,
@@ -143,13 +147,32 @@ describe("servicios/reportes", () => {
 
     expect(reporte.autorId).toBe("usr-ana");
     expect(reporte.descripcion).toBeNull();
-    expect(reporte.codigo).toMatch(/^GCHU-2026-/);
+    expect(reporte.codigo).toMatch(/^LOCAL-[0-9A-F]{6}$/);
+    expect(reporte.sincronizado).toBe(false);
+    expect(etiquetaParaVecino(reporte)).toBe(ETIQUETA_PENDIENTE_SYNC);
     expect(reportesMock.some((item) => item.id === reporte.id)).toBe(true);
     expect(paramsDeTicket(reporte)).toMatchObject({
       codigo: reporte.codigo,
       tipoNombre: "Luminaria",
       direccion: "Rocamora 1240",
+      estado: ETIQUETA_PENDIENTE_SYNC,
     });
+
+    const publico = await esperar(obtenerReportes());
+    expect(publico.some((item) => item.id === reporte.id)).toBe(false);
+
+    const [registrado] = await esperar(sincronizarPendientes());
+    expect(registrado.codigo).toMatch(/^GCHU-2026-/);
+    expect(registrado.sincronizado).toBe(true);
+    expect(etiquetaParaVecino(registrado)).toBe("Recibido");
+
+    const visible = await esperar(obtenerReportes());
+    expect(visible.some((item) => item.codigo === registrado.codigo)).toBe(true);
+
+    const indice = reportesMock.findIndex((item) => item.id === reporte.id);
+    if (indice >= 0) {
+      reportesMock.splice(indice, 1);
+    }
   });
 
   test("asigna una cuadrilla activa y deja el reporte asignado", async () => {
