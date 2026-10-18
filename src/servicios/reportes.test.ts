@@ -2,6 +2,7 @@ import { cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
   actualizarEstado,
   asignarCuadrilla,
+  corregirZona,
   adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
@@ -13,7 +14,7 @@ import {
   ultimosReportesPublicos,
   validarBorradorReporte,
 } from "@/servicios/reportes";
-import { zonaParaCoordenadas } from "@/servicios/ubicacion";
+import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { DatosBorradorReporte } from "@/tipos";
 
 const reportesIniciales = reportesMock.length;
@@ -167,6 +168,33 @@ describe("servicios/reportes", () => {
     expect(actualizado.estado).toBe("asignado");
     expect(actualizado.cuadrillaId).toBe("cua-02");
 
+    original.estado = estadoPrev;
+    original.cuadrillaId = cuadrillaPrev;
+    cambiosEstadoMock.splice(cambiosPrev);
+  });
+
+  test("corrige la zona y, si está fuera, asignar la cuadrilla la ubica", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-002");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const zonaPrev = original.zonaId;
+    const estadoPrev = original.estado;
+    const cuadrillaPrev = original.cuadrillaId;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    original.zonaId = ZONA_FUERA;
+    const corregido = await esperar(corregirZona("rep-002", "zon-sur", "usr-100"));
+    expect(corregido.zonaId).toBe("zon-sur");
+
+    original.zonaId = ZONA_FUERA;
+    original.cuadrillaId = null;
+    const asignado = await esperar(asignarCuadrilla("rep-002", "cua-02", "usr-100"));
+    expect(asignado.zonaId).toBe("zon-norte");
+    expect(asignado.cuadrillaId).toBe("cua-02");
+    expect(asignado.estado).toBe("asignado");
+
+    original.zonaId = zonaPrev;
     original.estado = estadoPrev;
     original.cuadrillaId = cuadrillaPrev;
     cambiosEstadoMock.splice(cambiosPrev);

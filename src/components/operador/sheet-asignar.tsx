@@ -1,7 +1,8 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Paleta } from "@/constants/theme";
-import { cuadrillasParaReporte } from "@/servicios/bandeja";
+import { cuadrillasParaReporte, nombreZona } from "@/servicios/bandeja";
+import { ZONA_FUERA } from "@/servicios/ubicacion";
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,7 @@ export function SheetAsignar({
   onElegir,
 }: Props) {
   const cuadrillas = zonaId ? cuadrillasParaReporte(zonaId) : [];
+  const fuera = zonaId === ZONA_FUERA;
 
   return (
     <Modal
@@ -33,7 +35,9 @@ export function SheetAsignar({
         <Pressable style={styles.panel} onPress={() => {}}>
           <Text style={styles.titulo}>Asignar cuadrilla</Text>
           <Text style={styles.subtitulo}>
-            La cuadrilla queda a cargo de resolver el reporte.
+            {fuera
+              ? "El reporte está fuera de zona. Al asignar, pasa a la zona de la cuadrilla."
+              : "La cuadrilla queda a cargo de resolver el reporte."}
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -54,7 +58,11 @@ export function SheetAsignar({
                 ]}
               >
                 <Text style={styles.opcionNombre}>{cuadrilla.nombre}</Text>
-                <Text style={styles.opcionMeta}>{cuadrilla.especialidad}</Text>
+                <Text style={styles.opcionMeta}>
+                  {fuera
+                    ? `${nombreZona(cuadrilla.zonaId)} · ${cuadrilla.especialidad}`
+                    : cuadrilla.especialidad}
+                </Text>
               </Pressable>
             ))
           )}
