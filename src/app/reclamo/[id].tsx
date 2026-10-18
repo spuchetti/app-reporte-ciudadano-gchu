@@ -11,7 +11,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Ionicons from "@react-native-vector-icons/ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
