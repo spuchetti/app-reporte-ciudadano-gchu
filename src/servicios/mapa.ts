@@ -95,6 +95,9 @@ export function reportesDentroDeRadio({
 }): ReporteCercano[] {
   return reportes
     .filter((reporte) => {
+      if (reporte.duplicadoDe) {
+        return false;
+      }
       if (tipoId && reporte.tipoId !== tipoId) {
         return false;
       }
@@ -124,6 +127,9 @@ export function filtrarReportesMapa({
   soloCerca: boolean;
 }): Reporte[] {
   return reportes.filter((reporte) => {
+    if (reporte.duplicadoDe) {
+      return false;
+    }
     if (tipoId && reporte.tipoId !== tipoId) {
       return false;
     }
