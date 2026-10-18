@@ -18,6 +18,7 @@ jest.mock("react-native-maps", () => {
     default: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
     Marker: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
     Callout: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
+    PROVIDER_GOOGLE: "google",
   };
 });
 

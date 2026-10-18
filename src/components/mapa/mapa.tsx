@@ -1,6 +1,7 @@
 import MapViewNativo, {
   Callout,
   Marker,
+  PROVIDER_GOOGLE,
   type MapViewProps,
 } from "react-native-maps";
 
@@ -9,7 +10,7 @@ type Props = MapViewProps & {
 };
 
 export function MapView({ mensaje: _mensaje, ...props }: Props) {
-  return <MapViewNativo {...props} />;
+  return <MapViewNativo {...props} provider={PROVIDER_GOOGLE} />;
 }
 
 export { Marker, Callout };

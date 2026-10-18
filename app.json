@@ -87,7 +87,6 @@
           "color": "#ffffff"
         }
       ],
-      "react-native-maps",
       [
         "expo-secure-store",
         {
