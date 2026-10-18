@@ -35,6 +35,7 @@ import {
   asignarCuadrilla,
   corregirZona,
   etiquetaEstado,
+  etiquetaParaVecino,
   marcarDuplicado,
   obtenerCambiosEstado,
   obtenerReportePorId,
@@ -67,16 +68,18 @@ function fechaHoraLegible(fechaHora: string) {
   });
 }
 
-function ChipEstado({ estado }: { estado: EstadoReporte }) {
+function ChipEstado({ reporte }: { reporte: Reporte }) {
+  const pendiente = !reporte.sincronizado;
+  const color = pendiente ? Paleta.inkSoft : COLORES_ESTADO[reporte.estado];
   return (
     <View
       style={[
         styles.chipEstado,
-        { backgroundColor: `${COLORES_ESTADO[estado]}22` },
+        { backgroundColor: `${color}22` },
       ]}
     >
-      <Text style={[styles.textoChip, { color: COLORES_ESTADO[estado] }]}>
-        {etiquetaEstado(estado)}
+      <Text style={[styles.textoChip, { color }]}>
+        {etiquetaParaVecino(reporte)}
       </Text>
     </View>
   );
@@ -299,7 +302,7 @@ export default function DetalleReclamoScreen() {
             <Text numberOfLines={1} style={styles.codigo}>
               {reporte?.codigo ?? "Seguimiento"}
             </Text>
-            {reporte ? <ChipEstado estado={reporte.estado} /> : null}
+            {reporte ? <ChipEstado reporte={reporte} /> : null}
           </View>
           {reporte?.codigo ? (
             <View
