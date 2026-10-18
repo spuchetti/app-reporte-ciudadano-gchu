@@ -49,6 +49,10 @@ jest.mock("@/components/operador/sheet-duplicado", () => ({
   SheetDuplicado: () => null,
 }));
 
+jest.mock("@/components/operador/sheet-zona", () => ({
+  SheetZona: () => null,
+}));
+
 jest.mock("@/servicios/reportes", () => ({
   obtenerReportePorId: jest.fn(async () => null),
   obtenerCambiosEstado: jest.fn(async () => []),

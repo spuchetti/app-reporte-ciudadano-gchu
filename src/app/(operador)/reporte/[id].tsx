@@ -15,6 +15,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
+import { SheetZona } from "@/components/operador/sheet-zona";
 import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
@@ -31,6 +32,7 @@ import { esErrorServicio } from "@/servicios/error";
 import {
   actualizarEstado,
   asignarCuadrilla,
+  corregirZona,
   etiquetaEstado,
   marcarDuplicado,
   obtenerCambiosEstado,
@@ -66,6 +68,9 @@ export default function DetalleOperadorScreen() {
   const [mostrarDuplicado, setMostrarDuplicado] = useState(false);
   const [guardandoDuplicado, setGuardandoDuplicado] = useState(false);
   const [errorDuplicado, setErrorDuplicado] = useState<string | null>(null);
+  const [mostrarZona, setMostrarZona] = useState(false);
+  const [corrigiendoZona, setCorrigiendoZona] = useState(false);
+  const [errorZona, setErrorZona] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     if (!id) {
@@ -145,6 +150,26 @@ export default function DetalleOperadorScreen() {
       );
     } finally {
       setGuardandoDuplicado(false);
+    }
+  }
+
+  async function onCorregirZona(zonaId: string) {
+    if (!reporte || !usuario) {
+      return;
+    }
+    setCorrigiendoZona(true);
+    setErrorZona(null);
+    try {
+      const actualizado = await corregirZona(reporte.id, zonaId, usuario.id);
+      setReporte(actualizado);
+      setMostrarZona(false);
+      await cargar();
+    } catch (err) {
+      setErrorZona(
+        esErrorServicio(err) ? err.message : "No se pudo corregir la zona.",
+      );
+    } finally {
+      setCorrigiendoZona(false);
     }
   }
 
@@ -288,6 +313,20 @@ export default function DetalleOperadorScreen() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={`Corregir zona de ${reporte.codigo}`}
+                  onPress={() => {
+                    setErrorZona(null);
+                    setMostrarZona(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.botonSecundario,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.botonSecundarioTexto}>Corregir zona</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel={`Asignar ${reporte.codigo}`}
                   onPress={() => {
                     setErrorAsignar(null);
@@ -380,6 +419,19 @@ export default function DetalleOperadorScreen() {
         }}
         onElegir={(originalId) => {
           void onMarcarDuplicado(originalId);
+        }}
+      />
+      <SheetZona
+        visible={mostrarZona}
+        guardando={corrigiendoZona}
+        error={errorZona}
+        onCerrar={() => {
+          if (!corrigiendoZona) {
+            setMostrarZona(false);
+          }
+        }}
+        onElegir={(zonaId) => {
+          void onCorregirZona(zonaId);
         }}
       />
       <SheetAsignar
