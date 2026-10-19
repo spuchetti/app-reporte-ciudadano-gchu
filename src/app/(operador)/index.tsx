@@ -13,6 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
+import { QRScanner } from "@/components/operador/qr-scanner";
 import { fondoSuave, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
@@ -72,6 +73,7 @@ export default function BandejaOperadorScreen() {
   const [asignandoId, setAsignandoId] = useState<string | null>(null);
   const [errorAsignar, setErrorAsignar] = useState<string | null>(null);
   const [asignando, setAsignando] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
   const [opcionesZona, setOpcionesZona] = useState<{ id: string; etiqueta: string }[]>([]);
   const [opcionesTipo, setOpcionesTipo] = useState<{ id: string; etiqueta: string }[]>([]);
 
@@ -177,6 +179,17 @@ export default function BandejaOperadorScreen() {
       </HeaderOperador>
 
       <View style={styles.controles}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Escanear QR de Vecino"
+          onPress={() => setScannerVisible(true)}
+          style={({ pressed }) => [
+            styles.botonEscanearQr,
+            pressed && styles.botonEscanearQrPresionado,
+          ]}
+        >
+          <Text style={styles.textoEscanearQr}>Escanear QR de Vecino</Text>
+        </Pressable>
         <TextInput
           value={busqueda}
           onChangeText={setBusqueda}
@@ -342,6 +355,14 @@ export default function BandejaOperadorScreen() {
         }}
         onElegir={onAsignar}
       />
+      <QRScanner
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScan={(scannedData) => {
+          setScannerVisible(false);
+          router.push(`/(operador)/reporte/${scannedData}`);
+        }}
+      />
     </View>
   );
 }
@@ -434,6 +455,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Paleta.paperRaised,
     textAlign: "right",
+  },
+  botonEscanearQr: {
+    minHeight: 46,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Paleta.teal,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  botonEscanearQrPresionado: {
+    opacity: 0.85,
+  },
+  textoEscanearQr: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Paleta.paperRaised,
+    textAlign: "center",
   },
   controles: {
     backgroundColor: Paleta.paperRaised,
