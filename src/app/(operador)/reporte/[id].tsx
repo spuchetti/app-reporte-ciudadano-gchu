@@ -79,9 +79,8 @@ export default function DetalleOperadorScreen() {
       return;
     }
     try {
-      const [item, historial, lista] = await Promise.all([
+      const [item, lista] = await Promise.all([
         obtenerReportePorId(id),
-        obtenerCambiosEstado(id),
         obtenerReportes(),
       ]);
       if (!item) {
@@ -89,6 +88,7 @@ export default function DetalleOperadorScreen() {
         setReporte(null);
         return;
       }
+      const historial = await obtenerCambiosEstado(item.id);
       setReporte(item);
       setCatalogo(lista);
       setCambios(

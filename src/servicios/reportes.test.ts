@@ -12,6 +12,7 @@ import {
   etiquetaParaVecino,
   marcarDuplicado,
   obtenerAvisosDeEstado,
+  obtenerReportePorId,
   obtenerReportes,
   obtenerReportesPorZona,
   sincronizarPendientes,
@@ -49,6 +50,14 @@ describe("servicios/reportes", () => {
   afterEach(() => {
     reportesMock.splice(reportesIniciales);
     jest.useRealTimers();
+  });
+
+  test("busca un reporte por ID o por el código impreso en su QR", async () => {
+    const esperado = reportesMock[0];
+
+    await expect(esperar(obtenerReportePorId(esperado.codigo))).resolves.toEqual(
+      esperado,
+    );
   });
 
   test("exige un tipo de problema", () => {

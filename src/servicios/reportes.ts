@@ -108,7 +108,7 @@ export const obtenerReportePorId = async (
   id: string,
 ): Promise<Reporte | null> => {
   await delay(400);
-  const reporte = reportesMock.find((r) => r.id === id);
+  const reporte = reportesMock.find((r) => r.id === id || r.codigo === id);
   return reporte || null;
 };
 
