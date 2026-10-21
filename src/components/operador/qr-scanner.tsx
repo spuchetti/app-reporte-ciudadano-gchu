@@ -23,8 +23,6 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
   const [permiso, pedirPermiso] = useCameraPermissions();
   const [esperandoPermiso, setEsperandoPermiso] = useState(false);
   const [errorPermiso, setErrorPermiso] = useState<string | null>(null);
-  const [contenidoLeido, setContenidoLeido] = useState<string | null>(null);
-  const [escaneado, setEscaneado] = useState(false);
   const pidioPermiso = useRef(false);
   const escaneadoRef = useRef(false);
 
@@ -44,8 +42,6 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
     if (!visible) {
       pidioPermiso.current = false;
       escaneadoRef.current = false;
-      setEscaneado(false);
-      setContenidoLeido(null);
       setErrorPermiso(null);
       return;
     }
@@ -69,25 +65,21 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
       }
 
       escaneadoRef.current = true;
-      setEscaneado(true);
-      setContenidoLeido(data);
       onScan(data);
     },
     [onScan],
   );
 
-  function reintentarEscaneo() {
-    escaneadoRef.current = false;
-    setEscaneado(false);
-    setContenidoLeido(null);
-  }
-
   const cargandoPermiso =
     esperandoPermiso || (!permiso && errorPermiso === null);
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="fade"
       onRequestClose={onClose}
@@ -119,39 +111,18 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
               </View>
             ) : permiso?.granted ? (
               <>
-                {escaneado && contenidoLeido !== null ? (
-                  <View style={styles.resultado}>
-                    <Text style={styles.etiquetaResultado}>Contenido leído</Text>
-                    <Text selectable style={styles.contenidoResultado}>
-                      {contenidoLeido}
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    <Text style={styles.instruccion}>
-                      Centrá el código QR dentro del marco para escanearlo.
-                    </Text>
-                    <View style={styles.camara}>
-                      <CameraView
-                        style={StyleSheet.absoluteFill}
-                        facing="back"
-                        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                        onBarcodeScanned={handleScan}
-                      />
-                      <View pointerEvents="none" style={styles.marco} />
-                    </View>
-                  </>
-                )}
-
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={escaneado ? reintentarEscaneo : onClose}
-                  style={styles.botonPrincipal}
-                >
-                  <Text style={styles.botonPrincipalTexto}>
-                    {escaneado ? "Reintentar escaneo" : "Cerrar"}
-                  </Text>
-                </Pressable>
+                <Text style={styles.instruccion}>
+                  Centrá el código QR dentro del marco para escanearlo.
+                </Text>
+                <View style={styles.camara}>
+                  <CameraView
+                    style={StyleSheet.absoluteFill}
+                    facing="back"
+                    barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                    onBarcodeScanned={handleScan}
+                  />
+                  <View pointerEvents="none" style={styles.marco} />
+                </View>
               </>
             ) : (
               <View style={styles.estado}>
@@ -270,23 +241,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
-  },
-  resultado: {
-    gap: 8,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: Paleta.paper,
-  },
-  etiquetaResultado: {
-    color: Paleta.inkSoft,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  contenidoResultado: {
-    color: Paleta.ink,
-    fontSize: 14,
-    lineHeight: 20,
   },
   botonPrincipal: {
     minHeight: 48,
