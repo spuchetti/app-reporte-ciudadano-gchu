@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   KeyboardAvoidingView,
@@ -35,6 +35,7 @@ import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
   const insets = useSafeAreaInsets();
+  const { origen } = useLocalSearchParams<{ origen?: string }>();
   const { sesion, enviarReporte, adherirseAReporte } = useSesion();
   const inicial = leerBorrador();
   const [paso, setPaso] = useState(inicial.paso);
@@ -132,7 +133,9 @@ export function AsistenteReporte() {
   function onAtras() {
     setError(null);
     if (paso === 1) {
-      router.back();
+      router.replace(
+        origen === "home" ? "/(tabs)" : "/(tabs)/mis-reportes",
+      );
       return;
     }
     setPaso((actual) => actual - 1);

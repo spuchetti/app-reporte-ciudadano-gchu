@@ -1,6 +1,7 @@
 import React from "react";
 import { act, create, ReactTestRenderer } from "react-test-renderer";
 import HomeVecinoScreen from "../src/app/(tabs)/index";
+import { ProveedorOrigenReporte } from "@/contexto/origen-reporte";
 import { obtenerAvisosDeEstado, obtenerReportesPorZona } from "@/servicios/reportes";
 
 const mockPush = jest.fn();
@@ -128,7 +129,11 @@ function buscarPorLabel(
 async function montarHome() {
   let tree!: ReactTestRenderer;
   await act(async () => {
-    tree = create(<HomeVecinoScreen />);
+    tree = create(
+      <ProveedorOrigenReporte>
+        <HomeVecinoScreen />
+      </ProveedorOrigenReporte>,
+    );
   });
   return tree;
 }
