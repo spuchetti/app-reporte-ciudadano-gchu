@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import IconoPrincipal from '@/assets/branding/icono_principal.svg';
 import { Boton } from '@/components/ui/boton';
+import { IconoCategoria } from '@/components/ui/icono-categoria';
 import { InsigniaEstado } from '@/components/ui/insignia-estado';
 import { Fonts, Paleta } from '@/constants/theme';
 import { useSesion } from '@/contexto/sesion';
@@ -54,6 +55,7 @@ function TarjetaReporte({ reporte, sumado = false, onPress }: TarjetaReporteProp
       <View style={[styles.barraLateral, { backgroundColor: colorEstado }]} />
       
       <View style={styles.tarjetaContenido}>
+        <IconoCategoria tipoId={reporte.tipoId} size={22} />
         <View style={styles.cuerpoTexto}>
           <Text style={styles.codigo} numberOfLines={1}>
             {reporte.codigo}
