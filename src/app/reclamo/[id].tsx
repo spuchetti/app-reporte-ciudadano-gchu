@@ -20,6 +20,7 @@ import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
@@ -345,7 +346,10 @@ export default function DetalleReclamoScreen() {
                   },
                 ]}
               />
-              <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
+              <View style={styles.filaTipo}>
+                <IconoCategoria tipoId={reporte.tipoId} size={24} />
+                <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
+              </View>
               <Text style={styles.direccion}>{reporte.direccion}</Text>
               <View style={styles.resumenDatos}>
                 <Text style={styles.meta}>{haceTiempo(reporte.creadoEn)}</Text>
@@ -630,9 +634,15 @@ const styles = StyleSheet.create({
     width: 4,
   },
   tipo: {
+    flex: 1,
     fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 22,
+  },
+  filaTipo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   direccion: {
     fontFamily: Fonts.medium,

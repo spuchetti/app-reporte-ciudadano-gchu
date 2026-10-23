@@ -18,6 +18,7 @@ import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { useSesion } from "@/contexto/sesion";
 import {
@@ -247,29 +248,40 @@ export default function DetalleOperadorScreen() {
               <Image source={{ uri: foto }} style={styles.foto} />
             ) : null}
 
-            <Text style={styles.tipo}>
-              {`${nombreTipo(reporte.tipoId)} · ${reporte.direccion}`}
-            </Text>
-            <Text style={styles.meta}>
-              {`${nombreZona(reporte.zonaId)} · ${haceTiempo(reporte.creadoEn)}`}
-            </Text>
-            <Text style={styles.meta}>
-              {`${nombreAutor(reporte.autorId)} · ${textoFotos(reporte.fotos.length)}`}
-            </Text>
-            {reporte.cuadrillaId ? (
-              <Text style={styles.meta}>{nombreCuadrilla(reporte.cuadrillaId)}</Text>
-            ) : null}
-            {reporte.duplicadoDe ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={textoDuplicado(reporte.duplicadoDe)}
-                onPress={() => router.push(`/(operador)/reporte/${reporte.duplicadoDe}`)}
-              >
-                <Text style={styles.enlaceOriginal}>
-                  {textoDuplicado(reporte.duplicadoDe)}
+            <View style={styles.panelPrincipal}>
+              <View
+                style={[
+                  styles.barraEstado,
+                  { backgroundColor: COLORES_ESTADO[reporte.estado] },
+                ]}
+              />
+              <View style={styles.filaTipo}>
+                <IconoCategoria tipoId={reporte.tipoId} size={24} />
+                <Text style={styles.tipo}>
+                  {`${nombreTipo(reporte.tipoId)} · ${reporte.direccion}`}
                 </Text>
-              </Pressable>
-            ) : null}
+              </View>
+              <Text style={styles.meta}>
+                {`${nombreZona(reporte.zonaId)} · ${haceTiempo(reporte.creadoEn)}`}
+              </Text>
+              <Text style={styles.meta}>
+                {`${nombreAutor(reporte.autorId)} · ${textoFotos(reporte.fotos.length)}`}
+              </Text>
+              {reporte.cuadrillaId ? (
+                <Text style={styles.meta}>{nombreCuadrilla(reporte.cuadrillaId)}</Text>
+              ) : null}
+              {reporte.duplicadoDe ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={textoDuplicado(reporte.duplicadoDe)}
+                  onPress={() => router.push(`/(operador)/reporte/${reporte.duplicadoDe}`)}
+                >
+                  <Text style={styles.enlaceOriginal}>
+                    {textoDuplicado(reporte.duplicadoDe)}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
 
             {reporte.descripcion ? (
               <Text style={styles.descripcion}>{reporte.descripcion}</Text>
@@ -481,6 +493,28 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 10,
   },
+  panelPrincipal: {
+    position: "relative",
+    overflow: "hidden",
+    backgroundColor: Paleta.paperRaised,
+    borderColor: Paleta.line,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    gap: 8,
+  },
+  barraEstado: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  filaTipo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   vacio: {
     fontFamily: Fonts.regular,
     textAlign: "center",
@@ -495,6 +529,7 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.paperRaised,
   },
   tipo: {
+    flex: 1,
     fontFamily: Fonts.semiBold,
     fontSize: 22,
     color: Paleta.ink,

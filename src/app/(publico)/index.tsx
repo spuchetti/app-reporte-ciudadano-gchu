@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
@@ -117,23 +118,40 @@ export default function MapaPublicoScreen() {
   return (
     <View style={styles.pantalla}>
       <StatusBar style="dark" />
-      <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.cabeceraFila}>
-          <IconoPrincipal
-            width={40}
-            height={40}
-            accessibilityLabel="Reporte Ciudadano"
-          />
-          <View style={styles.cabeceraTexto}>
+      <View style={[styles.cabecera, { paddingTop: insets.top }]}>
+        <View style={styles.bloqueIdentidad}>
+          <View style={styles.cabeceraFila}>
+            <IconoPrincipal
+              width={40}
+              height={40}
+              accessibilityLabel="Reporte Ciudadano"
+            />
             <Text style={styles.titulo}>Mapa de Gualeguaychú</Text>
-            <Text style={styles.subtitulo}>Podés mirar los reportes sin registrarte</Text>
           </View>
+          <Text style={styles.subtitulo}>
+            Podés mirar los reportes sin registrarte
+          </Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Filtros"
             onPress={() => setFiltrosAbiertos((abierto) => !abierto)}
-            style={[styles.botonFiltro, filtrosActivos > 0 ? styles.botonFiltroActivo : null]}
+            style={[
+              styles.botonFiltro,
+              filtrosActivos > 0 ? styles.botonFiltroActivo : null,
+            ]}
           >
+            <Ionicons
+              name="funnel-outline"
+              size={16}
+              color={filtrosActivos > 0 ? Paleta.paperRaised : Paleta.ink}
+            />
             <Text
               style={[
                 styles.botonFiltroTexto,
@@ -143,13 +161,6 @@ export default function MapaPublicoScreen() {
               {filtrosActivos > 0 ? `Filtros · ${filtrosActivos}` : "Filtros"}
             </Text>
           </Pressable>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
           <Chip etiqueta="Todos" activo={tipoId === null} onPress={() => setTipoId(null)} />
           {tiposReporteMock.map((tipo) => (
             <Chip
@@ -314,55 +325,60 @@ const styles = StyleSheet.create({
   },
   cabecera: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 10,
     gap: 12,
     backgroundColor: Paleta.paperRaised,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  bloqueIdentidad: {
+    gap: 4,
+  },
   cabeceraFila: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
-  },
-  cabeceraTexto: {
-    flex: 1,
   },
   titulo: {
     fontFamily: Fonts.semiBold,
-    fontSize: 19,
+    fontSize: 21,
     color: Paleta.ink,
+    flexShrink: 1,
   },
   subtitulo: {
-    marginTop: 4,
     fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
+    textAlign: "center",
   },
   botonFiltro: {
+    alignSelf: "center",
+    flexDirection: "row",
     borderRadius: 999,
-    paddingHorizontal: 12,
-    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: Paleta.paper,
     borderWidth: 1,
     borderColor: Paleta.line,
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
   },
   botonFiltroActivo: {
     backgroundColor: Paleta.teal,
     borderColor: Paleta.teal,
   },
   botonFiltroTexto: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 14,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
     color: Paleta.ink,
   },
   botonFiltroTextoActivo: {
     color: Paleta.paperRaised,
   },
   chips: {
-    gap: 8,
+    gap: 12,
     paddingRight: 8,
   },
   chipsWrap: {

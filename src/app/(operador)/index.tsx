@@ -42,6 +42,7 @@ import {
   obtenerReportes,
   obtenerTiposReporte,
 } from "@/servicios/reportes";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { obtenerZonas } from "@/servicios/zonas";
 import { EstadoReporte, Reporte } from "@/tipos";
 
@@ -288,6 +289,12 @@ export default function BandejaOperadorScreen() {
               obtenerCategoriaVisual(item.tipoId) ?? CATEGORIA_POR_DEFECTO;
             return (
               <View key={item.id} style={styles.tarjeta}>
+                <View
+                  style={[
+                    styles.barraEstadoTarjeta,
+                    { backgroundColor: COLORES_ESTADO[item.estado] },
+                  ]}
+                />
                 <View style={styles.tarjetaCuerpo}>
                   <View
                     style={[
@@ -598,6 +605,8 @@ const styles = StyleSheet.create({
     color: Paleta.inkSoft,
   },
   tarjeta: {
+    position: "relative",
+    overflow: "hidden",
     backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     padding: 16,
@@ -605,6 +614,13 @@ const styles = StyleSheet.create({
     borderColor: Paleta.line,
     marginBottom: 10,
     gap: 12,
+  },
+  barraEstadoTarjeta: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 5,
   },
   tarjetaCuerpo: {
     flexDirection: "row",
