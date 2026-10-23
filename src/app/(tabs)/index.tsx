@@ -11,9 +11,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker, Callout } from "@/components/mapa";
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { InsigniaEstado } from "@/components/ui/insignia-estado";
+import { obtenerCategoriaVisual } from "@/constants/categorias";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { zonasMock } from "@/mocks/zonas";
@@ -26,21 +31,8 @@ import {
   ultimosReportesPublicos,
   type AvisoDeEstado,
 } from "@/servicios/reportes";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { EstadoReporte, Reporte } from "@/tipos";
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
-
-function iniciales(nombre: string) {
-  const partes = nombre.trim().split(/\s+/).filter(Boolean);
-  const letras = `${partes[0]?.[0] ?? "V"}${partes[1]?.[0] ?? ""}`;
-  return letras.toUpperCase();
-}
 
 function colorEstado(estado: string) {
   return COLORES_ESTADO[estado as EstadoReporte] ?? Paleta.inkSoft;
@@ -160,11 +152,11 @@ export default function HomeVecinoScreen() {
         ]}
       >
         <View style={styles.cabeceraIzquierda}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarTexto}>
-              {iniciales(usuario?.nombre ?? "Vecino")}
-            </Text>
-          </View>
+          <IconoPrincipal
+            width={42}
+            height={42}
+            accessibilityLabel="Reporte Ciudadano"
+          />
           <View style={styles.saludoBloque}>
             <Text style={styles.saludo}>Hola</Text>
             <Text style={styles.nombre} numberOfLines={1}>
@@ -189,6 +181,7 @@ export default function HomeVecinoScreen() {
         <MapView style={styles.mapa} initialRegion={region}>
           {enMapa.map((reporte) => {
             const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
+            const categoria = obtenerCategoriaVisual(reporte.tipoId);
             const pin = colorEstado(reporte.estado);
             const fotoPrincipal = reporte.fotos.find((f) => f.esPrincipal)?.url;
 
@@ -210,9 +203,12 @@ export default function HomeVecinoScreen() {
                         resizeMode="cover"
                       />
                     ) : null}
-                    <Text style={styles.tituloBurbuja}>
-                      {`${tipo?.icono || "📌"} ${tipo?.nombre || "Reporte"}`}
-                    </Text>
+                    <View style={styles.tituloBurbujaFila}>
+                      <IconoCategoria tipoId={reporte.tipoId} size={18} />
+                      <Text style={styles.tituloBurbuja}>
+                        {categoria?.nombre ?? tipo?.nombre ?? "Reporte"}
+                      </Text>
+                    </View>
                     <Text style={styles.textoBurbuja} numberOfLines={3}>
                       {reporte.descripcion || reporte.direccion}
                     </Text>
@@ -254,7 +250,7 @@ export default function HomeVecinoScreen() {
               {resumenMisReportes}
             </Text>
           </View>
-          <Text style={styles.flechaMisReportes}>›</Text>
+          <Ionicons name="chevron-forward" size={22} color={Paleta.teal} />
         </Pressable>
 
         <ScrollView
@@ -293,27 +289,25 @@ export default function HomeVecinoScreen() {
               <Text style={styles.bloqueTitulo}>Últimos de tu zona</Text>
               {ultimos.map((reporte) => {
                 const tipo = tiposReporteMock.find((t) => t.id === reporte.tipoId);
-                const estado = colorEstado(reporte.estado);
+                const categoria = obtenerCategoriaVisual(reporte.tipoId);
                 return (
                   <View key={reporte.id} style={styles.reporteFila}>
                     <View style={styles.reporteIcono}>
-                      <Text style={styles.reporteIconoTexto}>
-                        {tipo?.icono ?? "📌"}
-                      </Text>
+                      <IconoCategoria tipoId={reporte.tipoId} size={20} />
                     </View>
                     <View style={styles.filaTexto}>
                       <Text style={styles.filaTitulo} numberOfLines={1}>
-                        {tipo?.nombre ?? "Reporte"}
+                        {categoria?.nombre ?? tipo?.nombre ?? "Reporte"}
                       </Text>
                       <Text style={styles.filaMeta} numberOfLines={1}>
                         {reporte.descripcion || reporte.direccion}
                       </Text>
                     </View>
-                    <View style={[styles.insignia, { backgroundColor: fondoSuave(estado) }]}>
-                      <Text style={[styles.insigniaTexto, { color: estado }]}>
-                        {etiquetaEstado(reporte.estado)}
-                      </Text>
-                    </View>
+                    <InsigniaEstado
+                      estado={reporte.estado}
+                      etiqueta={etiquetaEstado(reporte.estado)}
+                      maxWidth={132}
+                    />
                   </View>
                 );
               })}
@@ -349,45 +343,37 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   saludoBloque: {
     flex: 1,
   },
-  saludo: { fontSize: 12, color: "rgba(255,255,255,0.78)" },
+  saludo: {
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.88)",
+  },
   nombre: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 20,
-    fontWeight: "600",
     color: Paleta.paperRaised,
   },
   zona: {
     marginTop: 2,
+    fontFamily: Fonts.regular,
     fontSize: 12,
-    color: "rgba(255,255,255,0.78)",
+    color: "rgba(255,255,255,0.88)",
   },
   salir: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.paperRaised,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    backgroundColor: Paleta.tealDeep,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarTexto: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Paleta.paperRaised,
+    paddingVertical: 12,
   },
   mapaContainer: {
     flex: 1,
     position: "relative",
-    backgroundColor: "#E1F5EE",
+    backgroundColor: Paleta.tealSoft,
     overflow: "hidden",
   },
   mapa: { width: "100%", height: "100%" },
@@ -397,7 +383,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     backgroundColor: Paleta.paperRaised,
-    borderRadius: 12,
+    borderRadius: 18,
     paddingVertical: 12,
     paddingHorizontal: 14,
     shadowColor: "#12232E",
@@ -410,8 +396,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FDECEC",
   },
   resumenTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   resumenErrorTexto: {
@@ -459,20 +445,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tituloMisReportes: {
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   subtituloMisReportes: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
   },
-  flechaMisReportes: {
-    fontSize: 22,
-    color: Paleta.teal,
-    fontWeight: "600",
-  },
-
   panelLista: {
     maxHeight: 180,
   },
@@ -484,8 +465,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bloqueTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 11,
-    fontWeight: "700",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: Paleta.inkSoft,
@@ -519,37 +500,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  reporteIconoTexto: {
-    fontSize: 16,
-  },
   filaTexto: {
     flex: 1,
     minWidth: 0,
     gap: 2,
   },
   filaTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   filaMeta: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
     lineHeight: 16,
   },
-  insignia: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  insigniaTexto: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
   cta: {
-    backgroundColor: Paleta.orange,
+    backgroundColor: Paleta.teal,
     minHeight: 52,
-    borderRadius: 12,
+    borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -558,9 +528,9 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   ctaTexto: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
     fontSize: 16,
-    fontWeight: "700",
   },
   burbujaInfo: {
     width: 250,
@@ -573,12 +543,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tituloBurbuja: {
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 4,
     color: Paleta.ink,
   },
+  tituloBurbujaFila: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
   textoBurbuja: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     flexWrap: "wrap",

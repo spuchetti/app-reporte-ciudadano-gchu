@@ -1,17 +1,16 @@
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { Fonts, Paleta } from '@/constants/theme';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      backgroundColor={Paleta.paperRaised}
+      indicatorColor={Paleta.tealSoft}
+      labelStyle={{
+        default: { fontFamily: Fonts.medium, color: Paleta.inkSoft },
+        selected: { fontFamily: Fonts.semiBold, color: Paleta.tealDeep },
+      }}>
       <NativeTabs.Trigger name="index">
         <Label>Home</Label>
         <Icon src={require('@/assets/images/tabIcons/home.png')} />

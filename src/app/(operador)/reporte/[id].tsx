@@ -11,12 +11,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
@@ -40,15 +42,8 @@ import {
   obtenerReportes,
   textoDuplicado,
 } from "@/servicios/reportes";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
 
 export default function DetalleOperadorScreen() {
   const insets = useSafeAreaInsets();
@@ -198,7 +193,6 @@ export default function DetalleOperadorScreen() {
     }
   }
 
-  const color = reporte ? COLORES_ESTADO[reporte.estado] : Paleta.inkSoft;
   const foto = reporte?.fotos.find((item) => item.esPrincipal)?.url;
   const originales = reporte ? reportesParaDuplicar(catalogo, reporte.id) : [];
   const gestionable = reporte ? puedeGestionar(reporte) : false;
@@ -218,17 +212,24 @@ export default function DetalleOperadorScreen() {
           onPress={() => router.back()}
           hitSlop={8}
         >
-          <Text style={styles.volver}>Bandeja</Text>
+          <View style={styles.volverFila}>
+            <Ionicons
+              name="arrow-back"
+              size={20}
+              color={Paleta.paperRaised}
+            />
+            <Text style={styles.volver}>Bandeja</Text>
+          </View>
         </Pressable>
         <Text style={styles.titulo} numberOfLines={1}>
           {reporte?.codigo ?? "Reporte"}
         </Text>
         {reporte ? (
-          <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
-            <Text style={[styles.insigniaTexto, { color }]}>
-              {etiquetaEstado(reporte.estado)}
-            </Text>
-          </View>
+          <InsigniaEstado
+            estado={reporte.estado}
+            etiqueta={etiquetaEstado(reporte.estado)}
+            sobreFondoOscuro
+          />
         ) : null}
       </View>
 
@@ -453,64 +454,63 @@ export default function DetalleOperadorScreen() {
 const styles = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: Paleta.paper },
   cabecera: {
-    backgroundColor: Paleta.orange,
-    paddingHorizontal: 16,
+    backgroundColor: PaletaOperador.principal,
+    paddingHorizontal: 20,
     paddingBottom: 16,
     gap: 8,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   volver: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
     color: Paleta.paperRaised,
   },
+  volverFila: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 22,
-    fontWeight: "600",
     color: Paleta.paperRaised,
   },
   contenido: {
-    padding: 16,
+    padding: 20,
     gap: 10,
   },
   vacio: {
+    fontFamily: Fonts.regular,
     textAlign: "center",
     marginTop: 32,
     fontSize: 14,
     color: Paleta.inkSoft,
   },
-  insignia: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  insigniaTexto: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
   foto: {
     width: "100%",
     height: 180,
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: Paleta.paperRaised,
   },
   tipo: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 22,
     color: Paleta.ink,
   },
   meta: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
   },
   enlaceOriginal: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "700",
-    color: Paleta.teal,
+    color: PaletaOperador.principal,
   },
   descripcion: {
-    marginTop: 4,
+    fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 20,
     color: Paleta.ink,
@@ -524,28 +524,29 @@ const styles = StyleSheet.create({
   },
   botonSecundario: {
     minHeight: 48,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.orange,
+    borderColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
   botonSecundarioTexto: {
-    color: Paleta.orange,
+    fontFamily: Fonts.semiBold,
+    color: PaletaOperador.principal,
     fontSize: 15,
-    fontWeight: "700",
   },
   botonAsignar: {
     minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: Paleta.orange,
+    borderRadius: 999,
+    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
   botonAsignarTexto: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
     fontSize: 15,
-    fontWeight: "700",
+    textAlign: "center",
   },
   pressed: {
     opacity: 0.88,
@@ -555,8 +556,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   historialTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 11,
-    fontWeight: "700",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: Paleta.inkSoft,
@@ -606,19 +607,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   cambioEstado: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 14,
-    fontWeight: "700",
   },
   cambioEstadoActual: {
     fontSize: 16,
   },
   cambioTexto: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
   },
   cambioFecha: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 12,
   },

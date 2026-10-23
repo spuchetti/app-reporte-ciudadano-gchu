@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import TarjetaZona from "@/components/operador/tarjeta-zona";
 import Cargando from "@/components/ui/cargando";
 import HeaderOperador from "@/components/ui/headerOperador";
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { ZonaConCuadrillas, zonasConCuadrillas } from "@/servicios/zonas";
 
@@ -47,23 +49,29 @@ export default function Zonas() {
 
   return (
     <View style={styles.pantalla}>
-      <HeaderOperador>
+      <HeaderOperador style={styles.cabecera}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Volver a la bandeja"
           onPress={() => router.back()}
           hitSlop={8}
         >
-          <Text style={styles.volver}>← Bandeja</Text>
+          <View style={styles.volver}>
+            <Ionicons name="arrow-back" size={20} color={Paleta.paperRaised} />
+            <Text style={styles.volverTexto}>Bandeja</Text>
+          </View>
         </Pressable>
         <View style={styles.informacion}>
-          <Text style={styles.titulo}>Zonas y cuadrillas</Text>
-          {usuario ? <Text style={styles.subtitulo}>{usuario.nombre}</Text> : null}
+          <IconoPrincipal width={36} height={36} accessibilityLabel="Reporte Ciudadano" />
+          <View style={styles.informacionTexto}>
+            <Text style={styles.titulo}>Zonas y cuadrillas</Text>
+            {usuario ? <Text style={styles.subtitulo}>{usuario.nombre}</Text> : null}
+          </View>
         </View>
       </HeaderOperador>
 
       {cargando ? (
-        <Cargando text={cargando} style={{ backgroundColor: Paleta.orange }} />
+        <Cargando text={cargando} style={{ backgroundColor: PaletaOperador.oscura }} />
       ) : (
         <FlatList
           style={styles.lista}
@@ -90,41 +98,59 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Paleta.paper,
   },
+  cabecera: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   volver: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  volverTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
-    fontWeight: "600",
     color: Paleta.paperRaised,
   },
   informacion: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    gap: 10,
+  },
+  informacionTexto: {
+    alignItems: "center",
+    minWidth: 0,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 28,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 22,
     color: Paleta.paperRaised,
     textAlign: "center",
   },
   subtitulo: {
+    fontFamily: Fonts.medium,
     fontSize: 15,
-    fontWeight: "600",
     color: Paleta.paperRaised,
   },
   lista: {
     flex: 1,
   },
   listaContenido: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
   },
   error: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     marginBottom: 16,
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
-    fontWeight: "700",
-    borderRadius: 8,
+    borderRadius: 14,
     color: Paleta.rojo,
     textAlign: "center",
     backgroundColor: fondoSuave(Paleta.rojo),

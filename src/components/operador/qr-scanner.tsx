@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
-import { Paleta } from "@/constants/theme";
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 
 type Props = {
   visible: boolean;
@@ -92,7 +93,10 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
         >
           <View style={styles.panel}>
             <View style={styles.cabecera}>
-              <Text style={styles.titulo}>Escanear código QR</Text>
+              <View style={styles.marcaCabecera}>
+                <IconoPrincipal width={32} height={32} accessibilityLabel="Reporte Ciudadano" />
+                <Text style={styles.titulo}>Escanear código QR</Text>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Cerrar escáner QR"
@@ -106,7 +110,7 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
 
             {cargandoPermiso ? (
               <View style={styles.estado}>
-                <ActivityIndicator color={Paleta.teal} />
+                <ActivityIndicator color={PaletaOperador.principal} />
                 <Text style={styles.textoEstado}>Cargando permisos...</Text>
               </View>
             ) : permiso?.granted ? (
@@ -195,22 +199,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  marcaCabecera: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   titulo: {
     flex: 1,
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 20,
-    fontWeight: "700",
   },
   botonCerrar: {
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
   botonCerrarTexto: {
+    fontFamily: Fonts.medium,
     color: Paleta.inkSoft,
     fontSize: 14,
-    fontWeight: "600",
   },
   instruccion: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
@@ -237,6 +249,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   textoEstado: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
@@ -247,26 +260,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: Paleta.teal,
+    borderRadius: 999,
+    backgroundColor: PaletaOperador.principal,
   },
   botonPrincipalTexto: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
     fontSize: 15,
-    fontWeight: "700",
   },
   botonSecundario: {
     minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: Paleta.line,
   },
   botonSecundarioTexto: {
+    fontFamily: Fonts.medium,
     color: Paleta.inkSoft,
     fontSize: 14,
-    fontWeight: "600",
   },
 });

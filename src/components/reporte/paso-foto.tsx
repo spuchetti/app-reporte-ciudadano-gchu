@@ -13,7 +13,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 
 type Props = {
   fotos: string[];
@@ -214,12 +214,14 @@ export function PasoFoto({ fotos, onFotos }: Props) {
 
 const styles = StyleSheet.create({
   ayuda: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 16,
   },
   ayudaClaro: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.paperRaised,
     lineHeight: 20,
@@ -229,11 +231,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
   errorClaro: {
+    fontFamily: Fonts.medium,
     color: Paleta.paperRaised,
     fontSize: 13,
     marginBottom: 12,
@@ -241,7 +245,7 @@ const styles = StyleSheet.create({
   },
   camaraCaja: {
     height: 420,
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: "hidden",
     backgroundColor: Paleta.ink,
     justifyContent: "flex-end",
@@ -255,7 +259,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    backgroundColor: Paleta.tealDeep,
+    backgroundColor: Paleta.ink,
   },
   camaraPie: {
     padding: 16,
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     backgroundColor: Paleta.paperRaised,
     borderWidth: 4,
-    borderColor: Paleta.orange,
+    borderColor: Paleta.teal,
     marginBottom: 12,
   },
   previews: {
@@ -279,7 +283,7 @@ const styles = StyleSheet.create({
   preview: {
     flex: 1,
     height: 180,
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: Paleta.paper,
   },
   separador: {

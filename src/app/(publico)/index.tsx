@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
@@ -118,6 +119,11 @@ export default function MapaPublicoScreen() {
       <StatusBar style="dark" />
       <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
         <View style={styles.cabeceraFila}>
+          <IconoPrincipal
+            width={40}
+            height={40}
+            accessibilityLabel="Reporte Ciudadano"
+          />
           <View style={styles.cabeceraTexto}>
             <Text style={styles.titulo}>Mapa de Gualeguaychú</Text>
             <Text style={styles.subtitulo}>Podés mirar los reportes sin registrarte</Text>
@@ -304,38 +310,39 @@ function Leyenda({ color, texto }: { color: string; texto: string }) {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
+    backgroundColor: Paleta.paper,
   },
   cabecera: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Paleta.line,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
     gap: 12,
+    backgroundColor: Paleta.paperRaised,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   cabeceraFila: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   cabeceraTexto: {
     flex: 1,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 20,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 19,
     color: Paleta.ink,
   },
   subtitulo: {
     marginTop: 4,
-    fontSize: 13,
+    fontFamily: Fonts.regular,
+    fontSize: 14,
     color: Paleta.inkSoft,
   },
   botonFiltro: {
     borderRadius: 999,
     paddingHorizontal: 12,
-    minHeight: 36,
+    minHeight: 44,
     backgroundColor: Paleta.paper,
     borderWidth: 1,
     borderColor: Paleta.line,
@@ -347,8 +354,8 @@ const styles = StyleSheet.create({
     borderColor: Paleta.teal,
   },
   botonFiltroTexto: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
     color: Paleta.ink,
   },
   botonFiltroTextoActivo: {
@@ -366,7 +373,8 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    minHeight: 40,
+    justifyContent: "center",
     backgroundColor: Paleta.paper,
     borderWidth: 1,
     borderColor: Paleta.line,
@@ -376,8 +384,8 @@ const styles = StyleSheet.create({
     borderColor: Paleta.teal,
   },
   chipTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   chipTextoActivo: {
@@ -387,7 +395,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: "#FDECEC",
     flexDirection: "row",
     alignItems: "center",
@@ -395,18 +403,19 @@ const styles = StyleSheet.create({
   },
   avisoTexto: {
     flex: 1,
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.rojo,
     lineHeight: 18,
   },
   avisoCerrar: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
     color: Paleta.ink,
   },
   mapa: {
     flex: 1,
-    backgroundColor: "#E1F5EE",
+    backgroundColor: Paleta.tealSoft,
     overflow: "hidden",
   },
   resumen: {
@@ -429,22 +438,23 @@ const styles = StyleSheet.create({
   },
   resumenTexto: {
     flex: 1,
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   cercaChip: {
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    minHeight: 40,
+    justifyContent: "center",
     backgroundColor: Paleta.paper,
   },
   cercaChipActivo: {
     backgroundColor: Paleta.teal,
   },
   cercaTexto: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.semiBold,
+    fontSize: 13,
     color: Paleta.tealDeep,
   },
   cercaTextoActivo: {
@@ -466,8 +476,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   panelTitulo: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontFamily: Fonts.semiBold,
+    fontSize: 12,
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: Paleta.inkSoft,
@@ -488,17 +498,19 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   leyendaTexto: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
   listo: {
     alignSelf: "flex-end",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 12,
   },
   listoTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "700",
     color: Paleta.teal,
   },
   pie: {
@@ -514,6 +526,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   noSoyYoTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
     color: Paleta.inkSoft,
   },

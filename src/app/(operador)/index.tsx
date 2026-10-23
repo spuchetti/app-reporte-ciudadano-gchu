@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,15 +11,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
 
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { QRScanner } from "@/components/operador/qr-scanner";
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { InsigniaEstado } from "@/components/ui/insignia-estado";
+import HeaderOperador from "@/components/ui/headerOperador";
+import {
+  CATEGORIA_POR_DEFECTO,
+  obtenerCategoriaVisual,
+} from "@/constants/categorias";
+import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   ESTADOS_BANDEJA,
   filtrarReportesBandeja,
   haceTiempo,
-  iconoTipo,
   nombreAutor,
   nombreTipo,
   nombreZona,
@@ -38,15 +44,6 @@ import {
 } from "@/servicios/reportes";
 import { obtenerZonas } from "@/servicios/zonas";
 import { EstadoReporte, Reporte } from "@/tipos";
-import HeaderOperador from "@/components/ui/headerOperador";
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
 
 const PESTANAS: { id: PestanaBandeja; etiqueta: string }[] = [
   { id: "todos", etiqueta: "Todos" },
@@ -151,12 +148,19 @@ export default function BandejaOperadorScreen() {
       <StatusBar style="light" />
 
       <HeaderOperador style={styles.cabecera}>
-        <View style={styles.cabeceraTexto}>
-          <Text style={styles.titulo}>Bandeja</Text>
-          <Text style={styles.subtitulo}>
-            {zonaNombre} · {visibles.length}{" "}
-            {visibles.length === 1 ? "reporte" : "reportes"}
-          </Text>
+        <View style={styles.marcaCabecera}>
+          <IconoPrincipal
+            width={38}
+            height={38}
+            accessibilityLabel="Reporte Ciudadano"
+          />
+          <View style={styles.cabeceraTexto}>
+            <Text style={styles.titulo}>Bandeja</Text>
+            <Text style={styles.subtitulo}>
+              {zonaNombre} · {visibles.length}{" "}
+              {visibles.length === 1 ? "reporte" : "reportes"}
+            </Text>
+          </View>
         </View>
         <View style={styles.accionesCabecera}>
           <Pressable
@@ -280,21 +284,29 @@ export default function BandejaOperadorScreen() {
           </Text>
         ) : (
           visibles.map((item) => {
-            const color = COLORES_ESTADO[item.estado];
+            const categoria =
+              obtenerCategoriaVisual(item.tipoId) ?? CATEGORIA_POR_DEFECTO;
             return (
               <View key={item.id} style={styles.tarjeta}>
                 <View style={styles.tarjetaCuerpo}>
-                  <View style={[styles.icono, { backgroundColor: fondoSuave(color) }]}>
-                    <Text style={styles.iconoTexto}>{iconoTipo(item.tipoId)}</Text>
+                  <View
+                    style={[
+                      styles.icono,
+                      {
+                        backgroundColor: fondoSuave(categoria.color),
+                      },
+                    ]}
+                  >
+                    <IconoCategoria tipoId={item.tipoId} size={22} />
                   </View>
                   <View style={styles.tarjetaInfo}>
                     <View style={styles.tarjetaCabecera}>
                       <Text style={styles.codigo}>{item.codigo}</Text>
-                      <View style={[styles.insignia, { backgroundColor: fondoSuave(color) }]}>
-                        <Text style={[styles.insigniaTexto, { color }]}>
-                          {etiquetaEstado(item.estado)}
-                        </Text>
-                      </View>
+                      <InsigniaEstado
+                        estado={item.estado}
+                        etiqueta={etiquetaEstado(item.estado)}
+                        maxWidth={136}
+                      />
                     </View>
                     <Text style={styles.linea} numberOfLines={1}>
                       {`${nombreTipo(item.tipoId)} · ${item.direccion}`}
@@ -426,23 +438,30 @@ function Chip({
 const styles = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: Paleta.paper },
   cabecera: {
-    backgroundColor: Paleta.orange,
-    paddingHorizontal: 16,
+    backgroundColor: PaletaOperador.oscura,
+    paddingHorizontal: 20,
     paddingBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     gap: 12,
   },
-  cabeceraTexto: { flex: 1 },
+  marcaCabecera: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  cabeceraTexto: { flex: 1, minWidth: 0 },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 24,
-    fontWeight: "600",
     color: Paleta.paperRaised,
   },
   subtitulo: {
     marginTop: 4,
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: "rgba(255,255,255,0.85)",
   },
@@ -451,17 +470,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   salir: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.paperRaised,
     textAlign: "right",
   },
   botonEscanearQr: {
-    minHeight: 46,
-    borderRadius: 12,
+    minHeight: 48,
+    borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Paleta.teal,
+    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -469,16 +488,16 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   textoEscanearQr: {
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
-    fontWeight: "700",
     color: Paleta.paperRaised,
     textAlign: "center",
   },
   controles: {
     backgroundColor: Paleta.paperRaised,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Paleta.line,
     gap: 10,
@@ -486,10 +505,11 @@ const styles = StyleSheet.create({
   buscador: {
     borderWidth: 1,
     borderColor: Paleta.line,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
+    fontFamily: Fonts.regular,
     color: Paleta.ink,
     backgroundColor: Paleta.paper,
   },
@@ -499,19 +519,19 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 36,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Paleta.paper,
   },
   tabActiva: {
-    backgroundColor: Paleta.orange,
+    backgroundColor: PaletaOperador.principal,
   },
   tabTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
-    fontWeight: "600",
-    color: Paleta.orange,
+    color: PaletaOperador.principal,
   },
   tabTextoActivo: {
     color: Paleta.paperRaised,
@@ -520,11 +540,12 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   filtrosToggleTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.inkSoft,
   },
   filtrosResumen: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
@@ -535,8 +556,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   grupoTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 11,
-    fontWeight: "700",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: Paleta.inkSoft,
@@ -555,21 +576,22 @@ const styles = StyleSheet.create({
     borderColor: Paleta.line,
   },
   chipActivo: {
-    backgroundColor: Paleta.orange,
-    borderColor: Paleta.orange,
+    backgroundColor: PaletaOperador.principal,
+    borderColor: PaletaOperador.principal,
   },
   chipTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 12,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   chipTextoActivo: {
     color: Paleta.paperRaised,
   },
   lista: {
-    padding: 16,
+    padding: 20,
   },
   vacio: {
+    fontFamily: Fonts.regular,
     textAlign: "center",
     paddingVertical: 32,
     fontSize: 14,
@@ -577,8 +599,8 @@ const styles = StyleSheet.create({
   },
   tarjeta: {
     backgroundColor: Paleta.paperRaised,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: Paleta.line,
     marginBottom: 10,
@@ -595,9 +617,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconoTexto: {
-    fontSize: 20,
-  },
   tarjetaInfo: {
     flex: 1,
     minWidth: 0,
@@ -611,24 +630,17 @@ const styles = StyleSheet.create({
   },
   codigo: {
     flex: 1,
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
     color: Paleta.ink,
   },
-  insignia: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  insigniaTexto: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
   linea: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.ink,
   },
   meta: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
@@ -638,18 +650,18 @@ const styles = StyleSheet.create({
   },
   botonRevisar: {
     flex: 1,
-    minHeight: 40,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.orange,
+    borderColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
   botonAsignar: {
     flex: 1,
-    minHeight: 40,
-    borderRadius: 8,
-    backgroundColor: Paleta.orange,
+    minHeight: 44,
+    borderRadius: 999,
+    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -657,13 +669,13 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   textoRevisar: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
-    color: Paleta.orange,
+    color: PaletaOperador.principal,
   },
   textoAsignar: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
     color: Paleta.paperRaised,
   },
 });

@@ -1,6 +1,6 @@
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { PASOS_REPORTE } from "@/servicios/borrador";
 
 const TITULOS = [
@@ -42,15 +42,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   kicker: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: "600",
     color: Paleta.teal,
     marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 24,
     fontWeight: "600",
     color: Paleta.ink,

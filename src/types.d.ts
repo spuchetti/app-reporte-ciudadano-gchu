@@ -1,6 +1,14 @@
 /// <reference types="jest" />
 
 // src/types.d.ts
+declare module "*.svg" {
+  import type { ComponentType } from "react";
+  import type { SvgProps } from "react-native-svg";
+
+  const content: ComponentType<SvgProps>;
+  export default content;
+}
+
 declare module "*.css" {
   const content: any;
   export default content;
