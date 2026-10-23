@@ -20,6 +20,7 @@ import { IconoCategoria } from '@/components/ui/icono-categoria';
 import { InsigniaEstado } from '@/components/ui/insignia-estado';
 import { Fonts, Paleta } from '@/constants/theme';
 import { useSesion } from '@/contexto/sesion';
+import { useOrigenReporte } from '@/contexto/origen-reporte';
 import { haceTiempo, nombreTipo } from '@/servicios/bandeja';
 import {
   etiquetaParaVecino,
@@ -92,6 +93,7 @@ export default function MisReportesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { sesion } = useSesion();
+  const { establecerOrigen } = useOrigenReporte();
 
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
   const autorId = usuario?.id ?? null;
@@ -138,8 +140,9 @@ export default function MisReportesScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      establecerOrigen('mis-reportes');
       cargarDatos();
-    }, [cargarDatos])
+    }, [cargarDatos, establecerOrigen])
   );
 
   const resumenReclamos = useMemo(() => {

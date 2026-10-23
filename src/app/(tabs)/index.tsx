@@ -20,6 +20,7 @@ import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
 import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useOrigenReporte } from "@/contexto/origen-reporte";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { zonasMock } from "@/mocks/zonas";
 import {
@@ -41,6 +42,7 @@ function colorEstado(estado: string) {
 export default function HomeVecinoScreen() {
   const insets = useSafeAreaInsets();
   const { sesion, cerrarSesion } = useSesion();
+  const { establecerOrigen } = useOrigenReporte();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
   const router = useRouter();
   const zonaId = usuario?.zonaId ?? null;
@@ -63,6 +65,7 @@ export default function HomeVecinoScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      establecerOrigen("home");
       let activo = true;
 
       (async () => {
@@ -107,7 +110,7 @@ export default function HomeVecinoScreen() {
       return () => {
         activo = false;
       };
-    }, [autorId, zonaId]),
+    }, [autorId, establecerOrigen, zonaId]),
   );
 
   const enMapa = useMemo(
