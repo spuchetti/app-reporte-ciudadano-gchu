@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { obtenerCategoriaVisual } from "@/constants/categorias";
+import { Fonts, Paleta } from "@/constants/theme";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { TipoDeReporte } from "@/tipos";
 
 type Props = {
@@ -14,6 +16,7 @@ export function PasoTipo({ tipos, tipoId, onElegir }: Props) {
     <View style={styles.grilla}>
       {tipos.map((tipo) => {
         const seleccionado = tipo.id === tipoId;
+        const categoria = obtenerCategoriaVisual(tipo.id);
         return (
           <Pressable
             key={tipo.id}
@@ -22,11 +25,11 @@ export function PasoTipo({ tipos, tipoId, onElegir }: Props) {
             onPress={() => onElegir(tipo.id)}
             style={[styles.tarjeta, seleccionado ? styles.tarjetaActiva : null]}
           >
-            <Text style={styles.icono}>{tipo.icono}</Text>
+            <IconoCategoria tipoId={tipo.id} size={28} />
             <Text
               style={[styles.nombre, seleccionado ? styles.nombreActivo : null]}
             >
-              {tipo.nombre}
+              {categoria?.nombre ?? tipo.nombre}
             </Text>
           </Pressable>
         );
@@ -43,11 +46,11 @@ const styles = StyleSheet.create({
   },
   tarjeta: {
     width: "47%",
-    minHeight: 96,
-    borderRadius: 12,
+    minHeight: 104,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Paleta.line,
-    backgroundColor: Paleta.paper,
+    backgroundColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 16,
@@ -56,18 +59,16 @@ const styles = StyleSheet.create({
   },
   tarjetaActiva: {
     borderColor: Paleta.teal,
-    backgroundColor: "#E1F5EE",
-  },
-  icono: {
-    fontSize: 28,
+    backgroundColor: Paleta.tealSoft,
   },
   nombre: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.ink,
     textAlign: "center",
   },
   nombreActivo: {
+    fontFamily: Fonts.bold,
     color: Paleta.tealDeep,
   },
 });

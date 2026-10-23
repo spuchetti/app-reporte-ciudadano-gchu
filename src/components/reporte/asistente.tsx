@@ -19,7 +19,7 @@ import { PasoTipo } from "@/components/reporte/paso-tipo";
 import { PasoUbicacion } from "@/components/reporte/paso-ubicacion";
 import { ProgresoReporte } from "@/components/reporte/progreso";
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   actualizarBorrador,
@@ -286,24 +286,36 @@ export function AsistenteReporte() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
+    backgroundColor: Paleta.paper,
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   formInner: {
     width: "100%",
     maxWidth: 420,
     alignSelf: "center",
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Paleta.line,
+    backgroundColor: Paleta.paperRaised,
+    shadowColor: Paleta.ink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   marca: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Paleta.inkSoft,
-    marginBottom: 8,
+    fontFamily: Fonts.semiBold,
+    fontSize: 16,
+    color: Paleta.tealDeep,
+    marginBottom: 12,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginTop: 16,

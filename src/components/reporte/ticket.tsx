@@ -1,6 +1,7 @@
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 
 type Props = {
   codigo: string;
@@ -21,7 +22,7 @@ export function TicketReporte({
     <View style={styles.tarjeta}>
       <View style={styles.filaCodigo}>
         <Text style={styles.codigo}>{codigo}</Text>
-        <Text style={styles.pin}>📍</Text>
+        <Ionicons name="location" size={20} color={Paleta.paperRaised} />
       </View>
       <View style={styles.linea} />
       <View style={styles.fila}>
@@ -40,7 +41,7 @@ export function TicketReporte({
 const styles = StyleSheet.create({
   tarjeta: {
     backgroundColor: Paleta.tealDeep,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     gap: 10,
   },
@@ -50,17 +51,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   codigo: {
-    fontFamily: Platform.select({
-      ios: "Menlo",
-      android: "monospace",
-      default: "monospace",
-    }),
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
     fontWeight: "700",
     color: Paleta.paperRaised,
-  },
-  pin: {
-    fontSize: 18,
   },
   linea: {
     height: 1,
@@ -74,15 +68,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   principal: {
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
     fontWeight: "600",
     color: Paleta.paperRaised,
   },
   secundario: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: "rgba(255,255,255,0.8)",
   },
   direccion: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.paperRaised,
   },

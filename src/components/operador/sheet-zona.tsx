@@ -1,6 +1,6 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { zonasMock } from "@/mocks/zonas";
 
 type Props = {
@@ -37,7 +37,7 @@ export function SheetZona({ visible, guardando, error, onCerrar, onElegir }: Pro
           ))}
 
           {guardando ? (
-            <ActivityIndicator color={Paleta.orange} style={styles.cargando} />
+            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -70,23 +70,25 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
     marginBottom: 8,
   },
   error: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.rojo,
   },
   opcion: {
     borderWidth: 1,
     borderColor: Paleta.line,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
     backgroundColor: Paleta.paper,
@@ -95,8 +97,8 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   opcionNombre: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   cargando: {
@@ -107,8 +109,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cancelarTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.inkSoft,
   },
 });

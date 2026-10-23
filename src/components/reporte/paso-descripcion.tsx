@@ -8,9 +8,10 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
+import { Ionicons } from "@expo/vector-icons";
 
 import { CampoTexto } from "@/components/ui/campo-texto";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 
 type Props = {
   descripcion: string;
@@ -50,7 +51,7 @@ function FichaNota({
         }}
         style={styles.play}
       >
-        <Text style={styles.playIcono}>▶</Text>
+        <Ionicons name="play" size={14} color={Paleta.paperRaised} />
       </Pressable>
       <Text style={styles.fichaTexto}>{etiqueta}</Text>
       <Pressable
@@ -60,7 +61,7 @@ function FichaNota({
         hitSlop={8}
         style={styles.borrar}
       >
-        <Text style={styles.borrarTexto}>×</Text>
+        <Ionicons name="close" size={22} color={Paleta.inkSoft} />
       </Pressable>
     </View>
   );
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
@@ -184,9 +186,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   agregarTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
     color: Paleta.tealDeep,
-    fontWeight: "500",
   },
   filaVoz: {
     flexDirection: "row",
@@ -202,13 +204,13 @@ const styles = StyleSheet.create({
   },
   grabando: {
     flex: 1,
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   accion: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.tealDeep,
   },
   ficha: {
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     backgroundColor: Paleta.paper,
-    borderRadius: 8,
+    borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
@@ -228,15 +230,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  playIcono: {
-    color: Paleta.paperRaised,
-    fontSize: 12,
-    marginLeft: 2,
-  },
   fichaTexto: {
     flex: 1,
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: "500",
     color: Paleta.ink,
   },
   borrar: {
@@ -244,10 +241,5 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: "center",
     justifyContent: "center",
-  },
-  borrarTexto: {
-    fontSize: 22,
-    color: Paleta.inkSoft,
-    lineHeight: 24,
   },
 });

@@ -20,7 +20,8 @@ import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
-import { Paleta } from "@/constants/theme";
+import { InsigniaEstado } from "@/components/ui/insignia-estado";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
@@ -44,15 +45,8 @@ import {
   obtenerReportes,
   textoDuplicado,
 } from "@/servicios/reportes";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
 
 function impactoLigero() {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
@@ -73,18 +67,13 @@ function fechaHoraLegible(fechaHora: string) {
 
 function ChipEstado({ reporte }: { reporte: Reporte }) {
   const pendiente = !reporte.sincronizado;
-  const color = pendiente ? Paleta.inkSoft : COLORES_ESTADO[reporte.estado];
   return (
-    <View
-      style={[
-        styles.chipEstado,
-        { backgroundColor: `${color}22` },
-      ]}
-    >
-      <Text style={[styles.textoChip, { color }]}>
-        {etiquetaParaVecino(reporte)}
-      </Text>
-    </View>
+    <InsigniaEstado
+      estado={reporte.estado}
+      etiqueta={etiquetaParaVecino(reporte)}
+      sobreFondoOscuro
+      colorOverride={pendiente ? Paleta.inkSoft : undefined}
+    />
   );
 }
 
@@ -298,7 +287,7 @@ export default function DetalleReclamoScreen() {
           </Pressable>
           <View style={styles.codigoCabecera}>
             <Text style={styles.eyebrow}>DETALLE DEL RECLAMO</Text>
-            <Text numberOfLines={1} style={styles.codigo}>
+            <Text numberOfLines={2} style={styles.codigo}>
               {reporte?.codigo ?? "Seguimiento"}
             </Text>
             {reporte ? <ChipEstado reporte={reporte} /> : null}
@@ -346,21 +335,30 @@ export default function DetalleReclamoScreen() {
         ) : (
           <>
             <View style={styles.panelPrincipal}>
+              <View
+                style={[
+                  styles.barraEstado,
+                  {
+                    backgroundColor: reporte.sincronizado
+                      ? COLORES_ESTADO[reporte.estado]
+                      : Paleta.inkSoft,
+                  },
+                ]}
+              />
               <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
               <Text style={styles.direccion}>{reporte.direccion}</Text>
-              <Text style={styles.meta}>{haceTiempo(reporte.creadoEn)}</Text>
-              <Text style={styles.adhesiones}>
-                {`${reporte.adhesiones} vecinos se sumaron`}
-              </Text>
+              <View style={styles.resumenDatos}>
+                <Text style={styles.meta}>{haceTiempo(reporte.creadoEn)}</Text>
+                <Text style={styles.adhesiones}>
+                  {`${reporte.adhesiones} vecinos se sumaron`}
+                </Text>
+              </View>
               {adhesionesDelReporte(reporte.id).length > 0 ? (
-                <Text style={styles.meta}>
+                <Text style={styles.vecinosSumados}>
                   {adhesionesDelReporte(reporte.id)
                     .map((item) => nombreAutor(item.usuarioId))
                     .join(", ")}
                 </Text>
-              ) : null}
-              {reporte.descripcion ? (
-                <Text style={styles.descripcion}>{reporte.descripcion}</Text>
               ) : null}
               {reporte.cuadrillaId ? (
                 <Text style={styles.meta}>
@@ -382,6 +380,13 @@ export default function DetalleReclamoScreen() {
                 </Pressable>
               ) : null}
             </View>
+
+            {reporte.descripcion ? (
+              <View style={styles.bloqueDescripcion}>
+                <Text style={styles.tituloSeccion}>Descripción</Text>
+                <Text style={styles.descripcion}>{reporte.descripcion}</Text>
+              </View>
+            ) : null}
 
             {fotoOriginal ? (
               <View style={styles.seccion}>
@@ -566,9 +571,11 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.paper,
   },
   cabecera: {
-    backgroundColor: Paleta.tealDeep,
-    paddingHorizontal: 16,
+    backgroundColor: Paleta.teal,
+    paddingHorizontal: 18,
     paddingBottom: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   filaCabecera: {
     flexDirection: "row",
@@ -576,9 +583,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   botonVolver: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -588,89 +595,109 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   eyebrow: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
-    opacity: 0.76,
     fontSize: 11,
-    fontWeight: "700",
   },
   codigo: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 16,
   },
   qrCabecera: {
     backgroundColor: Paleta.paperRaised,
-    borderRadius: 6,
+    borderRadius: 10,
     padding: 5,
   },
   contenido: {
-    padding: 16,
-    gap: 14,
+    padding: 20,
+    gap: 12,
   },
   panelPrincipal: {
     backgroundColor: Paleta.paperRaised,
     borderColor: Paleta.line,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 18,
+    overflow: "hidden",
     padding: 16,
     gap: 8,
   },
-  chipEstado: {
-    alignSelf: "flex-start",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  textoChip: {
-    fontSize: 12,
-    fontWeight: "700",
+  barraEstado: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
   },
   tipo: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 22,
   },
   direccion: {
+    fontFamily: Fonts.medium,
     color: Paleta.inkSoft,
     fontSize: 15,
   },
   adhesiones: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.tealDeep,
     fontSize: 14,
-    fontWeight: "700",
+    textAlign: "right",
+  },
+  resumenDatos: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+  },
+  vecinosSumados: {
+    fontFamily: Fonts.regular,
+    color: Paleta.inkSoft,
+    fontSize: 13,
+    lineHeight: 18,
   },
   meta: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 13,
   },
   enlaceOriginal: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.teal,
     fontSize: 14,
-    fontWeight: "700",
   },
   descripcion: {
+    fontFamily: Fonts.regular,
     color: Paleta.ink,
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 4,
+  },
+  bloqueDescripcion: {
+    backgroundColor: Paleta.tealSoft,
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
   },
   seccion: {
     backgroundColor: Paleta.paperRaised,
     borderColor: Paleta.line,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 18,
+    padding: 14,
     gap: 10,
   },
   tituloSeccion: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 16,
-    fontWeight: "700",
   },
   foto: {
     width: "100%",
     height: 220,
-    borderRadius: 6,
+    borderRadius: 14,
     backgroundColor: Paleta.paper,
   },
   acciones: {
@@ -725,18 +752,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   cambioEstado: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 14,
-    fontWeight: "700",
   },
   cambioEstadoActual: {
     fontSize: 16,
   },
   cambioFecha: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 12,
   },
   cambioTexto: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
@@ -750,6 +779,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   vacioTexto: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     textAlign: "center",

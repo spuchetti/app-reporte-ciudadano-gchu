@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { nombreTipo } from "@/servicios/bandeja";
 import {
   COLORES_ESTADO,
@@ -247,31 +247,34 @@ function CercanoCard({
 
 const styles = StyleSheet.create({
   direccion: {
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
     fontWeight: "600",
     color: Paleta.ink,
     marginBottom: 8,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 8,
   },
   mapa: {
     height: 280,
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#E1F5EE",
+    backgroundColor: Paleta.tealSoft,
     marginBottom: 8,
   },
   pista: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
     marginBottom: 16,
   },
   duplicados: {
     backgroundColor: Paleta.paper,
-    borderRadius: 12,
+    borderRadius: 18,
     padding: 12,
     gap: 10,
     marginBottom: 16,
@@ -279,12 +282,13 @@ const styles = StyleSheet.create({
     borderColor: Paleta.line,
   },
   duplicadosTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "700",
     color: Paleta.ink,
     lineHeight: 20,
   },
   duplicadosPista: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
@@ -295,17 +299,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cardTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   cardMeta: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
   sumarme: {
-    minHeight: 40,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 999,
     backgroundColor: Paleta.teal,
     alignItems: "center",
     justifyContent: "center",
@@ -315,8 +320,8 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   sumarmeTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
     color: Paleta.paperRaised,
   },
 });

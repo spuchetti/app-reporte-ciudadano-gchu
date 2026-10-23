@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { ESTADOS_GESTION } from "@/servicios/bandeja";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { etiquetaEstado } from "@/servicios/reportes";
 import { EstadoReporte } from "@/tipos";
 
@@ -115,9 +116,29 @@ export function SheetEstado({
                     accessibilityLabel={etiquetaEstado(item)}
                     disabled={guardando}
                     onPress={() => setEstado(item)}
-                    style={[styles.opcion, activo ? styles.opcionActiva : null]}
+                    style={[
+                      styles.opcion,
+                      activo
+                        ? [
+                            styles.opcionActiva,
+                            {
+                              backgroundColor: COLORES_ESTADO[item],
+                              borderColor: COLORES_ESTADO[item],
+                            },
+                          ]
+                        : null,
+                    ]}
                   >
-                    <Text style={[styles.opcionTexto, activo ? styles.opcionTextoActivo : null]}>
+                    <Text
+                      style={[
+                        styles.opcionTexto,
+                        activo ? styles.opcionTextoActivo : null,
+                        activo &&
+                        (item === "recibido" || item === "asignado" || item === "resuelto")
+                          ? styles.opcionTextoActivoOscuro
+                          : null,
+                      ]}
+                    >
                       {etiquetaEstado(item)}
                     </Text>
                   </Pressable>
@@ -168,7 +189,7 @@ export function SheetEstado({
             ) : null}
 
             {guardando ? (
-              <ActivityIndicator color={Paleta.orange} style={styles.cargando} />
+              <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
             ) : (
               <Pressable
                 accessibilityRole="button"
@@ -222,19 +243,21 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   titulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   subtitulo: {
     marginTop: 4,
     marginBottom: 12,
+    fontFamily: Fonts.regular,
     fontSize: 13,
     lineHeight: 18,
     color: Paleta.inkSoft,
   },
   error: {
     marginBottom: 8,
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.rojo,
   },
@@ -252,16 +275,18 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.paper,
   },
   opcionActiva: {
-    backgroundColor: Paleta.orange,
-    borderColor: Paleta.orange,
+    borderWidth: 2,
   },
   opcionTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   opcionTextoActivo: {
     color: Paleta.paperRaised,
+  },
+  opcionTextoActivoOscuro: {
+    color: Paleta.ink,
   },
   motivo: {
     marginTop: 12,
@@ -272,6 +297,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
+    fontFamily: Fonts.regular,
     color: Paleta.ink,
     backgroundColor: Paleta.paper,
     textAlignVertical: "top",
@@ -281,20 +307,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fotoTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 11,
-    fontWeight: "700",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: Paleta.inkSoft,
   },
   fotoAyuda: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
   },
   foto: {
     width: "100%",
     height: 140,
-    borderRadius: 10,
+    borderRadius: 14,
     backgroundColor: Paleta.paper,
   },
   fotoAcciones: {
@@ -303,17 +330,17 @@ const styles = StyleSheet.create({
   },
   fotoBoton: {
     flex: 1,
-    minHeight: 40,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.orange,
+    borderColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
   fotoBotonTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "700",
-    color: Paleta.orange,
+    color: PaletaOperador.principal,
   },
   cargando: {
     marginTop: 16,
@@ -321,8 +348,8 @@ const styles = StyleSheet.create({
   guardar: {
     marginTop: 16,
     minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: Paleta.orange,
+    borderRadius: 999,
+    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -330,17 +357,17 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   guardarTexto: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.paperRaised,
     fontSize: 15,
-    fontWeight: "700",
   },
   cancelar: {
     alignItems: "center",
     paddingVertical: 12,
   },
   cancelarTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.inkSoft,
   },
 });

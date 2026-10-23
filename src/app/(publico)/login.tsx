@@ -15,13 +15,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Paleta } from "@/constants/theme";
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
 
 export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const logoSize = Math.min(96, Math.max(64, width * 0.2));
   const dosColumnas = width >= 768;
   const { iniciarSesion } = useSesion();
   const desbloqueo = useDesbloqueoAlEntrar("operador", true);
@@ -54,9 +56,12 @@ export default function LoginOperadorScreen() {
 
   const marca = (
     <View style={[styles.marca, dosColumnas ? styles.marcaLado : null]}>
-      <View style={styles.logo}>
-        <Text style={styles.logoEmoji}>🏛️</Text>
-      </View>
+      <IconoPrincipal
+        width={logoSize}
+        height={logoSize}
+        style={styles.logo}
+        accessibilityLabel="Reporte Ciudadano"
+      />
       <Text style={styles.tituloMarca}>Reporte Ciudadano</Text>
       <Text style={styles.subtituloMarca}>
         Acceso para operadores municipales.
@@ -82,7 +87,7 @@ export default function LoginOperadorScreen() {
           style={[
             dosColumnas
               ? styles.marcaColumna
-              : { paddingTop: insets.top, backgroundColor: Paleta.tealDeep },
+              : { paddingTop: insets.top, backgroundColor: PaletaOperador.oscura },
           ]}
         >
           {marca}
@@ -101,6 +106,7 @@ export default function LoginOperadorScreen() {
             </Text>
 
             <CampoTexto
+              rol="operador"
               etiqueta="Email"
               value={email}
               onChangeText={setEmail}
@@ -114,6 +120,7 @@ export default function LoginOperadorScreen() {
             />
 
             <CampoTexto
+              rol="operador"
               etiqueta="Contraseña"
               value={contrasena}
               onChangeText={setContrasena}
@@ -131,6 +138,7 @@ export default function LoginOperadorScreen() {
 
             <Boton
               titulo="Ingresar"
+              rol="operador"
               cargando={cargando || desbloqueo.desbloqueando}
               disabled={cargando || desbloqueo.desbloqueando}
               onPress={onIngresar}
@@ -140,6 +148,7 @@ export default function LoginOperadorScreen() {
             <Boton
               titulo="Volver al mapa"
               variante="texto"
+              rol="operador"
               disabled={cargando || desbloqueo.desbloqueando}
               onPress={() => router.replace("/")}
             />
@@ -170,7 +179,7 @@ const styles = StyleSheet.create({
     minHeight: "100%",
   },
   marca: {
-    backgroundColor: Paleta.tealDeep,
+    backgroundColor: PaletaOperador.oscura,
     paddingHorizontal: 32,
     paddingVertical: 40,
     alignItems: "center",
@@ -184,26 +193,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    width: 80,
-    height: 80,
-    backgroundColor: Paleta.orange,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 24,
-  },
-  logoEmoji: {
-    fontSize: 40,
+    flexShrink: 0,
   },
   tituloMarca: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 32,
-    fontWeight: "600",
     color: Paleta.paperRaised,
     textAlign: "center",
     marginBottom: 12,
   },
   subtituloMarca: {
+    fontFamily: Fonts.regular,
     fontSize: 15,
     color: "rgba(255,255,255,0.9)",
     textAlign: "center",
@@ -222,18 +223,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   tituloForm: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 28,
-    fontWeight: "600",
     color: Paleta.ink,
     marginBottom: 8,
   },
   subtituloForm: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     marginBottom: 32,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
@@ -248,12 +250,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   ayudaTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: "600",
     color: Paleta.ink,
     marginBottom: 6,
   },
   ayudaTexto: {
+    fontFamily: Fonts.regular,
     fontSize: 11,
     color: Paleta.inkSoft,
     lineHeight: 16,

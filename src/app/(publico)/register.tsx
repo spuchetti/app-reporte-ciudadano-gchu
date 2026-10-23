@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { borradorListoParaEnviar, leerBorrador } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
@@ -145,7 +145,7 @@ export default function DatosVecinoScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
+    backgroundColor: Paleta.paper,
   },
   scroll: {
     flexGrow: 1,
@@ -154,22 +154,33 @@ const styles = StyleSheet.create({
   },
   formInner: {
     width: "100%",
-    maxWidth: 320,
+    maxWidth: 440,
     alignSelf: "center",
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Paleta.line,
+    backgroundColor: Paleta.paperRaised,
+    shadowColor: Paleta.ink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 28,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 30,
     color: Paleta.ink,
     marginBottom: 8,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     marginBottom: 32,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,

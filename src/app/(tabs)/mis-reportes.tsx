@@ -12,9 +12,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
+import IconoPrincipal from '@/assets/branding/icono_principal.svg';
 import { Boton } from '@/components/ui/boton';
-import { Paleta, fondoSuave } from '@/constants/theme';
+import { InsigniaEstado } from '@/components/ui/insignia-estado';
+import { Fonts, Paleta } from '@/constants/theme';
 import { useSesion } from '@/contexto/sesion';
 import { haceTiempo, nombreTipo } from '@/servicios/bandeja';
 import {
@@ -23,15 +26,8 @@ import {
   obtenerReportesAdheridos,
   sincronizarPendientes,
 } from '@/servicios/reportes';
-import { EstadoReporte, Reporte } from '@/tipos';
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
+import { COLORES_ESTADO } from '@/servicios/mapa';
+import { Reporte } from '@/tipos';
 
 interface TarjetaReporteProps {
   reporte: Reporte;
@@ -75,15 +71,14 @@ function TarjetaReporte({ reporte, sumado = false, onPress }: TarjetaReporteProp
         </View>
 
         <View style={styles.tarjetaDerecha}>
-          <View style={[styles.insigniaEstado, { backgroundColor: fondoSuave(colorEstado) }]}>
-            <Text
-              numberOfLines={3}
-              style={[styles.textoInsigniaEstado, { color: colorEstado }]}
-            >
-              {estado}
-            </Text>
-          </View>
-          <Text style={styles.flechaDetalle}>›</Text>
+          <InsigniaEstado
+            estado={reporte.estado}
+            etiqueta={estado}
+            colorOverride={pendiente ? Paleta.inkSoft : undefined}
+            maxWidth={118}
+            lineas={3}
+          />
+          <Ionicons name="chevron-forward" size={20} color={Paleta.inkSoft} />
         </View>
       </View>
 
@@ -189,10 +184,17 @@ export default function MisReportesScreen() {
           { paddingTop: Platform.OS === 'web' ? 88 : insets.top + 16 },
         ]}
       >
-        <Text style={styles.cabeceraTitulo}>Mis reportes</Text>
-        {!cargando && !error && (
-          <Text style={styles.cabeceraSubtitulo}>{resumenReclamos}</Text>
-        )}
+        <IconoPrincipal
+          width={40}
+          height={40}
+          accessibilityLabel="Reporte Ciudadano"
+        />
+        <View style={styles.cabeceraTexto}>
+          <Text style={styles.cabeceraTitulo}>Mis reportes</Text>
+          {!cargando && !error && (
+            <Text style={styles.cabeceraSubtitulo}>{resumenReclamos}</Text>
+          )}
+        </View>
       </View>
 
       {cargando ? (
@@ -264,16 +266,22 @@ const styles = StyleSheet.create({
   cabecera: {
     backgroundColor: Paleta.teal,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cabeceraTexto: {
+    flex: 1,
     gap: 4,
   },
   cabeceraTitulo: {
-    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' }),
-    fontSize: 26,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    fontSize: 24,
     color: Paleta.paperRaised,
   },
   cabeceraSubtitulo: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.paperRaised,
     opacity: 0.85,
@@ -286,16 +294,18 @@ const styles = StyleSheet.create({
   },
   textoCarga: {
     marginTop: 12,
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
   },
   tituloError: {
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
-    fontWeight: '700',
     color: Paleta.rojo,
     marginBottom: 4,
   },
   textoError: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.rojo,
     textAlign: 'center',
@@ -306,8 +316,8 @@ const styles = StyleSheet.create({
     width: 140,
   },
   listaContenido: {
-    padding: 16,
-    gap: 12,
+    padding: 20,
+    gap: 14,
   },
   listaVacia: {
     flexGrow: 1,
@@ -315,7 +325,7 @@ const styles = StyleSheet.create({
   },
   tarjeta: {
     backgroundColor: Paleta.paperRaised,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Paleta.line,
     flexDirection: 'row',
@@ -347,32 +357,34 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   codigo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 0.4,
     color: Paleta.tealDeep,
   },
   tipoTitulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 16,
-    fontWeight: '700',
     color: Paleta.ink,
   },
   direccion: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
   },
   sumado: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: '700',
     color: Paleta.teal,
   },
   seccion: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: '700',
     color: Paleta.inkSoft,
     marginTop: 4,
   },
   antiguedad: {
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
     marginTop: 2,
@@ -382,34 +394,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  insigniaEstado: {
-    maxWidth: 118,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  textoInsigniaEstado: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  flechaDetalle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Paleta.inkSoft,
-  },
   vacioCaja: {
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   vacioTitulo: {
-    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' }),
+    fontFamily: Fonts.semiBold,
     fontSize: 20,
     fontWeight: '600',
     color: Paleta.ink,
     marginBottom: 8,
   },
   vacioSubtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     textAlign: 'center',

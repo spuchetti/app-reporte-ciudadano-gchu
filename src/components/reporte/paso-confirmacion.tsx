@@ -1,8 +1,9 @@
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 
 import { MapView, Marker } from "@/components/mapa";
-import { Paleta } from "@/constants/theme";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { Fonts, Paleta } from "@/constants/theme";
 import { nombreZona } from "@/servicios/bandeja";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { TipoDeReporte } from "@/tipos";
@@ -35,9 +36,12 @@ export function PasoConfirmacion({
       {fotos[0] ? (
         <Image source={{ uri: fotos[0] }} style={styles.foto} contentFit="cover" />
       ) : null}
-      <Text style={styles.tipo}>
-        {tipo ? `${tipo.icono}  ${tipo.nombre}` : "Tipo de problema"}
-      </Text>
+      <View style={styles.tipoFila}>
+        {tipo ? <IconoCategoria tipoId={tipo.id} size={24} /> : null}
+        <Text style={styles.tipo}>
+          {tipo?.nombre ?? "Tipo de problema"}
+        </Text>
+      </View>
       {tipo ? <Text style={styles.area}>{tipo.areaResponsable}</Text> : null}
       <View style={styles.mapa}>
         <MapView
@@ -70,19 +74,25 @@ const styles = StyleSheet.create({
   caja: {
     gap: 10,
   },
+  tipoFila: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   foto: {
     width: "100%",
     height: 180,
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: Paleta.paper,
   },
   tipo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 20,
     fontWeight: "600",
     color: Paleta.ink,
   },
   area: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
     marginTop: -6,
@@ -91,24 +101,28 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#E1F5EE",
+    backgroundColor: Paleta.tealSoft,
   },
   direccion: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
     fontWeight: "600",
     color: Paleta.ink,
   },
   zona: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
     fontWeight: "600",
     color: Paleta.tealDeep,
   },
   descripcion: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     lineHeight: 20,
   },
   audio: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
     fontWeight: "600",
     color: Paleta.tealDeep,

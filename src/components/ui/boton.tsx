@@ -6,24 +6,31 @@ import {
   type PressableProps,
 } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { Fonts, PaletaOperador, PaletaVecino } from "@/constants/theme";
 
 type Variante = "primario" | "secundario" | "texto";
+type RolVisual = "vecino" | "operador";
 
 type Props = PressableProps & {
   titulo: string;
   variante?: Variante;
   cargando?: boolean;
+  rol?: RolVisual;
 };
 
 export function Boton({
   titulo,
   variante = "primario",
   cargando = false,
+  rol = "vecino",
   disabled,
   ...rest
 }: Props) {
   const inactivo = disabled || cargando;
+  const colorPrimario =
+    rol === "operador" ? PaletaOperador.principal : PaletaVecino.principal;
+  const colorOscuro =
+    rol === "operador" ? PaletaOperador.oscura : PaletaVecino.oscura;
 
   return (
     <Pressable
@@ -32,8 +39,9 @@ export function Boton({
       disabled={inactivo}
       style={({ pressed }) => [
         styles.base,
-        variante === "primario" && styles.primario,
+        variante === "primario" && { backgroundColor: colorPrimario },
         variante === "secundario" && styles.secundario,
+        variante === "secundario" && { borderColor: colorPrimario },
         variante === "texto" && styles.texto,
         pressed && !inactivo && styles.pressed,
         inactivo && styles.inactivo,
@@ -42,15 +50,16 @@ export function Boton({
     >
       {cargando ? (
         <ActivityIndicator
-          color={variante === "primario" ? Paleta.paperRaised : Paleta.teal}
+          color={variante === "primario" ? "#FFFFFF" : colorPrimario}
         />
       ) : (
         <Text
           style={[
             styles.etiqueta,
             variante === "primario" && styles.etiquetaPrimario,
-            variante === "secundario" && styles.etiquetaSecundario,
+            variante === "secundario" && { color: colorPrimario },
             variante === "texto" && styles.etiquetaTexto,
+            variante === "texto" && { color: colorOscuro },
           ]}
         >
           {titulo}
@@ -64,18 +73,14 @@ const styles = StyleSheet.create({
   base: {
     width: "100%",
     minHeight: 48,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
-  primario: {
-    backgroundColor: Paleta.teal,
-  },
   secundario: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: Paleta.teal,
   },
   texto: {
     backgroundColor: "transparent",
@@ -88,17 +93,12 @@ const styles = StyleSheet.create({
   },
   etiqueta: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
   },
   etiquetaPrimario: {
-    color: Paleta.paperRaised,
-  },
-  etiquetaSecundario: {
-    color: Paleta.teal,
+    color: "#FFFFFF",
   },
   etiquetaTexto: {
-    color: Paleta.tealDeep,
-    fontWeight: "500",
-    textDecorationLine: "underline",
+    fontFamily: Fonts.medium,
   },
 });
