@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 
-import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { Boton } from "@/components/ui/boton";
 import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
@@ -61,12 +60,6 @@ export function SheetPreferenciaIngreso() {
     <Modal visible={!ocultarParaAuth} animationType="fade" transparent>
       <View style={styles.fondo}>
         <View style={styles.tarjeta}>
-          <IconoPrincipal
-            width={48}
-            height={48}
-            accessibilityLabel="Reporte Ciudadano"
-            style={styles.logo}
-          />
           <Text style={styles.titulo}>¿Cómo querés ingresar la próxima vez?</Text>
           <Text style={styles.subtitulo}>
             Lo usás para ingresar. Podés seguir con tus datos, si cancelás.
@@ -122,10 +115,6 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderWidth: 1,
     borderColor: Paleta.line,
-  },
-  logo: {
-    alignSelf: "center",
-    marginBottom: 16,
   },
   titulo: {
     fontFamily: Fonts.semiBold,

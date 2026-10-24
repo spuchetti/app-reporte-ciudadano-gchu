@@ -3,7 +3,6 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import TarjetaZona from "@/components/operador/tarjeta-zona";
 import Cargando from "@/components/ui/cargando";
 import HeaderOperador from "@/components/ui/headerOperador";
@@ -55,18 +54,13 @@ export default function Zonas() {
           accessibilityLabel="Volver a la bandeja"
           onPress={() => router.back()}
           hitSlop={8}
+          style={styles.volver}
         >
-          <View style={styles.volver}>
-            <Ionicons name="arrow-back" size={20} color={Paleta.paperRaised} />
-            <Text style={styles.volverTexto}>Bandeja</Text>
-          </View>
+          <Ionicons name="arrow-back" size={22} color={Paleta.paperRaised} />
         </Pressable>
         <View style={styles.informacion}>
-          <IconoPrincipal width={36} height={36} accessibilityLabel="Reporte Ciudadano" />
-          <View style={styles.informacionTexto}>
-            <Text style={styles.titulo}>Zonas y cuadrillas</Text>
-            {usuario ? <Text style={styles.subtitulo}>{usuario.nombre}</Text> : null}
-          </View>
+          <Text style={styles.titulo}>Zonas y cuadrillas</Text>
+          {usuario ? <Text style={styles.subtitulo}>{usuario.nombre}</Text> : null}
         </View>
       </HeaderOperador>
 
@@ -101,41 +95,28 @@ const styles = StyleSheet.create({
   cabecera: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    gap: 8,
   },
   volver: {
-    flexDirection: "row",
+    width: 36,
+    height: 36,
     alignItems: "center",
-    gap: 6,
-  },
-  volverTexto: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 16,
-    color: Paleta.paperRaised,
+    justifyContent: "center",
   },
   informacion: {
     flex: 1,
     minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  informacionTexto: {
-    alignItems: "center",
-    minWidth: 0,
   },
   titulo: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 22,
+    fontFamily: Fonts.bold,
+    fontSize: 18,
     color: Paleta.paperRaised,
-    textAlign: "center",
   },
   subtitulo: {
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-    color: Paleta.paperRaised,
+    marginTop: 2,
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.88)",
   },
   lista: {
     flex: 1,

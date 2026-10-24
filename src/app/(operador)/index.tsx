@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useFocusEffect, useRouter } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
@@ -17,11 +18,8 @@ import { QRScanner } from "@/components/operador/qr-scanner";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import HeaderOperador from "@/components/ui/headerOperador";
-import {
-  CATEGORIA_POR_DEFECTO,
-  obtenerCategoriaVisual,
-} from "@/constants/categorias";
-import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { obtenerCategoriaVisual } from "@/constants/categorias";
+import { Fonts, Paleta, PaletaOperador, fondoSuave } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   ESTADOS_BANDEJA,
@@ -42,7 +40,6 @@ import {
   obtenerReportes,
   obtenerTiposReporte,
 } from "@/servicios/reportes";
-import { COLORES_ESTADO } from "@/servicios/mapa";
 import { obtenerZonas } from "@/servicios/zonas";
 import { EstadoReporte, Reporte } from "@/tipos";
 
@@ -193,6 +190,7 @@ export default function BandejaOperadorScreen() {
             pressed && styles.botonEscanearQrPresionado,
           ]}
         >
+          <Ionicons name="qr-code-outline" size={18} color={Paleta.paperRaised} />
           <Text style={styles.textoEscanearQr}>Escanear QR de Vecino</Text>
         </Pressable>
         <TextInput
@@ -230,6 +228,7 @@ export default function BandejaOperadorScreen() {
           onPress={() => setFiltrosAbiertos((abierto) => !abierto)}
           style={styles.filtrosToggle}
         >
+          <Ionicons name="options-outline" size={16} color={PaletaOperador.principal} />
           <Text style={styles.filtrosToggleTexto}>
             {filtrosActivos > 0 ? `Filtros (${filtrosActivos})` : "Filtros por zona, tipo y estado"}
           </Text>
@@ -269,6 +268,7 @@ export default function BandejaOperadorScreen() {
       </View>
 
       <ScrollView
+        style={styles.listaScroll}
         contentContainerStyle={[
           styles.lista,
           { paddingBottom: insets.bottom + 24 },
@@ -284,23 +284,16 @@ export default function BandejaOperadorScreen() {
                 : "No hay reportes con esos filtros."}
           </Text>
         ) : (
-          visibles.map((item) => {
-            const categoria =
-              obtenerCategoriaVisual(item.tipoId) ?? CATEGORIA_POR_DEFECTO;
-            return (
+          visibles.map((item) => (
               <View key={item.id} style={styles.tarjeta}>
-                <View
-                  style={[
-                    styles.barraEstadoTarjeta,
-                    { backgroundColor: COLORES_ESTADO[item.estado] },
-                  ]}
-                />
                 <View style={styles.tarjetaCuerpo}>
                   <View
                     style={[
                       styles.icono,
                       {
-                        backgroundColor: fondoSuave(categoria.color),
+                        backgroundColor: fondoSuave(
+                          obtenerCategoriaVisual(item.tipoId)?.color ?? Paleta.teal,
+                        ),
                       },
                     ]}
                   >
@@ -312,7 +305,7 @@ export default function BandejaOperadorScreen() {
                       <InsigniaEstado
                         estado={item.estado}
                         etiqueta={etiquetaEstado(item.estado)}
-                        maxWidth={136}
+                        maxWidth={148}
                       />
                     </View>
                     <Text style={styles.linea} numberOfLines={1}>
@@ -357,8 +350,7 @@ export default function BandejaOperadorScreen() {
                   ) : null}
                 </View>
               </View>
-            );
-          })
+          ))
         )}
       </ScrollView>
 
@@ -443,11 +435,11 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: Paleta.paper },
+  pantalla: { flex: 1, backgroundColor: "#E8EEF3" },
   cabecera: {
     backgroundColor: PaletaOperador.oscura,
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -462,12 +454,12 @@ const styles = StyleSheet.create({
   },
   cabeceraTexto: { flex: 1, minWidth: 0 },
   titulo: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 24,
+    fontFamily: Fonts.bold,
+    fontSize: 26,
     color: Paleta.paperRaised,
   },
   subtitulo: {
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: Fonts.regular,
     fontSize: 13,
     color: "rgba(255,255,255,0.85)",
@@ -488,8 +480,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: PaletaOperador.principal,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
   botonEscanearQrPresionado: {
     opacity: 0.85,
@@ -505,20 +499,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Paleta.line,
     gap: 10,
   },
   buscador: {
     borderWidth: 1,
     borderColor: Paleta.line,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
     fontFamily: Fonts.regular,
     color: Paleta.ink,
-    backgroundColor: Paleta.paper,
+    backgroundColor: "#F4F7FA",
   },
   tabs: {
     flexDirection: "row",
@@ -526,14 +518,16 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 40,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.paper,
+    backgroundColor: "#F4F7FA",
+    borderWidth: 0,
   },
   tabActiva: {
     backgroundColor: PaletaOperador.principal,
+    borderColor: PaletaOperador.principal,
   },
   tabTexto: {
     fontFamily: Fonts.medium,
@@ -545,6 +539,9 @@ const styles = StyleSheet.create({
   },
   filtrosToggle: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   filtrosToggleTexto: {
     fontFamily: Fonts.semiBold,
@@ -594,6 +591,10 @@ const styles = StyleSheet.create({
   chipTextoActivo: {
     color: Paleta.paperRaised,
   },
+  listaScroll: {
+    flex: 1,
+    backgroundColor: "#E8EEF3",
+  },
   lista: {
     padding: 20,
   },
@@ -605,22 +606,11 @@ const styles = StyleSheet.create({
     color: Paleta.inkSoft,
   },
   tarjeta: {
-    position: "relative",
-    overflow: "hidden",
     backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Paleta.line,
-    marginBottom: 10,
+    padding: 14,
+    marginBottom: 12,
     gap: 12,
-  },
-  barraEstadoTarjeta: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 5,
   },
   tarjetaCuerpo: {
     flexDirection: "row",
@@ -629,9 +619,10 @@ const styles = StyleSheet.create({
   icono: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Paleta.tealSoft,
   },
   tarjetaInfo: {
     flex: 1,
@@ -648,11 +639,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.ink,
+    color: Paleta.inkSoft,
   },
   linea: {
-    fontFamily: Fonts.medium,
-    fontSize: 13,
+    fontFamily: Fonts.bold,
+    fontSize: 15,
     color: Paleta.ink,
   },
   meta: {

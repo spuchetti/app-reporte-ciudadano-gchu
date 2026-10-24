@@ -1,60 +1,88 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { Fonts, Paleta } from "@/constants/theme";
 import { PASOS_REPORTE } from "@/servicios/borrador";
 
 const TITULOS = [
-  "Tipo de problema",
-  "Foto",
-  "Ubicación",
-  "Descripción",
+  "¿Qué problema viste?",
+  "Sacá una foto",
+  "¿Dónde está?",
+  "Contanos qué pasa",
   "Confirmación",
 ];
 
 type Props = {
   paso: number;
+  onAtras: () => void;
+  onCerrar: () => void;
+  titulo?: string;
 };
 
-export function ProgresoReporte({ paso }: Props) {
+export function ProgresoReporte({ paso, onAtras, onCerrar, titulo }: Props) {
   return (
     <View style={styles.caja}>
-      <Text style={styles.kicker}>
-        Paso {paso} de {PASOS_REPORTE}
-      </Text>
-      <Text style={styles.titulo}>{TITULOS[paso - 1]}</Text>
+      <View style={styles.barra}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+          hitSlop={8}
+          onPress={onAtras}
+          style={styles.boton}
+        >
+          <Ionicons name="arrow-back" size={22} color={Paleta.ink} />
+        </Pressable>
+        <Text style={styles.paso}>
+          Paso {paso} de {PASOS_REPORTE}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar"
+          hitSlop={8}
+          onPress={onCerrar}
+          style={styles.boton}
+        >
+          <Ionicons name="close" size={22} color={Paleta.ink} />
+        </Pressable>
+      </View>
       <View style={styles.puntos}>
-        {TITULOS.map((_, indice) => (
+        {TITULOS.map((titulo, indice) => (
           <View
-            key={TITULOS[indice]}
-            style={[
-              styles.punto,
-              indice < paso ? styles.puntoActivo : null,
-            ]}
+            key={titulo}
+            style={[styles.punto, indice < paso ? styles.puntoActivo : null]}
           />
         ))}
       </View>
+      <Text style={styles.titulo}>{titulo ?? TITULOS[paso - 1]}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   caja: {
-    marginBottom: 20,
+    marginBottom: 8,
+    gap: 16,
   },
-  kicker: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 12,
-    color: Paleta.teal,
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+  barra: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  boton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paso: {
+    fontFamily: Fonts.medium,
+    fontSize: 15,
+    color: Paleta.inkSoft,
   },
   titulo: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 24,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 26,
     color: Paleta.ink,
-    marginBottom: 12,
   },
   puntos: {
     flexDirection: "row",

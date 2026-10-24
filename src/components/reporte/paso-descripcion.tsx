@@ -1,17 +1,32 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   AudioModule,
   RecordingPresets,
   setAudioModeAsync,
-  useAudioPlayer,
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
 import { Ionicons } from "@expo/vector-icons";
 
-import { CampoTexto } from "@/components/ui/campo-texto";
+import { NotaDeVoz } from "@/components/reporte/nota-de-voz";
 import { Fonts, Paleta } from "@/constants/theme";
+
+const MAX_DESCRIPCION = 300;
+const FRASES = [
+  "Pasa hace varios días",
+  "Hay riesgo para las personas",
+  "Se agrava cuando llueve",
+];
+
+function conFrase(actual: string, frase: string) {
+  if (actual.includes(frase)) {
+    return actual;
+  }
+  const base = actual.trim();
+  const siguiente = base ? `${base} ${frase}` : frase;
+  return siguiente.slice(0, MAX_DESCRIPCION);
+}
 
 type Props = {
   descripcion: string;
@@ -20,51 +35,25 @@ type Props = {
   onAudio: (uri: string | null) => void;
 };
 
+const MODO_GRABACION = {
+  allowsRecording: true,
+  playsInSilentMode: true,
+  shouldRouteThroughEarpiece: false,
+  interruptionMode: "doNotMix",
+} as const;
+
+const MODO_REPRODUCCION = {
+  allowsRecording: false,
+  playsInSilentMode: true,
+  shouldRouteThroughEarpiece: false,
+  interruptionMode: "doNotMix",
+} as const;
+
 function formatoTiempo(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const minutos = Math.floor(total / 60);
   const segundos = total % 60;
   return `${minutos}:${String(segundos).padStart(2, "0")}`;
-}
-
-function FichaNota({
-  uri,
-  duracionMs,
-  onBorrar,
-}: {
-  uri: string;
-  duracionMs: number;
-  onBorrar: () => void;
-}) {
-  const player = useAudioPlayer({ uri });
-  const etiqueta =
-    duracionMs > 0 ? `Nota de voz · ${formatoTiempo(duracionMs)}` : "Nota de voz";
-
-  return (
-    <View style={styles.ficha}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Reproducir nota de voz"
-        onPress={() => {
-          player.seekTo(0);
-          player.play();
-        }}
-        style={styles.play}
-      >
-        <Ionicons name="play" size={14} color={Paleta.paperRaised} />
-      </Pressable>
-      <Text style={styles.fichaTexto}>{etiqueta}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Borrar nota de voz"
-        onPress={onBorrar}
-        hitSlop={8}
-        style={styles.borrar}
-      >
-        <Ionicons name="close" size={22} color={Paleta.inkSoft} />
-      </Pressable>
-    </View>
-  );
 }
 
 export function PasoDescripcion({
@@ -76,13 +65,6 @@ export function PasoDescripcion({
   const grabadora = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const estado = useAudioRecorderState(grabadora);
   const [error, setError] = useState<string | null>(null);
-  const [duracionMs, setDuracionMs] = useState(0);
-
-  useEffect(() => {
-    if (!audioUrl) {
-      setDuracionMs(0);
-    }
-  }, [audioUrl]);
 
   useEffect(() => {
     return () => {
@@ -97,45 +79,66 @@ export function PasoDescripcion({
       setError("Para grabar, el teléfono tiene que permitir el micrófono.");
       return;
     }
-    await setAudioModeAsync({
-      playsInSilentMode: true,
-      allowsRecording: true,
-    });
+    await setAudioModeAsync(MODO_GRABACION);
     await grabadora.prepareToRecordAsync();
     grabadora.record();
   }
 
   async function detenerGrabacion() {
-    const ms = estado.durationMillis;
     await grabadora.stop();
     if (grabadora.uri) {
-      setDuracionMs(ms);
       onAudio(grabadora.uri);
     }
-    await setAudioModeAsync({
-      allowsRecording: false,
-      playsInSilentMode: true,
-    });
+    await setAudioModeAsync(MODO_REPRODUCCION);
   }
 
   return (
     <View>
-      <CampoTexto
-        etiqueta="¿Qué está pasando?"
-        value={descripcion}
-        onChangeText={onDescripcion}
-        placeholder="Desde cuándo, si hay riesgo y cualquier dato útil para la cuadrilla."
-        multiline
-        style={styles.area}
-      />
+      <View style={styles.filaEtiqueta}>
+        <Text style={styles.etiqueta}>¿Qué está pasando?</Text>
+        <Text style={styles.opcional}>Opcional</Text>
+      </View>
+      <View style={styles.area}>
+        <TextInput
+          value={descripcion}
+          onChangeText={(valor) => onDescripcion(valor.slice(0, MAX_DESCRIPCION))}
+          placeholder="Contá desde cuándo pasa y si hay algún riesgo."
+          placeholderTextColor={Paleta.inkSoft}
+          multiline
+          maxLength={MAX_DESCRIPCION}
+          style={styles.input}
+        />
+        <Text style={styles.contador}>
+          {descripcion.length}/{MAX_DESCRIPCION}
+        </Text>
+      </View>
+      <View style={styles.frases}>
+        {FRASES.map((frase) => (
+          <Pressable
+            key={frase}
+            accessibilityRole="button"
+            accessibilityLabel={`Agregar: ${frase}`}
+            onPress={() => onDescripcion(conFrase(descripcion, frase))}
+            style={styles.frase}
+          >
+            <Text style={styles.fraseMas}>+</Text>
+            <Text style={styles.fraseTexto}>{frase}</Text>
+          </Pressable>
+        ))}
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {estado.isRecording ? (
-        <View style={styles.filaVoz}>
-          <View style={styles.punto} />
-          <Text style={styles.grabando}>
-            Grabando {formatoTiempo(estado.durationMillis)}
-          </Text>
+        <View style={styles.voz}>
+          <View style={styles.grabandoMarca}>
+            <View style={styles.punto} />
+          </View>
+          <View style={styles.vozTexto}>
+            <Text style={styles.vozTitulo}>
+              Grabando {formatoTiempo(estado.durationMillis)}
+            </Text>
+            <Text style={styles.vozDetalle}>Tocá detener cuando termines.</Text>
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Detener grabación"
@@ -148,21 +151,26 @@ export function PasoDescripcion({
           </Pressable>
         </View>
       ) : audioUrl ? (
-        <FichaNota
-          uri={audioUrl}
-          duracionMs={duracionMs}
-          onBorrar={() => onAudio(null)}
-        />
+        <NotaDeVoz uri={audioUrl} onBorrar={() => onAudio(null)} />
       ) : (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Agregar nota de voz"
+          accessibilityLabel="Grabar nota de voz"
           onPress={() => {
             void empezarGrabacion();
           }}
-          style={styles.agregar}
+          style={styles.voz}
         >
-          <Text style={styles.agregarTexto}>Agregar nota de voz</Text>
+          <View style={styles.microfono}>
+            <Ionicons name="mic" size={18} color={Paleta.paperRaised} />
+          </View>
+          <View style={styles.vozTexto}>
+            <Text style={styles.vozTitulo}>Grabar nota de voz</Text>
+            <Text style={styles.vozDetalle}>
+              Si te resulta más fácil contarlo hablando
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Paleta.inkSoft} />
         </Pressable>
       )}
     </View>
@@ -170,9 +178,70 @@ export function PasoDescripcion({
 }
 
 const styles = StyleSheet.create({
+  filaEtiqueta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  etiqueta: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
+    color: Paleta.ink,
+  },
+  opcional: {
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    color: Paleta.inkSoft,
+  },
   area: {
-    minHeight: 120,
+    minHeight: 128,
+    borderRadius: 16,
+    backgroundColor: "#F4F7F8",
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 28,
+    marginBottom: 14,
+  },
+  input: {
+    minHeight: 72,
+    fontFamily: Fonts.regular,
+    fontSize: 15,
+    color: Paleta.ink,
     textAlignVertical: "top",
+    padding: 0,
+  },
+  contador: {
+    position: "absolute",
+    right: 12,
+    bottom: 10,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    color: Paleta.inkSoft,
+  },
+  frases: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  frase: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F4F7F8",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  fraseMas: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 15,
+    color: Paleta.tealDeep,
+  },
+  fraseTexto: {
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+    color: Paleta.ink,
   },
   error: {
     fontFamily: Fonts.medium,
@@ -180,66 +249,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
   },
-  agregar: {
-    alignSelf: "flex-start",
-    paddingVertical: 4,
-    paddingRight: 8,
-  },
-  agregarTexto: {
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-    color: Paleta.tealDeep,
-  },
-  filaVoz: {
+  voz: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 4,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#E6ECF0",
+    borderRadius: 16,
+    backgroundColor: Paleta.paperRaised,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  microfono: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Paleta.teal,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  vozTexto: {
+    flex: 1,
+    gap: 2,
+  },
+  vozTitulo: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    color: Paleta.ink,
+  },
+  vozDetalle: {
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    color: Paleta.inkSoft,
+  },
+  grabandoMarca: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FDECEC",
+    alignItems: "center",
+    justifyContent: "center",
   },
   punto: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: Paleta.rojo,
-  },
-  grabando: {
-    flex: 1,
-    fontFamily: Fonts.semiBold,
-    fontSize: 14,
-    color: Paleta.ink,
   },
   accion: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
     color: Paleta.tealDeep,
-  },
-  ficha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: Paleta.paper,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  play: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Paleta.teal,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fichaTexto: {
-    flex: 1,
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-    color: Paleta.ink,
-  },
-  borrar: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

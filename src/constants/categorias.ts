@@ -1,9 +1,7 @@
 import type { ComponentProps } from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-export type IconoCategoria = ComponentProps<
-  typeof MaterialCommunityIcons
->["name"];
+export type IconoCategoria = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 export type CategoriaVisual = {
   id: string;
@@ -23,7 +21,7 @@ export const CATEGORIAS_VISUALES: readonly CategoriaVisual[] = [
   {
     id: "tip-bache",
     nombre: "Bache",
-    icono: "road-variant",
+    icono: "road",
     color: "#D97706",
   },
   {
@@ -35,7 +33,7 @@ export const CATEGORIAS_VISUALES: readonly CategoriaVisual[] = [
   {
     id: "tip-basura",
     nombre: "Basura",
-    icono: "delete-outline",
+    icono: "trash-can-outline",
     color: "#64748B",
   },
   {
@@ -53,7 +51,7 @@ export const CATEGORIAS_VISUALES: readonly CategoriaVisual[] = [
   {
     id: "tip-semaforo",
     nombre: "Semáforo",
-    icono: "traffic-light",
+    icono: "traffic-light-outline",
     color: "#DC4B40",
   },
   {

@@ -1,3 +1,5 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
   Pressable,
@@ -19,12 +21,14 @@ type Props = TextInputProps & {
   etiqueta: string;
   error?: string | null;
   rol?: "vecino" | "operador";
+  icono?: ComponentProps<typeof Ionicons>["name"];
 };
 
 export function CampoTexto({
   etiqueta,
   error,
   rol = "vecino",
+  icono,
   secureTextEntry,
   onFocus,
   onBlur,
@@ -55,25 +59,35 @@ export function CampoTexto({
           </Pressable>
         ) : null}
       </View>
-      <TextInput
-        {...rest}
-        onFocus={(evento) => {
-          setEnfocado(true);
-          onFocus?.(evento);
-        }}
-        onBlur={(evento) => {
-          setEnfocado(false);
-          onBlur?.(evento);
-        }}
-        secureTextEntry={esClave && !visible}
-        placeholderTextColor={Paleta.inkSoft}
+      <View
         style={[
-          styles.input,
+          styles.campo,
           enfocado && !error ? { borderColor: acento, borderWidth: 2 } : null,
           error ? styles.inputError : null,
-          style,
         ]}
-      />
+      >
+        {icono ? (
+          <Ionicons
+            name={icono}
+            size={18}
+            color={enfocado && !error ? acento : Paleta.inkSoft}
+          />
+        ) : null}
+        <TextInput
+          {...rest}
+          onFocus={(evento) => {
+            setEnfocado(true);
+            onFocus?.(evento);
+          }}
+          onBlur={(evento) => {
+            setEnfocado(false);
+            onBlur?.(evento);
+          }}
+          secureTextEntry={esClave && !visible}
+          placeholderTextColor={Paleta.inkSoft}
+          style={[styles.input, style]}
+        />
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -98,17 +112,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: Fonts.medium,
   },
-  input: {
+  campo: {
     width: "100%",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: Paleta.line,
     borderRadius: 12,
+    backgroundColor: Paleta.paperRaised,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 14,
     fontFamily: Fonts.regular,
     color: Paleta.ink,
-    backgroundColor: Paleta.paperRaised,
   },
   inputError: {
     borderColor: Paleta.rojo,

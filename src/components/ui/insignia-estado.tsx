@@ -17,8 +17,8 @@ const COLORES_ESTADO = {
     claro: { fondo: "#FFF0E4", texto: "#9D4308" },
   },
   resuelto: {
-    oscuro: { fondo: "#DDF5E3", texto: "#226D3A" },
-    claro: { fondo: "#E6F5E9", texto: "#226D3A" },
+    oscuro: { fondo: "#C8EBD4", texto: "#145C32" },
+    claro: { fondo: "#C9EED4", texto: "#145C32" },
   },
   rechazado: {
     oscuro: { fondo: "#FCE3E3", texto: "#A32E2E" },

@@ -2,7 +2,7 @@ import React from "react";
 import { act, create, ReactTestRenderer } from "react-test-renderer";
 import HomeVecinoScreen from "../src/app/(tabs)/index";
 import { ProveedorOrigenReporte } from "@/contexto/origen-reporte";
-import { obtenerAvisosDeEstado, obtenerReportesPorZona } from "@/servicios/reportes";
+import { obtenerReportes } from "@/servicios/reportes";
 
 const mockPush = jest.fn();
 
@@ -62,29 +62,15 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 jest.mock("@/servicios/reportes", () => ({
-  obtenerReportesPorZona: jest.fn(async () => []),
-  obtenerAvisosDeEstado: jest.fn(async () => []),
-  obtenerMisReportes: jest.fn(async () => []),
-  resumenReportesCerca: (cantidad: number) => {
-    if (cantidad <= 0) {
-      return "No hay reportes cerca tuyo";
-    }
-    if (cantidad === 1) {
-      return "Hay 1 reporte cerca tuyo";
-    }
-    return `Hay ${cantidad} reportes cerca tuyo`;
-  },
-  ultimosReportesPublicos: (reportes: unknown[]) => reportes.slice(0, 3),
-  etiquetaEstado: (estado: string) =>
-    ({ en_revision: "en revisión" }[estado] ?? estado),
+  obtenerReportes: jest.fn(async () => []),
 }));
 
-const obtenerPorZona = obtenerReportesPorZona as jest.MockedFunction<
-  typeof obtenerReportesPorZona
->;
-const obtenerAvisos = obtenerAvisosDeEstado as jest.MockedFunction<
-  typeof obtenerAvisosDeEstado
->;
+jest.mock("@/servicios/ubicacion", () => ({
+  obtenerUbicacionActual: jest.fn(async () => {
+    throw new Error("sin gps");
+  }),
+  COORDENADAS_CENTRO: { latitud: -33.0156, longitud: -58.5089 },
+}));
 
 const reporteNorte = {
   id: "rep-001",
@@ -106,12 +92,7 @@ const reporteNorte = {
   sincronizado: true,
 };
 
-const reporteSur = {
-  ...reporteNorte,
-  id: "rep-003",
-  descripcion: "Basura en Sur",
-  zonaId: "zon-sur",
-};
+const obtenerLista = obtenerReportes as jest.MockedFunction<typeof obtenerReportes>;
 
 function arbolComoTexto(nodo: unknown): string {
   return JSON.stringify(nodo);
@@ -142,70 +123,26 @@ describe("Home vecino", () => {
   jest.setTimeout(20000);
   beforeEach(() => {
     mockPush.mockClear();
-    obtenerPorZona.mockReset();
-    obtenerAvisos.mockReset();
-    obtenerPorZona.mockResolvedValue([reporteNorte]);
-    obtenerAvisos.mockResolvedValue([]);
+    obtenerLista.mockReset();
+    obtenerLista.mockResolvedValue([reporteNorte]);
   });
 
-  test("renderiza la cabecera y el botón de cerrar sesión", async () => {
+  test("renderiza el mapa y el acceso para cerrar sesión", async () => {
     const tree = await montarHome();
 
     const texto = arbolComoTexto(tree.toJSON());
-    expect(texto).toContain("Hola");
-    expect(texto).toContain("Mirko");
-    expect(texto).toContain("Cerrar sesión");
-    expect(obtenerPorZona).toHaveBeenCalledWith("zon-norte");
+    expect(texto).toContain("Gualeguaychú");
+    expect(texto).toContain("Hola, Mirko");
+    buscarPorLabel(tree, "Filtros");
+    buscarPorLabel(tree, "Cerrar sesión");
+    expect(obtenerLista).toHaveBeenCalled();
   });
 
-  test("pide los reportes de la zona del vecino y no mezcla otras zonas", async () => {
-    obtenerPorZona.mockImplementation(async (zonaId: string) =>
-      [reporteNorte, reporteSur].filter((item) => item.zonaId === zonaId),
-    );
-
+  test("muestra los reportes que llegan al mapa", async () => {
     const tree = await montarHome();
 
     const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Pozo en Norte");
-    expect(texto).not.toContain("Basura en Sur");
-    expect(obtenerPorZona).toHaveBeenCalledWith("zon-norte");
-  });
-
-  test("muestra cuántos reportes hay cerca y los últimos de la zona", async () => {
-    const tree = await montarHome();
-
-    const texto = arbolComoTexto(tree.toJSON());
-    expect(texto).toContain("Hay 1 reporte cerca tuyo");
-    expect(texto).toContain("Últimos de tu zona");
-  });
-
-  test("muestra avisos de cambio de estado de sus reportes", async () => {
-    obtenerAvisos.mockResolvedValue([
-      {
-        id: "cambio-008",
-        reporteId: "rep-004",
-        codigo: "GCHU-2026-00448",
-        tipoNombre: "Rama / árbol",
-        estado: "resuelto",
-        comentario: "Rama retirada, vereda despejada",
-        fechaHora: "2026-09-16T10:00:00-03:00",
-      },
-    ]);
-
-    const tree = await montarHome();
-
-    const texto = arbolComoTexto(tree.toJSON());
-    expect(texto).toContain("Tu reporte de Rama / árbol está resuelto.");
-    expect(obtenerAvisos).toHaveBeenCalledWith("usr-001");
-  });
-
-  test("el botón Reportar problema abre el alta de reporte", async () => {
-    const tree = await montarHome();
-
-    await act(async () => {
-      buscarPorLabel(tree, "Reportar problema").props.onPress();
-    });
-
-    expect(mockPush).toHaveBeenCalledWith("/reporte/nuevo");
+    expect(texto).toContain("Mostramos los reportes de la ciudad");
   });
 });

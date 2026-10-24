@@ -1,8 +1,11 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import type { ComponentProps } from "react";
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
+  View,
   type PressableProps,
 } from "react-native";
 
@@ -16,6 +19,7 @@ type Props = PressableProps & {
   variante?: Variante;
   cargando?: boolean;
   rol?: RolVisual;
+  icono?: ComponentProps<typeof Ionicons>["name"];
 };
 
 export function Boton({
@@ -23,14 +27,21 @@ export function Boton({
   variante = "primario",
   cargando = false,
   rol = "vecino",
+  icono,
   disabled,
   ...rest
 }: Props) {
   const inactivo = disabled || cargando;
   const colorPrimario =
-    rol === "operador" ? PaletaOperador.principal : PaletaVecino.principal;
+    rol === "operador" ? PaletaOperador.principal : PaletaVecino.oscura;
   const colorOscuro =
     rol === "operador" ? PaletaOperador.oscura : PaletaVecino.oscura;
+  const colorIcono =
+    variante === "primario"
+      ? "#FFFFFF"
+      : variante === "secundario"
+        ? colorPrimario
+        : colorOscuro;
 
   return (
     <Pressable
@@ -53,17 +64,22 @@ export function Boton({
           color={variante === "primario" ? "#FFFFFF" : colorPrimario}
         />
       ) : (
-        <Text
-          style={[
-            styles.etiqueta,
-            variante === "primario" && styles.etiquetaPrimario,
-            variante === "secundario" && { color: colorPrimario },
-            variante === "texto" && styles.etiquetaTexto,
-            variante === "texto" && { color: colorOscuro },
-          ]}
-        >
-          {titulo}
-        </Text>
+        <View style={styles.contenido}>
+          {icono ? (
+            <Ionicons name={icono} size={18} color={colorIcono} />
+          ) : null}
+          <Text
+            style={[
+              styles.etiqueta,
+              variante === "primario" && styles.etiquetaPrimario,
+              variante === "secundario" && { color: colorPrimario },
+              variante === "texto" && styles.etiquetaTexto,
+              variante === "texto" && { color: colorOscuro },
+            ]}
+          >
+            {titulo}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -90,6 +106,12 @@ const styles = StyleSheet.create({
   },
   inactivo: {
     opacity: 0.6,
+  },
+  contenido: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   etiqueta: {
     fontSize: 15,

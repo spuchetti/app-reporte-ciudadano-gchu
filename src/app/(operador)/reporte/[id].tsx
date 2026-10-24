@@ -18,6 +18,7 @@ import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { obtenerCategoriaVisual } from "@/constants/categorias";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { useSesion } from "@/contexto/sesion";
@@ -256,7 +257,11 @@ export default function DetalleOperadorScreen() {
                 ]}
               />
               <View style={styles.filaTipo}>
-                <IconoCategoria tipoId={reporte.tipoId} size={24} />
+                <IconoCategoria
+                  tipoId={reporte.tipoId}
+                  size={24}
+                  color={obtenerCategoriaVisual(reporte.tipoId)?.color}
+                />
                 <Text style={styles.tipo}>
                   {`${nombreTipo(reporte.tipoId)} · ${reporte.direccion}`}
                 </Text>

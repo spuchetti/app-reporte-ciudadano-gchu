@@ -23,7 +23,7 @@ import { esErrorServicio } from "@/servicios/error";
 export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const logoSize = Math.min(96, Math.max(64, width * 0.2));
+  const logoSize = Math.min(76, Math.max(64, width * 0.18));
   const dosColumnas = width >= 768;
   const { iniciarSesion } = useSesion();
   const desbloqueo = useDesbloqueoAlEntrar("operador", true);
@@ -56,13 +56,15 @@ export default function LoginOperadorScreen() {
 
   const marca = (
     <View style={[styles.marca, dosColumnas ? styles.marcaLado : null]}>
+      <View style={styles.circuloGrande} />
+      <View style={styles.circuloChico} />
       <IconoPrincipal
         width={logoSize}
         height={logoSize}
         style={styles.logo}
         accessibilityLabel="Reporte Ciudadano"
       />
-      <Text style={styles.tituloMarca}>Reporte Ciudadano</Text>
+      <Text style={styles.tituloMarca}>{"Reporte\nCiudadano"}</Text>
       <Text style={styles.subtituloMarca}>
         Acceso para operadores municipales.
       </Text>
@@ -96,7 +98,7 @@ export default function LoginOperadorScreen() {
         <View
           style={[
             styles.formulario,
-            { paddingTop: dosColumnas ? 48 : 32 },
+            { paddingTop: dosColumnas ? 48 : 28 },
           ]}
         >
           <View style={styles.formInner}>
@@ -181,9 +183,29 @@ const styles = StyleSheet.create({
   marca: {
     backgroundColor: PaletaOperador.oscura,
     paddingHorizontal: 32,
-    paddingVertical: 40,
+    paddingTop: 28,
+    paddingBottom: 36,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  circuloGrande: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    top: -80,
+    right: -70,
+  },
+  circuloChico: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    bottom: -70,
+    left: -60,
   },
   marcaLado: {
     flex: 1,
@@ -193,23 +215,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    marginBottom: 24,
+    marginBottom: 12,
     flexShrink: 0,
   },
   tituloMarca: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 32,
+    fontFamily: Fonts.bold,
+    fontSize: 30,
+    lineHeight: 34,
     color: Paleta.paperRaised,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subtituloMarca: {
     fontFamily: Fonts.regular,
-    fontSize: 15,
-    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.88)",
     textAlign: "center",
     maxWidth: 280,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   formulario: {
     flex: 1,
@@ -223,16 +246,16 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   tituloForm: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 28,
+    fontFamily: Fonts.bold,
+    fontSize: 26,
     color: Paleta.ink,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtituloForm: {
     fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
-    marginBottom: 32,
+    marginBottom: 22,
   },
   error: {
     fontFamily: Fonts.medium,
@@ -244,21 +267,22 @@ const styles = StyleSheet.create({
     height: 12,
   },
   ayuda: {
-    marginTop: 24,
-    padding: 12,
-    backgroundColor: Paleta.paper,
-    borderRadius: 8,
+    marginTop: 28,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#F3F6F8",
+    borderRadius: 16,
   },
   ayudaTitulo: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 12,
+    fontFamily: Fonts.bold,
+    fontSize: 13,
     color: Paleta.ink,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   ayudaTexto: {
     fontFamily: Fonts.regular,
-    fontSize: 11,
+    fontSize: 12,
     color: Paleta.inkSoft,
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });
