@@ -240,9 +240,12 @@ export function paramsDeTicket(reporte: Reporte) {
   return {
     codigo: reporte.codigo,
     tipoNombre: tipo?.nombre ?? "Reporte",
+    tipoId: reporte.tipoId,
     area: tipo?.areaResponsable ?? "",
     direccion: reporte.direccion,
     estado: etiquetaParaVecino(reporte),
+    estadoClave: reporte.estado,
+    pendiente: reporte.sincronizado ? "0" : "1",
   };
 }
 

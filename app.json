@@ -5,7 +5,7 @@
     "scheme": "app-reporte-ciudadano-gchu",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/branding/generated/icono-app.png",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -22,10 +22,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/branding/generated/icono-adaptativo-foreground.png",
+        "backgroundColor": "#F5F7FA"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -43,17 +41,17 @@
       "package": "com.anonymous.appreporteciudadanogchu"
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/branding/generated/icono-app.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/branding/generated/splash-icono.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#F5F7FA"
         }
       ],
       [
@@ -83,7 +81,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/branding/generated/icono-notificaciones.png",
           "color": "#ffffff"
         }
       ],

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { router } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   KeyboardAvoidingView,
@@ -19,7 +19,7 @@ import { PasoTipo } from "@/components/reporte/paso-tipo";
 import { PasoUbicacion } from "@/components/reporte/paso-ubicacion";
 import { ProgresoReporte } from "@/components/reporte/progreso";
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   actualizarBorrador,
@@ -35,6 +35,8 @@ import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const { origen } = useLocalSearchParams<{ origen?: string }>();
   const { sesion, enviarReporte, adherirseAReporte } = useSesion();
   const inicial = leerBorrador();
   const [paso, setPaso] = useState(inicial.paso);
@@ -49,6 +51,8 @@ export function AsistenteReporte() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [sumando, setSumando] = useState(false);
+  const [revisandoFoto, setRevisandoFoto] = useState(inicial.fotos.length > 0);
+  const [cercanoElegido, setCercanoElegido] = useState<Reporte | null>(null);
 
   const vecinoIdentificado =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
@@ -70,6 +74,10 @@ export function AsistenteReporte() {
       activo = false;
     };
   }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [paso]);
 
   useEffect(() => {
     actualizarBorrador({
@@ -100,7 +108,7 @@ export function AsistenteReporte() {
       return fotos.length >= 1;
     }
     if (paso === 3) {
-      return latitud != null && longitud != null && direccion.trim().length >= 5;
+      return latitud != null && longitud != null;
     }
     return true;
   }
@@ -124,18 +132,42 @@ export function AsistenteReporte() {
       setError(mensajePaso());
       return;
     }
+    if (paso === 3 && cercanoElegido) {
+      void onSumarse(cercanoElegido);
+      return;
+    }
+    if (paso === 3 && direccion.trim().length < 5) {
+      setDireccion("Gualeguaychú");
+    }
     if (paso < PASOS_REPORTE) {
       setPaso((actual) => actual + 1);
     }
   }
 
-  function onAtras() {
+  function salir() {
     setError(null);
-    if (paso === 1) {
+    if (router.canGoBack()) {
       router.back();
       return;
     }
-    setPaso((actual) => actual - 1);
+    if (origen === "home") {
+      router.replace("/(tabs)");
+      return;
+    }
+    if (origen === "mis-reportes") {
+      router.replace("/(tabs)/mis-reportes");
+      return;
+    }
+    router.replace("/(publico)");
+  }
+
+  function onAtras() {
+    setError(null);
+    if (paso > 1) {
+      setPaso((actual) => actual - 1);
+      return;
+    }
+    salir();
   }
 
   async function onSumarse(reporte: Reporte) {
@@ -201,6 +233,7 @@ export function AsistenteReporte() {
     >
       <StatusBar style="dark" />
       <ScrollView
+        ref={scrollRef}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scroll,
@@ -211,13 +244,25 @@ export function AsistenteReporte() {
         ]}
       >
         <View style={styles.formInner}>
-          <Text style={styles.marca}>Crear reporte</Text>
-          <ProgresoReporte paso={paso} />
+          <ProgresoReporte
+            paso={paso}
+            titulo={
+              paso === 2 && revisandoFoto ? "Revisá la foto" : undefined
+            }
+            onAtras={onAtras}
+            onCerrar={salir}
+          />
 
           {paso === 1 ? (
             <PasoTipo tipos={tipos} tipoId={tipoId} onElegir={setTipoId} />
           ) : null}
-          {paso === 2 ? <PasoFoto fotos={fotos} onFotos={setFotos} /> : null}
+          {paso === 2 ? (
+            <PasoFoto
+              fotos={fotos}
+              onFotos={setFotos}
+              onRevisando={setRevisandoFoto}
+            />
+          ) : null}
           {paso === 3 ? (
             <PasoUbicacion
               tipoId={tipoId}
@@ -225,7 +270,7 @@ export function AsistenteReporte() {
               longitud={longitud}
               direccion={direccion}
               onUbicacion={onUbicacion}
-              onSumarse={(reporte) => void onSumarse(reporte)}
+              onElegirCercano={setCercanoElegido}
               sumando={sumando}
             />
           ) : null}
@@ -252,9 +297,10 @@ export function AsistenteReporte() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.acciones}>
-            {paso < PASOS_REPORTE && puedeAvanzar() ? (
+            {paso < PASOS_REPORTE ? (
               <Boton
                 titulo="Continuar"
+                cargando={paso === 3 && sumando}
                 disabled={sumando}
                 onPress={onSiguiente}
               />
@@ -267,15 +313,6 @@ export function AsistenteReporte() {
                 onPress={() => void onEnviar()}
               />
             ) : null}
-            {paso < PASOS_REPORTE && puedeAvanzar() ? (
-              <View style={styles.separador} />
-            ) : null}
-            <Boton
-              titulo={paso === 1 ? "Volver" : "Atrás"}
-              variante="texto"
-              disabled={enviando || sumando}
-              onPress={onAtras}
-            />
           </View>
         </View>
       </ScrollView>
@@ -290,20 +327,17 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   formInner: {
     width: "100%",
     maxWidth: 420,
     alignSelf: "center",
-  },
-  marca: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Paleta.inkSoft,
-    marginBottom: 8,
+    padding: 4,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginTop: 16,

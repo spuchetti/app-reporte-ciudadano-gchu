@@ -1,4 +1,4 @@
-import { Paleta } from "@/constants/theme";
+import { PaletaOperador } from "@/constants/theme";
 import React from "react";
 import { Platform, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +22,7 @@ export default function HeaderOperador({ children, style }: Props) {
 
 const styles = StyleSheet.create({
     cabecera: {
-        backgroundColor: Paleta.orange,
+        backgroundColor: PaletaOperador.oscura,
         paddingHorizontal: 16,
         paddingBottom: 16,
         gap: 8,

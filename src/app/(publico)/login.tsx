@@ -15,13 +15,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Paleta } from "@/constants/theme";
+import IconoPrincipal from "@/assets/branding/icono_principal.svg";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
 
 export default function LoginOperadorScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const logoSize = Math.min(76, Math.max(64, width * 0.18));
   const dosColumnas = width >= 768;
   const { iniciarSesion } = useSesion();
   const desbloqueo = useDesbloqueoAlEntrar("operador", true);
@@ -54,10 +56,15 @@ export default function LoginOperadorScreen() {
 
   const marca = (
     <View style={[styles.marca, dosColumnas ? styles.marcaLado : null]}>
-      <View style={styles.logo}>
-        <Text style={styles.logoEmoji}>🏛️</Text>
-      </View>
-      <Text style={styles.tituloMarca}>Reporte Ciudadano</Text>
+      <View style={styles.circuloGrande} />
+      <View style={styles.circuloChico} />
+      <IconoPrincipal
+        width={logoSize}
+        height={logoSize}
+        style={styles.logo}
+        accessibilityLabel="Reporte Ciudadano"
+      />
+      <Text style={styles.tituloMarca}>{"Reporte\nCiudadano"}</Text>
       <Text style={styles.subtituloMarca}>
         Acceso para operadores municipales.
       </Text>
@@ -82,7 +89,7 @@ export default function LoginOperadorScreen() {
           style={[
             dosColumnas
               ? styles.marcaColumna
-              : { paddingTop: insets.top, backgroundColor: Paleta.tealDeep },
+              : { paddingTop: insets.top, backgroundColor: PaletaOperador.oscura },
           ]}
         >
           {marca}
@@ -91,7 +98,7 @@ export default function LoginOperadorScreen() {
         <View
           style={[
             styles.formulario,
-            { paddingTop: dosColumnas ? 48 : 32 },
+            { paddingTop: dosColumnas ? 48 : 28 },
           ]}
         >
           <View style={styles.formInner}>
@@ -101,6 +108,7 @@ export default function LoginOperadorScreen() {
             </Text>
 
             <CampoTexto
+              rol="operador"
               etiqueta="Email"
               value={email}
               onChangeText={setEmail}
@@ -114,6 +122,7 @@ export default function LoginOperadorScreen() {
             />
 
             <CampoTexto
+              rol="operador"
               etiqueta="Contraseña"
               value={contrasena}
               onChangeText={setContrasena}
@@ -131,6 +140,7 @@ export default function LoginOperadorScreen() {
 
             <Boton
               titulo="Ingresar"
+              rol="operador"
               cargando={cargando || desbloqueo.desbloqueando}
               disabled={cargando || desbloqueo.desbloqueando}
               onPress={onIngresar}
@@ -140,6 +150,7 @@ export default function LoginOperadorScreen() {
             <Boton
               titulo="Volver al mapa"
               variante="texto"
+              rol="operador"
               disabled={cargando || desbloqueo.desbloqueando}
               onPress={() => router.replace("/")}
             />
@@ -170,11 +181,31 @@ const styles = StyleSheet.create({
     minHeight: "100%",
   },
   marca: {
-    backgroundColor: Paleta.tealDeep,
+    backgroundColor: PaletaOperador.oscura,
     paddingHorizontal: 32,
-    paddingVertical: 40,
+    paddingTop: 28,
+    paddingBottom: 36,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  circuloGrande: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    top: -80,
+    right: -70,
+  },
+  circuloChico: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    bottom: -70,
+    left: -60,
   },
   marcaLado: {
     flex: 1,
@@ -184,31 +215,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    width: 80,
-    height: 80,
-    backgroundColor: Paleta.orange,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  logoEmoji: {
-    fontSize: 40,
+    marginBottom: 12,
+    flexShrink: 0,
   },
   tituloMarca: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 32,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 30,
+    lineHeight: 34,
     color: Paleta.paperRaised,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subtituloMarca: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.9)",
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.88)",
     textAlign: "center",
     maxWidth: 280,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   formulario: {
     flex: 1,
@@ -222,18 +246,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   tituloForm: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 28,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 26,
     color: Paleta.ink,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtituloForm: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
-    marginBottom: 32,
+    marginBottom: 22,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
@@ -242,20 +267,22 @@ const styles = StyleSheet.create({
     height: 12,
   },
   ayuda: {
-    marginTop: 24,
-    padding: 12,
-    backgroundColor: Paleta.paper,
-    borderRadius: 8,
+    marginTop: 28,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#F3F6F8",
+    borderRadius: 16,
   },
   ayudaTitulo: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 13,
     color: Paleta.ink,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   ayudaTexto: {
-    fontSize: 11,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
     color: Paleta.inkSoft,
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });

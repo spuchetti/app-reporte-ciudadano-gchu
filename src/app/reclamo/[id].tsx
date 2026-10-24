@@ -4,12 +4,14 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
@@ -20,7 +22,7 @@ import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
@@ -44,15 +46,8 @@ import {
   obtenerReportes,
   textoDuplicado,
 } from "@/servicios/reportes";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
-
-const COLORES_ESTADO: Record<EstadoReporte, string> = {
-  recibido: Paleta.amarillo,
-  en_revision: Paleta.azul,
-  asignado: Paleta.orange,
-  resuelto: Paleta.verde,
-  rechazado: Paleta.rojo,
-};
 
 function impactoLigero() {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
@@ -60,33 +55,38 @@ function impactoLigero() {
   );
 }
 
-function fechaHoraLegible(fechaHora: string) {
+function textoAdhesiones(cantidad: number) {
+  if (cantidad === 1) {
+    return "1 vecino se sumó";
+  }
+  return `${cantidad} vecinos se sumaron`;
+}
+
+function fechaHistorial(fechaHora: string) {
   const fecha = new Date(fechaHora);
   if (Number.isNaN(fecha.getTime())) {
     return fechaHora;
   }
-  return fecha.toLocaleString("es-AR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const dia = fecha.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+  const hora = fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return `${dia}, ${hora}`;
 }
 
-function ChipEstado({ reporte }: { reporte: Reporte }) {
-  const pendiente = !reporte.sincronizado;
-  const color = pendiente ? Paleta.inkSoft : COLORES_ESTADO[reporte.estado];
-  return (
-    <View
-      style={[
-        styles.chipEstado,
-        { backgroundColor: `${color}22` },
-      ]}
-    >
-      <Text style={[styles.textoChip, { color }]}>
-        {etiquetaParaVecino(reporte)}
-      </Text>
-    </View>
-  );
-}
+const FONDO_ESTADO: Record<EstadoReporte, string> = {
+  recibido: "#FFF6DC",
+  en_revision: "#E5F0FA",
+  asignado: "#FFF0E4",
+  resuelto: "#E6F5E9",
+  rechazado: "#FCE9E9",
+};
+
+const TEXTO_ESTADO: Record<EstadoReporte, string> = {
+  recibido: "#785500",
+  en_revision: "#245C85",
+  asignado: "#9D4308",
+  resuelto: "#226D3A",
+  rechazado: "#A32E2E",
+};
 
 export default function DetalleReclamoScreen() {
   const insets = useSafeAreaInsets();
@@ -111,6 +111,7 @@ export default function DetalleReclamoScreen() {
   const [mostrarZona, setMostrarZona] = useState(false);
   const [corrigiendoZona, setCorrigiendoZona] = useState(false);
   const [errorZona, setErrorZona] = useState<string | null>(null);
+  const [mostrarQr, setMostrarQr] = useState(false);
   const pantallaActiva = useRef(true);
   const secuenciaCarga = useRef(0);
 
@@ -277,56 +278,77 @@ export default function DetalleReclamoScreen() {
 
   return (
     <View style={styles.pantalla}>
-      <View
-        style={[
-          styles.cabecera,
-          { paddingTop: Platform.OS === "web" ? 48 : insets.top + 12 },
-        ]}
-      >
-        <View style={styles.filaCabecera}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver a la lista de reclamos"
-            hitSlop={8}
-            onPress={() => {
-              impactoLigero();
-              router.back();
-            }}
-            style={styles.botonVolver}
-          >
-            <Ionicons color={Paleta.paperRaised} name="arrow-back" size={22} />
-          </Pressable>
-          <View style={styles.codigoCabecera}>
-            <Text style={styles.eyebrow}>DETALLE DEL RECLAMO</Text>
-            <Text numberOfLines={1} style={styles.codigo}>
-              {reporte?.codigo ?? "Seguimiento"}
-            </Text>
-            {reporte ? <ChipEstado reporte={reporte} /> : null}
-          </View>
-          {reporte?.codigo ? (
-            <View
-              accessible
-              accessibilityLabel={`Código QR del reclamo ${reporte.codigo}`}
-              style={styles.qrCabecera}
-            >
-              <QRCode
-                backgroundColor={Paleta.paperRaised}
-                color={Paleta.ink}
-                size={76}
-                value={reporte.codigo}
-              />
-            </View>
-          ) : null}
-        </View>
-      </View>
-
+      <StatusBar style="light" />
       <ScrollView
-        contentContainerStyle={[
-          styles.contenido,
-          { paddingBottom: Math.max(insets.bottom, 24) },
-        ]}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.hero}>
+          {fotoOriginal ? (
+            <Image
+              accessibilityLabel="Foto del problema"
+              source={{ uri: fotoOriginal }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.heroVacio]} />
+          )}
+          <View
+            style={[
+              styles.heroBar,
+              { paddingTop: Platform.OS === "web" ? 20 : insets.top + 8 },
+            ]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver a la lista de reclamos"
+              hitSlop={8}
+              onPress={() => {
+                impactoLigero();
+                router.back();
+              }}
+              style={styles.botonHero}
+            >
+              <Ionicons color={Paleta.ink} name="arrow-back" size={22} />
+            </Pressable>
+            <View style={styles.heroAcciones}>
+              {reporte ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Compartir reclamo"
+                  hitSlop={8}
+                  onPress={() => {
+                    impactoLigero();
+                    void Share.share({
+                      message: `${nombreTipo(reporte.tipoId)} · ${reporte.codigo}\n${reporte.direccion}`,
+                    });
+                  }}
+                  style={styles.botonHero}
+                >
+                  <Ionicons color={Paleta.ink} name="share-social-outline" size={20} />
+                </Pressable>
+              ) : null}
+              {reporte?.codigo ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Código QR del reclamo ${reporte.codigo}`}
+                  accessibilityState={{ selected: mostrarQr }}
+                  hitSlop={8}
+                  onPress={() => {
+                    impactoLigero();
+                    setMostrarQr((visible) => !visible);
+                  }}
+                  style={styles.botonHero}
+                >
+                  <Ionicons color={Paleta.ink} name="qr-code-outline" size={20} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.cuerpo}>
         {cargando ? (
           <Cargando text="Cargando el detalle del reclamo..." />
         ) : error || !reporte ? (
@@ -346,22 +368,54 @@ export default function DetalleReclamoScreen() {
         ) : (
           <>
             <View style={styles.panelPrincipal}>
-              <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
-              <Text style={styles.direccion}>{reporte.direccion}</Text>
-              <Text style={styles.meta}>{haceTiempo(reporte.creadoEn)}</Text>
-              <Text style={styles.adhesiones}>
-                {`${reporte.adhesiones} vecinos se sumaron`}
-              </Text>
-              {adhesionesDelReporte(reporte.id).length > 0 ? (
-                <Text style={styles.meta}>
-                  {adhesionesDelReporte(reporte.id)
-                    .map((item) => nombreAutor(item.usuarioId))
-                    .join(", ")}
+              <View style={styles.filaEstado}>
+                <View
+                  style={[
+                    styles.estado,
+                    {
+                      backgroundColor: reporte.sincronizado
+                        ? FONDO_ESTADO[reporte.estado]
+                        : "#EEF1F4",
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.punto,
+                      {
+                        backgroundColor: reporte.sincronizado
+                          ? COLORES_ESTADO[reporte.estado]
+                          : Paleta.inkSoft,
+                      },
+                    ]}
+                  />
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      styles.estadoTexto,
+                      {
+                        color: reporte.sincronizado
+                          ? TEXTO_ESTADO[reporte.estado]
+                          : Paleta.inkSoft,
+                      },
+                    ]}
+                  >
+                    {etiquetaParaVecino(reporte)}
+                  </Text>
+                </View>
+                <Text style={styles.codigo} numberOfLines={1}>
+                  {reporte.codigo}
                 </Text>
-              ) : null}
-              {reporte.descripcion ? (
-                <Text style={styles.descripcion}>{reporte.descripcion}</Text>
-              ) : null}
+              </View>
+              <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
+              <View style={styles.filaDato}>
+                <Ionicons name="location-outline" size={16} color={Paleta.inkSoft} />
+                <Text style={styles.direccion}>{reporte.direccion}</Text>
+              </View>
+              <View style={styles.filaDato}>
+                <Ionicons name="time-outline" size={16} color={Paleta.inkSoft} />
+                <Text style={styles.meta}>{`Reportado ${haceTiempo(reporte.creadoEn)}`}</Text>
+              </View>
               {reporte.cuadrillaId ? (
                 <Text style={styles.meta}>
                   {`Asignado a ${nombreCuadrilla(reporte.cuadrillaId)}`}
@@ -383,20 +437,47 @@ export default function DetalleReclamoScreen() {
               ) : null}
             </View>
 
-            {fotoOriginal ? (
-              <View style={styles.seccion}>
-                <Text style={styles.tituloSeccion}>Foto original del problema</Text>
-                <Image
-                  accessibilityLabel="Foto original del problema"
-                  source={{ uri: fotoOriginal }}
-                  style={styles.foto}
-                  resizeMode="cover"
+            {mostrarQr ? (
+              <View style={styles.qrPanel} accessibilityLabel={`Código QR del reclamo ${reporte.codigo}`}>
+                <QRCode
+                  backgroundColor={Paleta.paperRaised}
+                  color={Paleta.ink}
+                  size={160}
+                  value={reporte.codigo}
                 />
+                <Text style={styles.codigo}>{reporte.codigo}</Text>
               </View>
             ) : null}
 
+            {reporte.descripcion ? (
+              <View style={styles.bloque}>
+                <Text style={styles.tituloSeccion}>Descripción</Text>
+                <Text style={styles.descripcion}>{reporte.descripcion}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.bloque}>
+              <View style={styles.filaAdhesion}>
+                <View style={styles.iconoAdhesion}>
+                  <Ionicons name="people-outline" size={18} color={Paleta.tealDeep} />
+                </View>
+                <View style={styles.datoTexto}>
+                  <Text style={styles.adhesiones}>
+                    {textoAdhesiones(reporte.adhesiones)}
+                  </Text>
+                  {adhesionesDelReporte(reporte.id).length > 0 ? (
+                    <Text style={styles.vecinosSumados}>
+                      {adhesionesDelReporte(reporte.id)
+                        .map((item) => nombreAutor(item.usuarioId))
+                        .join(", ")}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+
             {reporte.estado === "resuelto" && reporte.fotoArreglo ? (
-              <View style={styles.seccion}>
+              <View style={styles.bloque}>
                 <Text style={styles.tituloSeccion}>Foto de la solución</Text>
                 <Image
                   accessibilityLabel="Foto de la solución"
@@ -448,55 +529,38 @@ export default function DetalleReclamoScreen() {
               </View>
             ) : null}
 
-            <View style={styles.historial}>
-              <Text style={styles.tituloSeccion}>Historial de avance del reporte</Text>
+            <View style={styles.bloque}>
+              <Text style={styles.tituloSeccion}>Historial</Text>
               {historial.length > 0 ? (
                 <View style={styles.listaHistorial}>
-                  {historial.map((cambio, index) => {
-                    const esActual = index === historial.length - 1;
-                    return (
-                      <View key={cambio.id} style={styles.itemTimeline}>
-                        <View style={styles.columnaIndicador}>
-                          <View
-                            style={[
-                              styles.marcaHistorial,
-                              esActual && styles.marcaHistorialActual,
-                              { backgroundColor: COLORES_ESTADO[cambio.estado] },
-                            ]}
-                          />
-                          {index < historial.length - 1 ? (
-                            <View style={styles.lineaHistorial} />
-                          ) : null}
-                        </View>
-                        <View style={styles.columnaContenido}>
-                          <View style={styles.filaTituloFecha}>
-                            <Text
-                              style={[
-                                styles.cambioEstado,
-                                esActual && styles.cambioEstadoActual,
-                              ]}
-                            >
-                              {etiquetaEstado(cambio.estado)}
-                            </Text>
-                            <Text style={styles.cambioFecha}>
-                              {fechaHoraLegible(cambio.fechaHora)}
-                            </Text>
-                          </View>
-                          {cambio.comentario ? (
-                            <Text
-                              style={[
-                                styles.cambioTexto,
-                                cambio.estado === "rechazado" &&
-                                  styles.comentarioRechazado,
-                              ]}
-                            >
-                              {cambio.comentario}
-                            </Text>
-                          ) : null}
-                        </View>
+                  {historial.map((cambio) => (
+                    <View key={cambio.id} style={styles.itemHistorial}>
+                      <View style={styles.filaHistorial}>
+                        <View
+                          style={[
+                            styles.punto,
+                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
+                          ]}
+                        />
+                        <Text style={styles.cambioEstado}>
+                          {etiquetaEstado(cambio.estado)}
+                        </Text>
+                        <Text style={styles.cambioFecha}>
+                          {fechaHistorial(cambio.fechaHora)}
+                        </Text>
                       </View>
-                    );
-                  })}
+                      {cambio.comentario ? (
+                        <Text
+                          style={[
+                            styles.cambioTexto,
+                            cambio.estado === "rechazado" && styles.comentarioRechazado,
+                          ]}
+                        >
+                          {cambio.comentario}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
                 </View>
               ) : (
                 <Text style={styles.meta}>
@@ -506,6 +570,7 @@ export default function DetalleReclamoScreen() {
             </View>
           </>
         )}
+        </View>
       </ScrollView>
 
       <SheetEstado
@@ -565,112 +630,163 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Paleta.paper,
   },
-  cabecera: {
-    backgroundColor: Paleta.tealDeep,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+  hero: {
+    height: 240,
+    backgroundColor: "#3F4A57",
   },
-  filaCabecera: {
+  heroVacio: {
+    backgroundColor: "#3F4A57",
+  },
+  heroBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
   },
-  botonVolver: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+  heroAcciones: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  botonHero: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
   },
-  codigoCabecera: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  eyebrow: {
-    color: Paleta.paperRaised,
-    opacity: 0.76,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  codigo: {
-    color: Paleta.paperRaised,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  qrCabecera: {
-    backgroundColor: Paleta.paperRaised,
-    borderRadius: 6,
-    padding: 5,
-  },
-  contenido: {
-    padding: 16,
-    gap: 14,
+  cuerpo: {
+    marginTop: -28,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   panelPrincipal: {
     backgroundColor: Paleta.paperRaised,
-    borderColor: Paleta.line,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 20,
     padding: 16,
+    gap: 10,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  filaEstado: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
   },
-  chipEstado: {
-    alignSelf: "flex-start",
-    borderRadius: 6,
+  estado: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 1,
+    gap: 6,
+    borderRadius: 999,
+    paddingVertical: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
   },
-  textoChip: {
-    fontSize: 12,
-    fontWeight: "700",
+  punto: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  estadoTexto: {
+    flexShrink: 1,
+    fontFamily: Fonts.semiBold,
+    fontSize: 13,
+  },
+  codigo: {
+    flexShrink: 0,
+    fontFamily: Fonts.medium,
+    color: Paleta.inkSoft,
+    fontSize: 13,
   },
   tipo: {
+    fontFamily: Fonts.bold,
     color: Paleta.ink,
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 28,
   },
   direccion: {
+    flex: 1,
+    fontFamily: Fonts.medium,
     color: Paleta.inkSoft,
     fontSize: 15,
   },
+  filaDato: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  datoTexto: {
+    flex: 1,
+    gap: 2,
+  },
   adhesiones: {
-    color: Paleta.tealDeep,
-    fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.semiBold,
+    color: Paleta.ink,
+    fontSize: 15,
+  },
+  vecinosSumados: {
+    fontFamily: Fonts.regular,
+    color: Paleta.inkSoft,
+    fontSize: 13,
+    lineHeight: 18,
   },
   meta: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 13,
   },
   enlaceOriginal: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.teal,
     fontSize: 14,
-    fontWeight: "700",
   },
   descripcion: {
+    fontFamily: Fonts.regular,
     color: Paleta.ink,
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 4,
   },
-  seccion: {
+  bloque: {
     backgroundColor: Paleta.paperRaised,
     borderColor: Paleta.line,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    gap: 10,
+    borderRadius: 18,
+    padding: 16,
+    gap: 8,
+  },
+  filaAdhesion: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconoAdhesion: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Paleta.tealSoft,
+  },
+  qrPanel: {
+    backgroundColor: Paleta.paperRaised,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "center",
+    gap: 12,
   },
   tituloSeccion: {
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
     fontSize: 16,
-    fontWeight: "700",
   },
   foto: {
     width: "100%",
     height: 220,
-    borderRadius: 6,
+    borderRadius: 14,
     backgroundColor: Paleta.paper,
   },
   acciones: {
@@ -678,65 +794,31 @@ const styles = StyleSheet.create({
   },
   historial: {
     gap: 10,
-    marginTop: 4,
-  },
-  itemTimeline: {
-    flexDirection: "row",
-    gap: 12,
-    paddingBottom: 16,
   },
   listaHistorial: {
-    gap: 0,
+    gap: 12,
   },
-  columnaIndicador: {
-    width: 14,
-    alignItems: "center",
-    position: "relative",
-  },
-  marcaHistorial: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 4,
-    zIndex: 2,
-  },
-  marcaHistorialActual: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginTop: 1,
-  },
-  lineaHistorial: {
-    position: "absolute",
-    top: 14,
-    bottom: -16,
-    left: 6,
-    width: 2,
-    backgroundColor: Paleta.line,
-    zIndex: 1,
-  },
-  columnaContenido: {
-    flex: 1,
+  itemHistorial: {
     gap: 4,
   },
-  filaTituloFecha: {
+  filaHistorial: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    gap: 8,
   },
   cambioEstado: {
+    flex: 1,
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  cambioEstadoActual: {
-    fontSize: 16,
+    fontSize: 15,
   },
   cambioFecha: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 12,
   },
   cambioTexto: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
@@ -750,6 +832,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   vacioTexto: {
+    fontFamily: Fonts.regular,
     color: Paleta.inkSoft,
     fontSize: 14,
     textAlign: "center",
