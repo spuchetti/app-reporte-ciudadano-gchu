@@ -1,8 +1,12 @@
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 
 import { MapView, Marker } from "@/components/mapa";
-import { Paleta } from "@/constants/theme";
+import { NotaDeVoz } from "@/components/reporte/nota-de-voz";
+import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { obtenerCategoriaVisual } from "@/constants/categorias";
+import { Fonts, Paleta, fondoSuave } from "@/constants/theme";
 import { nombreZona } from "@/servicios/bandeja";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { TipoDeReporte } from "@/tipos";
@@ -23,22 +27,36 @@ export function PasoConfirmacion({
   direccion,
   latitud,
   longitud,
-  descripcion,
   audioUrl,
 }: Props) {
-  const zona = nombreZona(
-    zonaParaCoordenadas({ latitud, longitud }),
-  );
+  const zona = nombreZona(zonaParaCoordenadas({ latitud, longitud }));
+  const categoria = tipo ? obtenerCategoriaVisual(tipo.id) : undefined;
 
   return (
     <View style={styles.caja}>
       {fotos[0] ? (
         <Image source={{ uri: fotos[0] }} style={styles.foto} contentFit="cover" />
-      ) : null}
-      <Text style={styles.tipo}>
-        {tipo ? `${tipo.icono}  ${tipo.nombre}` : "Tipo de problema"}
-      </Text>
-      {tipo ? <Text style={styles.area}>{tipo.areaResponsable}</Text> : null}
+      ) : (
+        <View style={styles.fotoVacia}>
+          <Ionicons name="camera-outline" size={36} color="#9BB0BC" />
+        </View>
+      )}
+
+      <View style={styles.tipoFila}>
+        <View
+          style={[
+            styles.icono,
+            { backgroundColor: fondoSuave(categoria?.color ?? Paleta.teal) },
+          ]}
+        >
+          {tipo ? <IconoCategoria tipoId={tipo.id} size={22} /> : null}
+        </View>
+        <View style={styles.tipoTexto}>
+          <Text style={styles.tipo}>{tipo?.nombre ?? "Tipo de problema"}</Text>
+          {tipo ? <Text style={styles.area}>{tipo.areaResponsable}</Text> : null}
+        </View>
+      </View>
+
       <View style={styles.mapa}>
         <MapView
           style={StyleSheet.absoluteFill}
@@ -47,70 +65,99 @@ export function PasoConfirmacion({
           region={{
             latitude: latitud,
             longitude: longitud,
-            latitudeDelta: 0.006,
-            longitudeDelta: 0.006,
+            latitudeDelta: 0.012,
+            longitudeDelta: 0.012,
           }}
         >
-          <Marker coordinate={{ latitude: latitud, longitude: longitud }} />
+          <Marker
+            coordinate={{ latitude: latitud, longitude: longitud }}
+            pinColor={Paleta.teal}
+          />
         </MapView>
       </View>
-      <Text style={styles.direccion}>{direccion}</Text>
-      <Text style={styles.zona}>{zona}</Text>
-      {descripcion.trim() ? (
-        <Text style={styles.descripcion}>{descripcion.trim()}</Text>
-      ) : null}
-      {audioUrl ? (
-        <Text style={styles.audio}>Nota de voz adjunta</Text>
-      ) : null}
+
+      <View style={styles.lugar}>
+        <Ionicons name="location-outline" size={18} color={Paleta.tealDeep} />
+        <Text style={styles.direccion} numberOfLines={1}>
+          {direccion}
+        </Text>
+        <View style={styles.zona}>
+          <Text style={styles.zonaTexto}>{zona}</Text>
+        </View>
+      </View>
+
+      {audioUrl ? <NotaDeVoz uri={audioUrl} /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   caja: {
-    gap: 10,
+    gap: 14,
   },
   foto: {
     width: "100%",
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: Paleta.paper,
+    height: 168,
+    borderRadius: 20,
+    backgroundColor: "#E7F1F4",
+  },
+  fotoVacia: {
+    width: "100%",
+    height: 168,
+    borderRadius: 20,
+    backgroundColor: "#E7F1F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipoFila: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  icono: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipoTexto: {
+    flex: 1,
+    gap: 2,
   },
   tipo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 20,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 18,
     color: Paleta.ink,
   },
   area: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
-    marginTop: -6,
   },
   mapa: {
-    height: 140,
-    borderRadius: 12,
+    height: 132,
+    borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: "#E1F5EE",
+    backgroundColor: Paleta.tealSoft,
+  },
+  lugar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   direccion: {
-    fontSize: 14,
-    fontWeight: "600",
+    flex: 1,
+    fontFamily: Fonts.semiBold,
+    fontSize: 15,
     color: Paleta.ink,
   },
   zona: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Paleta.tealDeep,
+    paddingHorizontal: 2,
   },
-  descripcion: {
-    fontSize: 14,
-    color: Paleta.inkSoft,
-    lineHeight: 20,
-  },
-  audio: {
+  zonaTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 13,
-    fontWeight: "600",
     color: Paleta.tealDeep,
   },
 });

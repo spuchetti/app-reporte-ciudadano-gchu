@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import TarjetaZona from "@/components/operador/tarjeta-zona";
 import Cargando from "@/components/ui/cargando";
 import HeaderOperador from "@/components/ui/headerOperador";
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { ZonaConCuadrillas, zonasConCuadrillas } from "@/servicios/zonas";
 
@@ -47,14 +48,15 @@ export default function Zonas() {
 
   return (
     <View style={styles.pantalla}>
-      <HeaderOperador>
+      <HeaderOperador style={styles.cabecera}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Volver a la bandeja"
           onPress={() => router.back()}
           hitSlop={8}
+          style={styles.volver}
         >
-          <Text style={styles.volver}>← Bandeja</Text>
+          <Ionicons name="arrow-back" size={22} color={Paleta.paperRaised} />
         </Pressable>
         <View style={styles.informacion}>
           <Text style={styles.titulo}>Zonas y cuadrillas</Text>
@@ -63,7 +65,7 @@ export default function Zonas() {
       </HeaderOperador>
 
       {cargando ? (
-        <Cargando text={cargando} style={{ backgroundColor: Paleta.orange }} />
+        <Cargando text={cargando} style={{ backgroundColor: PaletaOperador.oscura }} />
       ) : (
         <FlatList
           style={styles.lista}
@@ -90,41 +92,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Paleta.paper,
   },
+  cabecera: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   volver: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Paleta.paperRaised,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
   informacion: {
-    alignItems: "center",
-    gap: 4,
+    flex: 1,
+    minWidth: 0,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 28,
-    fontWeight: "600",
+    fontFamily: Fonts.bold,
+    fontSize: 18,
     color: Paleta.paperRaised,
-    textAlign: "center",
   },
   subtitulo: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Paleta.paperRaised,
+    marginTop: 2,
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.88)",
   },
   lista: {
     flex: 1,
   },
   listaContenido: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
   },
   error: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     marginBottom: 16,
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
-    fontWeight: "700",
-    borderRadius: 8,
+    borderRadius: 14,
     color: Paleta.rojo,
     textAlign: "center",
     backgroundColor: fondoSuave(Paleta.rojo),

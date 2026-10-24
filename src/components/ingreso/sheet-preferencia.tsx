@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -9,7 +8,7 @@ import {
 } from "react-native";
 
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { esErrorServicio } from "@/servicios/error";
 import { ingresoRapidoDisponible } from "@/servicios/ingreso";
@@ -106,29 +105,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(18,35,46,0.45)",
     justifyContent: "flex-end",
+    paddingHorizontal: 12,
   },
   tarjeta: {
     backgroundColor: Paleta.paperRaised,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderRadius: 24,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 36,
+    paddingTop: 24,
+    paddingBottom: 28,
+    borderWidth: 1,
+    borderColor: Paleta.line,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    fontFamily: Fonts.semiBold,
     fontSize: 22,
     fontWeight: "600",
     color: Paleta.ink,
     marginBottom: 8,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 24,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
@@ -139,9 +142,11 @@ const styles = StyleSheet.create({
   omitir: {
     marginTop: 16,
     alignItems: "center",
-    padding: 8,
+    minHeight: 44,
+    justifyContent: "center",
   },
   omitirTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
     color: Paleta.inkSoft,
   },

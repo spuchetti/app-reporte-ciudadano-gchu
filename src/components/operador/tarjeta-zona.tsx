@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { fondoSuave, Paleta } from "@/constants/theme";
+import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { Cuadrilla, Zona } from "@/tipos";
 
 const COLORES_ZONA: Record<string, string> = {
   "zon-norte": Paleta.verde,
   "zon-centro": Paleta.azul,
   "zon-sur": "#532e9e",
-  "zon-este": Paleta.orange,
+  "zon-este": PaletaOperador.principal,
 };
 
 function textoCuadrillas(cantidad: number) {
@@ -76,8 +76,8 @@ export default function TarjetaZona({ zona, cuadrillas, zonaOperadorId }: Props)
 const styles = StyleSheet.create({
   tarjeta: {
     backgroundColor: Paleta.paperRaised,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: Paleta.line,
     gap: 12,
@@ -105,28 +105,30 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   nombre: {
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   referente: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
   },
   cantidad: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   tuZona: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: "700",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     overflow: "hidden",
   },
   vacio: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
   },
@@ -144,11 +146,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cuadrillaNombre: {
+    fontFamily: Fonts.semiBold,
     fontSize: 15,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   especialidad: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
   },
@@ -164,7 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: fondoSuave(Paleta.rojo),
   },
   chipTexto: {
+    fontFamily: Fonts.semiBold,
     fontSize: 12,
-    fontWeight: "700",
   },
 });

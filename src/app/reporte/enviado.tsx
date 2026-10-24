@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { TicketReporte } from "@/components/reporte/ticket";
 import { Boton } from "@/components/ui/boton";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 
 function textoParam(valor: string | string[] | undefined) {
   if (Array.isArray(valor)) {
@@ -24,6 +25,9 @@ export default function ReporteEnviadoScreen() {
     estado?: string | string[];
     modo?: string | string[];
     adhesiones?: string | string[];
+    tipoId?: string | string[];
+    estadoClave?: string | string[];
+    pendiente?: string | string[];
   }>();
 
   const codigo = textoParam(params.codigo) || "GCHU-2026-00000";
@@ -31,24 +35,34 @@ export default function ReporteEnviadoScreen() {
   const area = textoParam(params.area);
   const direccion = textoParam(params.direccion);
   const estado = textoParam(params.estado);
+  const tipoId = textoParam(params.tipoId);
+  const estadoClave = textoParam(params.estadoClave);
   const provisorio = codigo.startsWith("LOCAL-");
+  const pendiente = textoParam(params.pendiente) === "1" || provisorio;
   const sumado = textoParam(params.modo) === "sumado";
   const adhesiones = textoParam(params.adhesiones);
+  const titulo = sumado ? "Te sumaste al reporte" : "Reporte enviado";
 
   return (
     <View
       style={[
         styles.pantalla,
         {
-          paddingTop: insets.top + 32,
+          paddingTop: insets.top + 28,
           paddingBottom: Math.max(insets.bottom, 24),
         },
       ]}
     >
       <StatusBar style="dark" />
-      <Text style={styles.titulo}>
-        {sumado ? "Te sumaste al reporte" : "Reporte enviado"}
-      </Text>
+      <View style={styles.tituloFila}>
+        <View style={styles.iconoTitulo}>
+          <Ionicons name="document-text-outline" size={24} color={Paleta.tealDeep} />
+          <View style={styles.tilde}>
+            <Ionicons name="checkmark" size={11} color={Paleta.paperRaised} />
+          </View>
+        </View>
+        <Text style={styles.titulo}>{titulo}</Text>
+      </View>
       <Text style={styles.subtitulo}>
         {sumado
           ? adhesiones
@@ -60,13 +74,28 @@ export default function ReporteEnviadoScreen() {
       </Text>
       <TicketReporte
         codigo={codigo}
+        tipoId={tipoId || undefined}
         tipoNombre={tipoNombre}
         area={area}
         direccion={direccion}
         estado={estado || undefined}
+        estadoClave={
+          estadoClave === "recibido" ||
+          estadoClave === "en_revision" ||
+          estadoClave === "asignado" ||
+          estadoClave === "resuelto" ||
+          estadoClave === "rechazado"
+            ? estadoClave
+            : undefined
+        }
+        pendiente={pendiente}
       />
       <View style={styles.acciones}>
-        <Boton titulo="Ir al inicio" onPress={() => router.replace("/(tabs)")} />
+        <Boton
+          titulo="Ir al inicio"
+          variante="secundario"
+          onPress={() => router.replace("/(tabs)")}
+        />
       </View>
     </View>
   );
@@ -75,23 +104,48 @@ export default function ReporteEnviadoScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paper,
+    backgroundColor: Paleta.paperRaised,
     paddingHorizontal: 24,
   },
+  tituloFila: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  iconoTitulo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Paleta.tealSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tilde: {
+    position: "absolute",
+    right: 8,
+    bottom: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Paleta.teal,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
+    flex: 1,
+    fontFamily: Fonts.bold,
     fontSize: 28,
-    fontWeight: "600",
     color: Paleta.ink,
-    marginBottom: 8,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 24,
   },
   acciones: {
-    marginTop: 28,
+    marginTop: 24,
   },
 });

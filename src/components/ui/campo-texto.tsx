@@ -1,3 +1,5 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
   Pressable,
@@ -8,22 +10,37 @@ import {
   type TextInputProps,
 } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import {
+  Fonts,
+  Paleta,
+  PaletaOperador,
+  PaletaVecino,
+} from "@/constants/theme";
 
 type Props = TextInputProps & {
   etiqueta: string;
   error?: string | null;
+  rol?: "vecino" | "operador";
+  icono?: ComponentProps<typeof Ionicons>["name"];
 };
 
 export function CampoTexto({
   etiqueta,
   error,
+  rol = "vecino",
+  icono,
   secureTextEntry,
+  onFocus,
+  onBlur,
   style,
   ...rest
 }: Props) {
   const [visible, setVisible] = useState(false);
+  const [enfocado, setEnfocado] = useState(false);
   const esClave = Boolean(secureTextEntry);
+  const acento = rol === "operador"
+    ? PaletaOperador.principal
+    : PaletaVecino.principal;
 
   return (
     <View style={styles.contenedor}>
@@ -34,17 +51,43 @@ export function CampoTexto({
             onPress={() => setVisible((valor) => !valor)}
             accessibilityRole="button"
             accessibilityLabel={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            hitSlop={8}
           >
-            <Text style={styles.mostrar}>{visible ? "Ocultar" : "Mostrar"}</Text>
+            <Text style={[styles.mostrar, { color: acento }]}>
+              {visible ? "Ocultar" : "Mostrar"}
+            </Text>
           </Pressable>
         ) : null}
       </View>
-      <TextInput
-        {...rest}
-        secureTextEntry={esClave && !visible}
-        placeholderTextColor={Paleta.inkSoft}
-        style={[styles.input, error ? styles.inputError : null, style]}
-      />
+      <View
+        style={[
+          styles.campo,
+          enfocado && !error ? { borderColor: acento, borderWidth: 2 } : null,
+          error ? styles.inputError : null,
+        ]}
+      >
+        {icono ? (
+          <Ionicons
+            name={icono}
+            size={18}
+            color={enfocado && !error ? acento : Paleta.inkSoft}
+          />
+        ) : null}
+        <TextInput
+          {...rest}
+          onFocus={(evento) => {
+            setEnfocado(true);
+            onFocus?.(evento);
+          }}
+          onBlur={(evento) => {
+            setEnfocado(false);
+            onBlur?.(evento);
+          }}
+          secureTextEntry={esClave && !visible}
+          placeholderTextColor={Paleta.inkSoft}
+          style={[styles.input, style]}
+        />
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -62,24 +105,30 @@ const styles = StyleSheet.create({
   },
   etiqueta: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Paleta.ink,
   },
   mostrar: {
     fontSize: 13,
-    fontWeight: "500",
-    color: Paleta.teal,
+    fontFamily: Fonts.medium,
   },
-  input: {
+  campo: {
     width: "100%",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: Paleta.line,
-    borderRadius: 8,
-    fontSize: 14,
-    color: Paleta.ink,
+    borderRadius: 12,
     backgroundColor: Paleta.paperRaised,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Paleta.ink,
   },
   inputError: {
     borderColor: Paleta.rojo,

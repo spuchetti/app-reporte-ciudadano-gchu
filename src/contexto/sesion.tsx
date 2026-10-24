@@ -67,6 +67,8 @@ type ValorSesion = {
   omitirPreferenciaIngreso: () => Promise<void>;
   entrarConSesionGuardada: (rol: Rol) => Promise<void>;
   cerrarSesion: () => Promise<void>;
+  irAlLoginOperador: boolean;
+  consumirLoginOperador: () => void;
   olvidarDispositivo: () => Promise<void>;
   cerrarAvisoSesionVencida: () => void;
 };
@@ -82,6 +84,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
   const [rolToken, setRolToken] = useState<Rol | null>(null);
   const [pendienteElegirIngreso, setPendienteElegirIngreso] = useState(false);
   const [pendienteDesbloqueo, setPendienteDesbloqueo] = useState(false);
+  const [irAlLoginOperador, setIrAlLoginOperador] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -290,6 +293,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
     const rol =
       sesion?.esInvitado === false ? sesion.usuario.rol : rolToken;
     const eraVecino = rol === "vecino";
+    const eraOperador = rol === "operador";
     await cerrarSesionServicio();
     setSesion(null);
     setSesionVencida(false);
@@ -300,7 +304,14 @@ export function SesionProvider({ children }: PropsWithChildren) {
     if (eraVecino) {
       setHuboVecino(true);
     }
+    if (eraOperador) {
+      setIrAlLoginOperador(true);
+    }
   }, [sesion, rolToken]);
+
+  const consumirLoginOperador = useCallback(() => {
+    setIrAlLoginOperador(false);
+  }, []);
 
   const olvidarDispositivo = useCallback(async () => {
     await olvidarDispositivoServicio();
@@ -342,6 +353,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       omitirPreferenciaIngreso,
       entrarConSesionGuardada,
       cerrarSesion,
+      irAlLoginOperador,
+      consumirLoginOperador,
       olvidarDispositivo,
       cerrarAvisoSesionVencida,
     }),
@@ -368,6 +381,8 @@ export function SesionProvider({ children }: PropsWithChildren) {
       omitirPreferenciaIngreso,
       entrarConSesionGuardada,
       cerrarSesion,
+      irAlLoginOperador,
+      consumirLoginOperador,
       olvidarDispositivo,
       cerrarAvisoSesionVencida,
     ],
