@@ -1,3 +1,4 @@
+import { type Ref } from "react";
 import MapViewNativo, {
   Callout,
   Marker,
@@ -7,10 +8,11 @@ import MapViewNativo, {
 
 type Props = MapViewProps & {
   mensaje?: string;
+  ref?: Ref<MapViewNativo>;
 };
 
-export function MapView({ mensaje: _mensaje, ...props }: Props) {
-  return <MapViewNativo {...props} provider={PROVIDER_GOOGLE} />;
+export function MapView({ mensaje: _mensaje, ref, ...props }: Props) {
+  return <MapViewNativo ref={ref} {...props} provider={PROVIDER_GOOGLE} />;
 }
 
 export { Marker, Callout };

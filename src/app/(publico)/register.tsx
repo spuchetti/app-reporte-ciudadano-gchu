@@ -89,6 +89,7 @@ export default function DatosVecinoScreen() {
 
           <CampoTexto
             etiqueta="Nombre"
+            icono="person-outline"
             value={nombre}
             onChangeText={setNombre}
             placeholder="Tu nombre"
@@ -98,6 +99,7 @@ export default function DatosVecinoScreen() {
           />
           <CampoTexto
             etiqueta="Email"
+            icono="mail-outline"
             value={email}
             onChangeText={setEmail}
             placeholder="tu@email.com"
@@ -110,6 +112,7 @@ export default function DatosVecinoScreen() {
           />
           <CampoTexto
             etiqueta="Teléfono"
+            icono="call-outline"
             value={telefono}
             onChangeText={setTelefono}
             placeholder="3446-123456"
@@ -145,7 +148,7 @@ export default function DatosVecinoScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paper,
+    backgroundColor: Paleta.paperRaised,
   },
   scroll: {
     flexGrow: 1,
@@ -156,16 +159,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 440,
     alignSelf: "center",
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Paleta.line,
-    backgroundColor: Paleta.paperRaised,
-    shadowColor: Paleta.ink,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    padding: 4,
   },
   titulo: {
     fontFamily: Fonts.semiBold,

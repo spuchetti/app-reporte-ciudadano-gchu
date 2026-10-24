@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><title>Reporte Ciudadano</title><g transform="translate(96 75) scale(3.45)"><defs><linearGradient id="pinGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00AFC1"/><stop offset="1" stop-color="#007C8C"/></linearGradient></defs>
         <ellipse cx="120" cy="227" rx="81" ry="17" fill="none" stroke="#007C8C" stroke-width="10"/>
         <path d="M120 20 C67 20 31 59 31 108 C31 157 75 194 120 221 C165 194 209 157 209 108 C209 59 173 20 120 20 Z" fill="url(#pinGrad)"/>
-        <path d="M120 55 C91 55 68 79 68 108 C68 135 88 159 120 181 C152 159 172 135 172 108 C172 79 149 55 120 55 Z" fill="#FFFFFF"/>
-        <rect x="110" y="79" width="20" height="62" rx="10" fill="#007C8C"/><circle cx="120" cy="156" r="11" fill="#007C8C"/></g></svg>
+        <rect x="110" y="79" width="20" height="62" rx="10" fill="#FFFFFF"/><circle cx="120" cy="156" r="11" fill="#FFFFFF"/></g></svg>

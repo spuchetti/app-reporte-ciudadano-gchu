@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 export const PaletaVecino = {
   principal: '#00AFC1',
   oscura: '#007C8C',
-  suave: '#E4F7F9',
+  suave: '#E6F7F9',
 } as const;
 
 export const PaletaOperador = {
@@ -19,7 +19,7 @@ export const PaletaOperador = {
 } as const;
 
 export const Paleta = {
-  ink: '#263746',
+  ink: '#0F172A',
   inkSoft: '#61707D',
   paper: '#F5F7FA',
   paperRaised: '#FFFFFF',

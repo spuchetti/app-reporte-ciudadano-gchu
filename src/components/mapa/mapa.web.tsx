@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, type Ref } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { Paleta } from "@/constants/theme";
@@ -8,15 +8,21 @@ type MapViewProps = {
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   mensaje?: string;
+  ref?: Ref<View>;
   [clave: string]: unknown;
 };
 
 export function MapView({
   style,
   mensaje = "El mapa con las calles de Gualeguaychú se ve en el celular.",
+  ref,
 }: MapViewProps) {
   return (
-    <View style={[styles.base, style]} accessibilityLabel="Mapa no disponible en web">
+    <View
+      ref={ref}
+      style={[styles.base, style]}
+      accessibilityLabel="Mapa no disponible en web"
+    >
       <Text style={styles.texto}>{mensaje}</Text>
     </View>
   );
