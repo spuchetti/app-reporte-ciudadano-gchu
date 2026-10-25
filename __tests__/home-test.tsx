@@ -145,9 +145,10 @@ describe("Home vecino", () => {
 
     expect(arbolComoTexto(tree.toJSON())).toContain("Mostramos los reportes de la ciudad");
 
-    const pin = tree.root.find(
-      (nodo) => nodo.props.coordinate?.latitude === reporteNorte.coordenadas.latitud,
-    );
+    const pin = tree.root.find((nodo) => {
+      const coordinate = (nodo.props as { coordinate?: { latitude: number } }).coordinate;
+      return coordinate?.latitude === reporteNorte.coordenadas.latitud;
+    });
     await act(async () => {
       pin.props.onPress();
     });
