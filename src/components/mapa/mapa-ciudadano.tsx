@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -52,6 +53,23 @@ export function MapaCiudadano() {
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [origen, setOrigen] = useState<Coordenadas | null>(null);
   const [region, setRegion] = useState(REGION_GCHU);
+  const [ubicando, setUbicando] = useState(false);
+  const mapaRef = useRef<ComponentRef<typeof MapView>>(null);
+
+  function centrarEn(coords: Coordenadas) {
+    const siguiente = {
+      latitude: coords.latitud,
+      longitude: coords.longitud,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
+    setOrigen(coords);
+    setRegion(siguiente);
+    const mapa = mapaRef.current as {
+      animateToRegion?: (region: typeof siguiente, ms: number) => void;
+    } | null;
+    mapa?.animateToRegion?.(siguiente, 450);
+  }
 
   const confirmarCerrarSesion = () => {
     if (Platform.OS === "web") {
@@ -96,13 +114,7 @@ export function MapaCiudadano() {
         if (!activo) {
           return;
         }
-        setOrigen(coords);
-        setRegion({
-          latitude: coords.latitud,
-          longitude: coords.longitud,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        });
+        centrarEn(coords);
       })
       .catch(() => {});
 
@@ -220,9 +232,10 @@ export function MapaCiudadano() {
 
       <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
         <MapView
-          key={origen ? `${origen.latitud}-${origen.longitud}` : "ciudad"}
+          ref={mapaRef}
           style={StyleSheet.absoluteFill}
           initialRegion={region}
+          showsMyLocationButton={false}
           showsUserLocation
         >
           {visibles.map((reporte) => {
@@ -307,6 +320,31 @@ export function MapaCiudadano() {
           </View>
         ) : null}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Mi ubicación"
+        disabled={ubicando}
+        collapsable={false}
+        onPress={() => {
+          setUbicando(true);
+          obtenerUbicacionActual()
+            .then((coords) => centrarEn(coords))
+            .catch(() => {
+              // Sin permiso el mapa se queda donde está.
+            })
+            .finally(() => setUbicando(false));
+        }}
+        style={styles.ubicar}
+      >
+        <View style={styles.ubicarCirculo} collapsable={false}>
+          {ubicando ? (
+            <ActivityIndicator color={Paleta.tealDeep} />
+          ) : (
+            <Ionicons name="locate" size={22} color={Paleta.tealDeep} />
+          )}
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -507,6 +545,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Paleta.tealSoft,
     overflow: "hidden",
+  },
+  ubicar: {
+    position: "absolute",
+    right: 16,
+    bottom: 16,
+    zIndex: 30,
+    elevation: 30,
+  },
+  ubicarCirculo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(15, 23, 42, 0.08)",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 8,
   },
   resumen: {
     position: "absolute",
