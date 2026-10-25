@@ -102,6 +102,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
       accessibilityRole="button"
       accessibilityLabel={`Reclamo ${reporte.codigo}, ${tipo}, estado ${etiquetaParaVecino(reporte)}`}
     >
+      <View style={[styles.barraEstado, { backgroundColor: colorEstado }]} />
       <View style={styles.tarjetaCuerpo}>
         <View
           style={[styles.iconoTipo, { backgroundColor: fondoSuave(categoria.color) }]}
@@ -509,6 +510,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tarjeta: {
+    position: 'relative',
     backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     borderWidth: 1,
@@ -520,6 +522,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
   },
+  barraEstado: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
   tarjetaPresionada: {
     opacity: 0.88,
   },
@@ -528,6 +537,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     padding: 14,
+    paddingLeft: 18,
   },
   iconoTipo: {
     width: 48,

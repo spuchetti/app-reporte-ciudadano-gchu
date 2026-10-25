@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -45,6 +53,33 @@ export function MapaCiudadano() {
   const [origen, setOrigen] = useState<Coordenadas | null>(null);
   const [region, setRegion] = useState(REGION_GCHU);
 
+  const confirmarCerrarSesion = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm("¿Estás seguro de que querés cerrar sesión?")) {
+        void cerrarSesion();
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Cerrar sesión",
+      "¿Estás seguro de que querés cerrar sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Cerrar sesión",
+          style: "destructive",
+          onPress: () => {
+            void cerrarSesion();
+          },
+        },
+      ],
+    );
+  };
+
   useEffect(() => {
     let activo = true;
 
@@ -54,9 +89,7 @@ export function MapaCiudadano() {
           setReportes(lista);
         }
       })
-      .catch(() => {
-        // El mapa igual se muestra; los pines quedan vacíos.
-      });
+      .catch(() => {});
 
     obtenerUbicacionActual()
       .then((coords) => {
@@ -71,9 +104,7 @@ export function MapaCiudadano() {
           longitudeDelta: 0.02,
         });
       })
-      .catch(() => {
-        // Sin GPS seguimos en el centro de la ciudad.
-      });
+      .catch(() => {});
 
     return () => {
       activo = false;
@@ -148,15 +179,19 @@ export function MapaCiudadano() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
-            onPress={() => {
-              void cerrarSesion();
-            }}
+            onPress={confirmarCerrarSesion}
             hitSlop={8}
-            style={styles.avatar}
+            style={({ pressed }) => [
+              styles.avatar,
+              pressed ? styles.avatarPresionado : null,
+            ]}
           >
             <Text style={styles.avatarLetra}>
               {nombre.trim().charAt(0).toUpperCase() || "V"}
             </Text>
+            <View style={styles.avatarInsigniaSalir}>
+              <Ionicons name="log-out-outline" size={11} color={Paleta.paperRaised} />
+            </View>
           </Pressable>
         </View>
 
@@ -381,6 +416,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   avatar: {
+    position: "relative",
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -388,10 +424,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarPresionado: {
+    opacity: 0.85,
+  },
   avatarLetra: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
     color: Paleta.tealDeep,
+  },
+  avatarInsigniaSalir: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Paleta.tealDeep,
+    borderWidth: 1.5,
+    borderColor: Paleta.paperRaised,
+    alignItems: "center",
+    justifyContent: "center",
   },
   botonFiltro: {
     width: 44,

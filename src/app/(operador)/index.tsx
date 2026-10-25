@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
+  Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,6 +36,7 @@ import {
   type PestanaBandeja,
 } from "@/servicios/bandeja";
 import { esErrorServicio } from "@/servicios/error";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import {
   asignarCuadrilla,
   etiquetaEstado,
@@ -55,6 +58,33 @@ export default function BandejaOperadorScreen() {
   const { sesion, cerrarSesion } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
   const zonaOperadorId = usuario?.zonaId ?? null;
+
+  const confirmarCerrarSesion = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm("¿Estás seguro de que querés cerrar sesión?")) {
+        void cerrarSesion();
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Cerrar sesión",
+      "¿Estás seguro de que querés cerrar sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Cerrar sesión",
+          style: "destructive",
+          onPress: () => {
+            void cerrarSesion();
+          },
+        },
+      ],
+    );
+  };
 
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -172,7 +202,7 @@ export default function BandejaOperadorScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
-            onPress={cerrarSesion}
+            onPress={confirmarCerrarSesion}
             hitSlop={8}
           >
             <Text style={styles.salir}>Cerrar sesión</Text>
@@ -285,71 +315,77 @@ export default function BandejaOperadorScreen() {
           </Text>
         ) : (
           visibles.map((item) => (
-              <View key={item.id} style={styles.tarjeta}>
-                <View style={styles.tarjetaCuerpo}>
-                  <View
-                    style={[
-                      styles.icono,
-                      {
-                        backgroundColor: fondoSuave(
-                          obtenerCategoriaVisual(item.tipoId)?.color ?? Paleta.teal,
-                        ),
-                      },
-                    ]}
-                  >
-                    <IconoCategoria tipoId={item.tipoId} size={22} />
-                  </View>
-                  <View style={styles.tarjetaInfo}>
-                    <View style={styles.tarjetaCabecera}>
-                      <Text style={styles.codigo}>{item.codigo}</Text>
-                      <InsigniaEstado
-                        estado={item.estado}
-                        etiqueta={etiquetaEstado(item.estado)}
-                        maxWidth={148}
-                      />
-                    </View>
-                    <Text style={styles.linea} numberOfLines={1}>
-                      {`${nombreTipo(item.tipoId)} · ${item.direccion}`}
-                    </Text>
-                    <Text style={styles.meta} numberOfLines={1}>
-                      {`${nombreZona(item.zonaId)} · ${haceTiempo(item.creadoEn)}`}
-                    </Text>
-                    <Text style={styles.meta} numberOfLines={1}>
-                      {`${nombreAutor(item.autorId)} · ${textoFotos(item.fotos.length)}`}
-                    </Text>
-                  </View>
+            <View key={item.id} style={styles.tarjeta}>
+              <View
+                style={[
+                  styles.barraEstado,
+                  { backgroundColor: COLORES_ESTADO[item.estado] },
+                ]}
+              />
+              <View style={styles.tarjetaCuerpo}>
+                <View
+                  style={[
+                    styles.icono,
+                    {
+                      backgroundColor: fondoSuave(
+                        obtenerCategoriaVisual(item.tipoId)?.color ?? Paleta.teal,
+                      ),
+                    },
+                  ]}
+                >
+                  <IconoCategoria tipoId={item.tipoId} size={22} />
                 </View>
+                <View style={styles.tarjetaInfo}>
+                  <View style={styles.tarjetaCabecera}>
+                    <Text style={styles.codigo}>{item.codigo}</Text>
+                    <InsigniaEstado
+                      estado={item.estado}
+                      etiqueta={etiquetaEstado(item.estado)}
+                      maxWidth={148}
+                    />
+                  </View>
+                  <Text style={styles.linea} numberOfLines={1}>
+                    {`${nombreTipo(item.tipoId)} · ${item.direccion}`}
+                  </Text>
+                  <Text style={styles.meta} numberOfLines={1}>
+                    {`${nombreZona(item.zonaId)} · ${haceTiempo(item.creadoEn)}`}
+                  </Text>
+                  <Text style={styles.meta} numberOfLines={1}>
+                    {`${nombreAutor(item.autorId)} · ${textoFotos(item.fotos.length)}`}
+                  </Text>
+                </View>
+              </View>
 
-                <View style={styles.acciones}>
+              <View style={styles.acciones}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Revisar ${item.codigo}`}
+                  onPress={() => router.push(`/(operador)/reporte/${item.id}`)}
+                  style={({ pressed }) => [
+                    styles.botonRevisar,
+                    pressed && styles.botonPressed,
+                  ]}
+                >
+                  <Text style={styles.textoRevisar}>Revisar</Text>
+                </Pressable>
+                {puedeAsignar(item.estado) ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Revisar ${item.codigo}`}
-                    onPress={() => router.push(`/(operador)/reporte/${item.id}`)}
+                    accessibilityLabel={`Asignar ${item.codigo}`}
+                    onPress={() => {
+                      setErrorAsignar(null);
+                      setAsignandoId(item.id);
+                    }}
                     style={({ pressed }) => [
-                      styles.botonRevisar,
+                      styles.botonAsignar,
                       pressed && styles.botonPressed,
                     ]}
                   >
-                    <Text style={styles.textoRevisar}>Revisar</Text>
+                    <Text style={styles.textoAsignar}>Asignar</Text>
                   </Pressable>
-                  {puedeAsignar(item.estado) ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Asignar ${item.codigo}`}
-                      onPress={() => {
-                        setErrorAsignar(null);
-                        setAsignandoId(item.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.botonAsignar,
-                        pressed && styles.botonPressed,
-                      ]}
-                    >
-                      <Text style={styles.textoAsignar}>Asignar</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+                ) : null}
               </View>
+            </View>
           ))
         )}
       </ScrollView>
@@ -606,11 +642,23 @@ const styles = StyleSheet.create({
     color: Paleta.inkSoft,
   },
   tarjeta: {
+    position: "relative",
+    overflow: "hidden",
     backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Paleta.line,
     padding: 14,
+    paddingLeft: 18,
     marginBottom: 12,
     gap: 12,
+  },
+  barraEstado: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
   },
   tarjetaCuerpo: {
     flexDirection: "row",
