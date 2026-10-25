@@ -1,3 +1,26 @@
+import * as LocalAuthentication from "expo-local-authentication";
+import { Platform } from "react-native";
+
+import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
+import { usuariosMock } from "@/mocks";
+import {
+  cerrarSesion,
+  desbloquearConPin,
+  desbloquearConRostro,
+  dispositivoTieneBiometria,
+  identificarVecino,
+  iniciarSesion,
+  intentarDesbloqueo,
+  MENSAJE_SESION_VENCIDA,
+  olvidarDispositivo,
+  recuperarArranque,
+  registrarVecino,
+  TTL_TOKEN_MS,
+  validarToken,
+} from "@/servicios/auth";
+import { guardarMetodoIngreso } from "@/servicios/ingreso";
+import { SesionAutenticada, Usuario } from "@/tipos";
+
 jest.mock("@/servicios/almacen-seguro", () => {
   const memoria = new Map<string, string>();
   return {
@@ -29,28 +52,7 @@ jest.mock("expo-local-authentication", () => ({
   },
 }));
 
-import * as LocalAuthentication from "expo-local-authentication";
-import { Platform } from "react-native";
 
-import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
-import { usuariosMock } from "@/mocks";
-import {
-  cerrarSesion,
-  desbloquearConPin,
-  desbloquearConRostro,
-  dispositivoTieneBiometria,
-  identificarVecino,
-  iniciarSesion,
-  intentarDesbloqueo,
-  MENSAJE_SESION_VENCIDA,
-  olvidarDispositivo,
-  recuperarArranque,
-  registrarVecino,
-  TTL_TOKEN_MS,
-  validarToken,
-} from "@/servicios/auth";
-import { guardarMetodoIngreso } from "@/servicios/ingreso";
-import { SesionAutenticada, Usuario } from "@/tipos";
 
 const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
   __memoria: Map<string, string>;
