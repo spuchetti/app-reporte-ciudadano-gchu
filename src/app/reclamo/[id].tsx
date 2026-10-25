@@ -46,8 +46,9 @@ import {
   obtenerReportes,
   textoDuplicado,
 } from "@/servicios/reportes";
-import { COLORES_ESTADO } from "@/servicios/mapa";
-import { CambioDeEstado, EstadoReporte, Reporte } from "@/tipos";
+import { COLORES_ESTADO, RADIO_CERCA_M, metrosEntre } from "@/servicios/mapa";
+import { obtenerUbicacionActual } from "@/servicios/ubicacion";
+import { CambioDeEstado, Coordenadas, EstadoReporte, Reporte } from "@/tipos";
 
 function impactoLigero() {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
@@ -91,7 +92,7 @@ const TEXTO_ESTADO: Record<EstadoReporte, string> = {
 export default function DetalleReclamoScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sesion } = useSesion();
+  const { sesion, adherirseAReporte } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
 
   const [reporte, setReporte] = useState<Reporte | null>(null);
@@ -112,6 +113,10 @@ export default function DetalleReclamoScreen() {
   const [corrigiendoZona, setCorrigiendoZona] = useState(false);
   const [errorZona, setErrorZona] = useState<string | null>(null);
   const [mostrarQr, setMostrarQr] = useState(false);
+  const [sumando, setSumando] = useState(false);
+  const [errorSumar, setErrorSumar] = useState<string | null>(null);
+  const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
+  const [ubicacionLista, setUbicacionLista] = useState(false);
   const pantallaActiva = useRef(true);
   const secuenciaCarga = useRef(0);
 
@@ -177,6 +182,32 @@ export default function DetalleReclamoScreen() {
       activo = false;
     };
   }, [cargar]);
+
+  useEffect(() => {
+    if (usuario?.rol !== "vecino") {
+      return;
+    }
+    let activo = true;
+    obtenerUbicacionActual()
+      .then((coords) => {
+        if (activo) {
+          setUbicacion(coords);
+        }
+      })
+      .catch(() => {
+        if (activo) {
+          setUbicacion(null);
+        }
+      })
+      .finally(() => {
+        if (activo) {
+          setUbicacionLista(true);
+        }
+      });
+    return () => {
+      activo = false;
+    };
+  }, [usuario?.rol]);
 
   async function onCambiarEstado(
     estado: EstadoReporte,
@@ -272,6 +303,42 @@ export default function DetalleReclamoScreen() {
     reporte?.fotos.find((foto) => foto.esPrincipal)?.url ?? reporte?.fotos[0]?.url;
   const puedeGestionarReporte =
     usuario?.rol === "operador" && reporte ? puedeGestionar(reporte) : false;
+  const puedeAdherirse = Boolean(
+    reporte &&
+      usuario?.rol === "vecino" &&
+      reporte.autorId !== usuario.id &&
+      reporte.estado !== "resuelto" &&
+      reporte.estado !== "rechazado" &&
+      !adhesionesDelReporte(reporte.id).some((item) => item.usuarioId === usuario.id),
+  );
+  const distancia =
+    reporte && ubicacion ? metrosEntre(ubicacion, reporte.coordenadas) : null;
+  const estaCerca = distancia != null && distancia <= RADIO_CERCA_M;
+  const puedeSumarse = puedeAdherirse && estaCerca;
+  const avisoDistancia =
+    puedeAdherirse && ubicacionLista && !estaCerca
+      ? "Solo podés sumarte a un reclamo que esté a menos de 100 m."
+      : null;
+
+  async function onSumarse() {
+    if (!reporte || sumando || !estaCerca) {
+      return;
+    }
+    setErrorSumar(null);
+    setSumando(true);
+    try {
+      await adherirseAReporte(reporte.id);
+    } catch (err) {
+      setErrorSumar(
+        esErrorServicio(err)
+          ? err.message
+          : "No se pudo sumar al reporte. Intentá de nuevo.",
+      );
+    } finally {
+      setSumando(false);
+    }
+  }
+
   const opcionesDuplicado = reporte
     ? reportesParaDuplicar(catalogo, reporte.id)
     : [];
@@ -302,7 +369,7 @@ export default function DetalleReclamoScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Volver a la lista de reclamos"
+              accessibilityLabel="Volver"
               hitSlop={8}
               onPress={() => {
                 impactoLigero();
@@ -475,6 +542,22 @@ export default function DetalleReclamoScreen() {
                 </View>
               </View>
             </View>
+
+            {puedeSumarse ? (
+              <View style={styles.acciones}>
+                {errorSumar ? <Text style={styles.errorSumar}>{errorSumar}</Text> : null}
+                <Boton
+                  titulo="Sumarme a este reclamo"
+                  cargando={sumando}
+                  onPress={() => {
+                    impactoLigero();
+                    void onSumarse();
+                  }}
+                />
+              </View>
+            ) : avisoDistancia ? (
+              <Text style={styles.avisoDistancia}>{avisoDistancia}</Text>
+            ) : null}
 
             {reporte.estado === "resuelto" && reporte.fotoArreglo ? (
               <View style={styles.bloque}>
@@ -791,6 +874,17 @@ const styles = StyleSheet.create({
   },
   acciones: {
     gap: 8,
+  },
+  errorSumar: {
+    fontFamily: Fonts.medium,
+    color: Paleta.rojo,
+    fontSize: 13,
+  },
+  avisoDistancia: {
+    fontFamily: Fonts.regular,
+    color: Paleta.inkSoft,
+    fontSize: 14,
+    lineHeight: 20,
   },
   historial: {
     gap: 10,
