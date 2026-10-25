@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -10,11 +11,13 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
-import { MapView, Marker, Callout } from "@/components/mapa";
+import { MapView, Marker } from "@/components/mapa";
+import { Boton } from "@/components/ui/boton";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
 import { Fonts, Paleta } from "@/constants/theme";
@@ -54,7 +57,10 @@ export function MapaCiudadano() {
   const [origen, setOrigen] = useState<Coordenadas | null>(null);
   const [region, setRegion] = useState(REGION_GCHU);
   const [ubicando, setUbicando] = useState(false);
+  const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
+  const [altoTarjeta, setAltoTarjeta] = useState(0);
   const mapaRef = useRef<ComponentRef<typeof MapView>>(null);
+  const ignorarToqueMapa = useRef(false);
 
   function centrarEn(coords: Coordenadas) {
     const siguiente = {
@@ -151,6 +157,7 @@ export function MapaCiudadano() {
         : `Hay ${cerca} reportes cerca tuyo`
     : "Mostramos los reportes de la ciudad";
 
+  const seleccionado = visibles.find((item) => item.id === seleccionadoId) ?? null;
   const filtrosActivos = [filtroEstado, soloCerca || null].filter(Boolean).length;
 
   return (
@@ -237,11 +244,15 @@ export function MapaCiudadano() {
           initialRegion={region}
           showsMyLocationButton={false}
           showsUserLocation
+          onPress={() => {
+            if (ignorarToqueMapa.current) {
+              return;
+            }
+            setSeleccionadoId(null);
+          }}
         >
           {visibles.map((reporte) => {
-            const categoria = obtenerCategoriaVisual(reporte.tipoId);
-            const tipo = tiposReporteMock.find((item) => item.id === reporte.tipoId);
-            const nombre = categoria?.nombre ?? tipo?.nombre ?? "Reporte";
+            const elegido = seleccionado?.id === reporte.id;
             return (
               <Marker
                 key={reporte.id}
@@ -250,21 +261,16 @@ export function MapaCiudadano() {
                   longitude: reporte.coordenadas.longitud,
                 }}
                 pinColor={COLORES_ESTADO[reporte.estado]}
-                title={`${etiquetaEstadoPublico(reporte.estado)} · ${reporte.codigo}`}
-                description={reporte.direccion}
-              >
-                <Callout>
-                  <View style={styles.burbuja}>
-                    <View style={styles.burbujaTitulo}>
-                      <IconoCategoria tipoId={reporte.tipoId} size={16} />
-                      <Text style={styles.burbujaNombre}>{nombre}</Text>
-                    </View>
-                    <Text style={styles.burbujaTexto}>
-                      {reporte.descripcion || reporte.direccion}
-                    </Text>
-                  </View>
-                </Callout>
-              </Marker>
+                opacity={seleccionado && !elegido ? 0.45 : 1}
+                zIndex={elegido ? 2 : 0}
+                onPress={() => {
+                  ignorarToqueMapa.current = true;
+                  setSeleccionadoId(reporte.id);
+                  setTimeout(() => {
+                    ignorarToqueMapa.current = false;
+                  }, 350);
+                }}
+              />
             );
           })}
         </MapView>
@@ -335,7 +341,7 @@ export function MapaCiudadano() {
             })
             .finally(() => setUbicando(false));
         }}
-        style={styles.ubicar}
+        style={[styles.ubicar, seleccionado ? { bottom: altoTarjeta + 28 } : null]}
       >
         <View style={styles.ubicarCirculo} collapsable={false}>
           {ubicando ? (
@@ -345,6 +351,83 @@ export function MapaCiudadano() {
           )}
         </View>
       </Pressable>
+      {seleccionado ? (
+        <TarjetaMapa
+          reporte={seleccionado}
+          onAlto={setAltoTarjeta}
+          onCerrar={() => setSeleccionadoId(null)}
+          onVer={() => router.push(`/reclamo/${seleccionado.id}`)}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function TarjetaMapa({
+  reporte,
+  onAlto,
+  onCerrar,
+  onVer,
+}: {
+  reporte: Reporte;
+  onAlto: (alto: number) => void;
+  onCerrar: () => void;
+  onVer: () => void;
+}) {
+  const categoria = obtenerCategoriaVisual(reporte.tipoId);
+  const tipo = tiposReporteMock.find((item) => item.id === reporte.tipoId);
+  const nombre = categoria?.nombre ?? tipo?.nombre ?? "Reporte";
+  const foto =
+    reporte.fotos.find((item) => item.esPrincipal)?.url ?? reporte.fotos[0]?.url;
+  const estado = etiquetaEstadoPublico(reporte.estado);
+
+  return (
+    <View
+      style={styles.tarjeta}
+      onLayout={(evento) => onAlto(evento.nativeEvent.layout.height)}
+      accessibilityRole="summary"
+      accessibilityLabel={`${nombre}, ${estado}, ${reporte.direccion}`}
+    >
+      <View style={styles.tarjetaFila}>
+        {foto ? (
+          <Image source={{ uri: foto }} style={styles.tarjetaFoto} />
+        ) : (
+          <View style={[styles.tarjetaFoto, styles.tarjetaFotoVacia]}>
+            <IconoCategoria tipoId={reporte.tipoId} size={28} />
+          </View>
+        )}
+        <View style={styles.tarjetaTexto}>
+          <Text style={styles.tarjetaNombre} numberOfLines={1}>
+            {nombre}
+          </Text>
+          <View style={styles.tarjetaEstado}>
+            <View
+              style={[
+                styles.tarjetaPunto,
+                { backgroundColor: COLORES_ESTADO[reporte.estado] },
+              ]}
+            />
+            <Text style={styles.tarjetaEstadoTexto}>{estado}</Text>
+          </View>
+          <Text style={styles.tarjetaDireccion} numberOfLines={1}>
+            {reporte.direccion}
+          </Text>
+          {reporte.descripcion ? (
+            <Text style={styles.tarjetaDescripcion} numberOfLines={1}>
+              {reporte.descripcion}
+            </Text>
+          ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar"
+          hitSlop={8}
+          onPress={onCerrar}
+        >
+          <Ionicons name="close" size={20} color={Paleta.inkSoft} />
+        </Pressable>
+      </View>
+      <Boton titulo="Ver reclamo" onPress={onVer} />
     </View>
   );
 }
@@ -663,21 +746,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Paleta.teal,
   },
-  burbuja: {
-    width: 220,
-    gap: 4,
+  tarjeta: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 12,
+    zIndex: 40,
+    elevation: 16,
+    backgroundColor: Paleta.paperRaised,
+    borderRadius: 20,
+    padding: 12,
+    gap: 12,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
   },
-  burbujaTitulo: {
+  tarjetaFila: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  tarjetaFoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    backgroundColor: Paleta.tealSoft,
+  },
+  tarjetaFotoVacia: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tarjetaTexto: {
+    flex: 1,
+    gap: 2,
+  },
+  tarjetaNombre: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 16,
+    color: Paleta.ink,
+  },
+  tarjetaEstado: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  burbujaNombre: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 14,
+  tarjetaPunto: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  tarjetaEstadoTexto: {
+    fontFamily: Fonts.medium,
+    fontSize: 13,
     color: Paleta.ink,
   },
-  burbujaTexto: {
+  tarjetaDireccion: {
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    color: Paleta.inkSoft,
+  },
+  tarjetaDescripcion: {
     fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
