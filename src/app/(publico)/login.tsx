@@ -56,8 +56,6 @@ export default function LoginOperadorScreen() {
 
   const marca = (
     <View style={[styles.marca, dosColumnas ? styles.marcaLado : null]}>
-      <View style={styles.circuloGrande} />
-      <View style={styles.circuloChico} />
       <IconoPrincipal
         width={logoSize}
         height={logoSize}
@@ -66,7 +64,7 @@ export default function LoginOperadorScreen() {
       />
       <Text style={styles.tituloMarca}>{"Reporte\nCiudadano"}</Text>
       <Text style={styles.subtituloMarca}>
-        Acceso para operadores municipales.
+        Acceso para operadores municipales
       </Text>
     </View>
   );
@@ -188,24 +186,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-  },
-  circuloGrande: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(255,255,255,0.07)",
-    top: -80,
-    right: -70,
-  },
-  circuloChico: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    bottom: -70,
-    left: -60,
   },
   marcaLado: {
     flex: 1,
