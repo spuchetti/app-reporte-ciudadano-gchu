@@ -2,7 +2,7 @@ import { esPendiente } from "@/servicios/bandeja";
 import { Coordenadas, EstadoReporte, Reporte } from "@/tipos";
 
 export const RADIO_DUPLICADO_M = 50;
-export const RADIO_CERCA_M = 400;
+export const RADIO_CERCA_M = 100;
 
 export const COLORES_ESTADO: Record<EstadoReporte, string> = {
   recibido: "#F2B705",
