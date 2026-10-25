@@ -25,7 +25,6 @@ type Props = {
   direccion: string;
   onUbicacion: (coords: Coordenadas, direccion: string) => void;
   onElegirCercano: (reporte: Reporte | null) => void;
-  onMapaOcupado?: (ocupado: boolean) => void;
   sumando?: boolean;
 };
 
@@ -36,7 +35,6 @@ export function PasoUbicacion({
   direccion,
   onUbicacion,
   onElegirCercano,
-  onMapaOcupado,
   sumando = false,
 }: Props) {
   const [cargando, setCargando] = useState(latitud == null);
@@ -45,11 +43,8 @@ export function PasoUbicacion({
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [eleccion, setEleccion] = useState("nuevo");
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ignorarToque = useRef(false);
   const onUbicacionRef = useRef(onUbicacion);
-  const onMapaOcupadoRef = useRef(onMapaOcupado);
   onUbicacionRef.current = onUbicacion;
-  onMapaOcupadoRef.current = onMapaOcupado;
 
   const coords: Coordenadas = {
     latitud: latitud ?? COORDENADAS_CENTRO.latitud,
@@ -119,14 +114,6 @@ export function PasoUbicacion({
     }
   }, [eleccion, idsCercanos, onElegirCercano]);
 
-  function ocuparMapa(ocupado: boolean) {
-    onMapaOcupadoRef.current?.(ocupado);
-  }
-
-  function moverPin(latitude: number, longitude: number) {
-    aplicarCoords({ latitud: latitude, longitud: longitude });
-  }
-
   function aplicarCoords(siguiente: Coordenadas) {
     onUbicacionRef.current(siguiente, direccion);
     if (geocodeTimer.current) {
@@ -184,19 +171,6 @@ export function PasoUbicacion({
             latitudeDelta: 0.008,
             longitudeDelta: 0.008,
           }}
-          moveOnMarkerPress={false}
-          onTouchStart={() => ocuparMapa(true)}
-          onTouchEnd={() => ocuparMapa(false)}
-          onTouchCancel={() => ocuparMapa(false)}
-          onPress={(evento) => {
-            if (ignorarToque.current) {
-              return;
-            }
-            moverPin(
-              evento.nativeEvent.coordinate.latitude,
-              evento.nativeEvent.coordinate.longitude,
-            );
-          }}
         >
           {cercanos.map(({ reporte }) => (
             <Marker
@@ -217,23 +191,19 @@ export function PasoUbicacion({
               latitude: coords.latitud,
               longitude: coords.longitud,
             }}
-            pinColor={Paleta.teal}
+            anchor={{ x: 0.5, y: 0.5 }}
             draggable
-            onDragStart={() => {
-              ignorarToque.current = true;
-              ocuparMapa(true);
-            }}
             onDragEnd={(evento) => {
-              moverPin(
-                evento.nativeEvent.coordinate.latitude,
-                evento.nativeEvent.coordinate.longitude,
-              );
-              ocuparMapa(false);
-              setTimeout(() => {
-                ignorarToque.current = false;
-              }, 300);
+              aplicarCoords({
+                latitud: evento.nativeEvent.coordinate.latitude,
+                longitud: evento.nativeEvent.coordinate.longitude,
+              });
             }}
-          />
+          >
+            <View style={styles.pinHalo}>
+              <View style={styles.pinActual} />
+            </View>
+          </Marker>
         </MapView>
         <View style={styles.direccionCapa} pointerEvents="none">
           <View style={styles.direccionChip}>
@@ -243,7 +213,7 @@ export function PasoUbicacion({
           </View>
         </View>
         <View style={styles.pista} pointerEvents="none">
-          <Text style={styles.pistaTexto}>Tocá el mapa o arrastrá el pin</Text>
+          <Text style={styles.pistaTexto}>Arrastrá el pin para corregir</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -387,6 +357,22 @@ const styles = StyleSheet.create({
     backgroundColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
+  },
+  pinHalo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,175,193,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pinActual: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Paleta.teal,
+    borderWidth: 3,
+    borderColor: Paleta.paperRaised,
   },
   pinCercano: {
     width: 16,
