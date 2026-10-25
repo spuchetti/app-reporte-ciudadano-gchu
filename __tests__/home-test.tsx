@@ -17,7 +17,9 @@ jest.mock("react-native-maps", () => {
   return {
     __esModule: true,
     default: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
-    Marker: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
+    Marker: ({ children, ...props }: { children?: React.ReactNode }) => (
+      <View {...props}>{children}</View>
+    ),
     Callout: ({ children }: { children?: React.ReactNode }) => <View>{children}</View>,
     PROVIDER_GOOGLE: "google",
   };
@@ -141,8 +143,17 @@ describe("Home vecino", () => {
   test("muestra los reportes que llegan al mapa", async () => {
     const tree = await montarHome();
 
+    expect(arbolComoTexto(tree.toJSON())).toContain("Mostramos los reportes de la ciudad");
+
+    const pin = tree.root.find(
+      (nodo) => nodo.props.coordinate?.latitude === reporteNorte.coordenadas.latitud,
+    );
+    await act(async () => {
+      pin.props.onPress();
+    });
+
     const texto = arbolComoTexto(tree.toJSON());
     expect(texto).toContain("Pozo en Norte");
-    expect(texto).toContain("Mostramos los reportes de la ciudad");
+    expect(texto).toContain("Ver reclamo");
   });
 });
