@@ -1,9 +1,31 @@
+import { isDevice } from "expo-device";
+import { Platform } from "react-native";
+
 import { leerSecreto } from "@/servicios/almacen-seguro";
 import { ErrorServicio } from "@/servicios/error";
 import { Foto, Reporte } from "@/tipos";
 
-/** La API que está corriendo en esta máquina. En el emulador de Android el host es 10.0.2.2. */
-export const URL_API = "http://localhost:3000";
+function leerUrl(valor: string | undefined, respaldo: string) {
+  const limpia = valor?.trim().replace(/\/$/, "");
+  return limpia || respaldo;
+}
+
+const URL_PC = leerUrl(process.env.EXPO_PUBLIC_API_URL, "");
+const URL_EMULADOR = leerUrl(process.env.EXPO_PUBLIC_API_URL_EMULADOR, "");
+const URL_TELEFONO = leerUrl(process.env.EXPO_PUBLIC_API_URL_TELEFONO, "");
+
+/** En la PC y en la web, localhost. En el emulador de Android, 10.0.2.2. En el teléfono, la IP de la PC. */
+export function urlApi() {
+  if (Platform.OS !== "android") {
+    return URL_PC;
+  }
+  if (isDevice) {
+    return URL_TELEFONO || URL_PC;
+  }
+  return URL_EMULADOR;
+}
+
+export const URL_API = urlApi();
 
 const CLAVE_SESION = "sesion";
 
@@ -112,7 +134,7 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Pro
   } catch {
     throw new ErrorServicio({
       codigo: "RED",
-      mensaje: "No hay conexión con la API. Revisá que esté en localhost:3000.",
+      mensaje: `No hay conexión con la API en ${URL_API}.`,
     });
   }
 
