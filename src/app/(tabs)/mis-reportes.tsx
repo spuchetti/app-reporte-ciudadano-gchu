@@ -331,7 +331,7 @@ export default function MisReportesScreen() {
                 </View>
                 <Text style={styles.vacioTitulo}>Todavía no te sumaste</Text>
                 <Text style={styles.vacioSubtitulo}>
-                  Cuando te sumes a un reclamo de otro vecino, va a aparecer en esta lista.
+                  Cuando te sumes a un reclamo de otro vecino desde este teléfono, va a aparecer en esta lista.
                 </Text>
                 <View style={styles.pasos}>
                   {[

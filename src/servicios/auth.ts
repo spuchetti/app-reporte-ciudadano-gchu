@@ -6,6 +6,7 @@ import {
   guardarSecreto,
   leerSecreto,
 } from "@/servicios/almacen-seguro";
+import { enPrueba, fijarTokenApi, pedir } from "@/servicios/api";
 import { ErrorServicio, esErrorServicio } from "@/servicios/error";
 import {
   borrarMetodoIngreso,
@@ -71,6 +72,7 @@ function armarSesion(usuario: Usuario): SesionAutenticada {
 }
 
 async function persistirSesion(sesion: SesionAutenticada) {
+  fijarTokenApi(sesion.token);
   await guardarSecreto(CLAVE_SESION, JSON.stringify(sesion));
   await marcarSesionDesbloqueada();
 }
@@ -100,8 +102,31 @@ function errorToken(codigo: "TOKEN_INVALIDO" | "TOKEN_EXPIRADO") {
   });
 }
 
+const TTL_API_MS = 30 * 24 * 60 * 60 * 1000;
+
+function sesionDesdeApi(datos: { token: string; usuario: Usuario }): SesionAutenticada {
+  return {
+    token: datos.token,
+    usuario: datos.usuario,
+    expiraEn: new Date(Date.now() + TTL_API_MS).toISOString(),
+    esInvitado: false,
+  };
+}
+
 /** Mock de GET /me: valida el token guardado y su vencimiento. */
 export async function validarToken(token: string): Promise<Usuario> {
+  if (!enPrueba()) {
+    fijarTokenApi(token);
+    try {
+      return await pedir<Usuario>("/yo", { token });
+    } catch (error) {
+      if (esErrorServicio(error) && error.codigo === "TOKEN_EXPIRADO") {
+        throw errorToken("TOKEN_EXPIRADO");
+      }
+      throw errorToken("TOKEN_INVALIDO");
+    }
+  }
+
   await delay(300);
 
   const crudo = await leerSecreto(CLAVE_SESION);
@@ -131,6 +156,28 @@ export async function iniciarSesion(
   email: string,
   contrasena: string,
 ): Promise<SesionAutenticada> {
+  if (!enPrueba()) {
+    const datos = await pedir<{ token: string; usuario: Usuario }>("/auth/ingreso", {
+      method: "POST",
+      token: null,
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        contrasena,
+      }),
+    });
+
+    if (datos.usuario.rol !== "operador") {
+      throw new ErrorServicio({
+        codigo: "CREDENCIALES_INVALIDAS",
+        mensaje: "Email o contraseña incorrectos.",
+      });
+    }
+
+    const sesion = sesionDesdeApi(datos);
+    await persistirSesion(sesion);
+    return sesion;
+  }
+
   await delay(600);
 
   const emailNormalizado = email.trim().toLowerCase();
@@ -202,10 +249,54 @@ function validarDatosVecino(datos: DatosRegistro) {
   return { nombre, email, telefono };
 }
 
-/** Alta o reingreso del vecino (sin contraseña). Si el email ya existe, el teléfono tiene que coincidir. */
+const LARGO_MINIMO_CONTRASENA = 8;
+
+/** Alta o reingreso del vecino. Contra la API hace falta contraseña: registro, o ingreso si el email ya existe. */
 export async function identificarVecino(
   datos: DatosRegistro,
 ): Promise<SesionAutenticada> {
+  if (!enPrueba()) {
+    const { nombre, email, telefono } = validarDatosVecino(datos);
+    const contrasena = (datos.contrasena ?? "").trim();
+    if (contrasena.length < LARGO_MINIMO_CONTRASENA) {
+      throw new ErrorServicio({
+        codigo: "CONTRASENA_CORTA",
+        mensaje: "La contraseña tiene que tener al menos 8 caracteres.",
+      });
+    }
+
+    const cuerpo = JSON.stringify({ nombre, email, telefono, contrasena });
+    let datosSesion: { token: string; usuario: Usuario };
+    try {
+      datosSesion = await pedir<{ token: string; usuario: Usuario }>("/auth/registro", {
+        method: "POST",
+        token: null,
+        body: cuerpo,
+      });
+    } catch (error) {
+      if (!esErrorServicio(error) || error.codigo !== "EMAIL_YA_REGISTRADO") {
+        throw error;
+      }
+      datosSesion = await pedir<{ token: string; usuario: Usuario }>("/auth/ingreso", {
+        method: "POST",
+        token: null,
+        body: JSON.stringify({ email, contrasena }),
+      });
+    }
+
+    if (datosSesion.usuario.rol !== "vecino") {
+      throw new ErrorServicio({
+        codigo: "IDENTIDAD_INVALIDA",
+        mensaje: MENSAJE_IDENTIDAD_INVALIDA,
+      });
+    }
+
+    const sesion = sesionDesdeApi(datosSesion);
+    await marcarHuboVecino();
+    await persistirSesion(sesion);
+    return sesion;
+  }
+
   await delay(800);
 
   const { nombre, email, telefono } = validarDatosVecino(datos);
@@ -277,6 +368,7 @@ export async function cerrarSesion(): Promise<void> {
     }
   }
 
+  fijarTokenApi(null);
   await borrarSecreto(CLAVE_SESION);
   await marcarSesionDesbloqueada();
   if (rol) {
@@ -286,6 +378,7 @@ export async function cerrarSesion(): Promise<void> {
 
 export async function olvidarDispositivo(): Promise<void> {
   await delay(200);
+  fijarTokenApi(null);
   await borrarSecreto(CLAVE_SESION);
   await borrarHuboVecino();
   await marcarSesionDesbloqueada();

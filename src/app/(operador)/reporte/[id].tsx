@@ -38,6 +38,7 @@ import {
   asignarCuadrilla,
   corregirZona,
   etiquetaEstado,
+  sePuedeCorregirZona,
   marcarDuplicado,
   obtenerCambiosEstado,
   obtenerReportePorId,
@@ -329,20 +330,22 @@ export default function DetalleOperadorScreen() {
                 >
                   <Text style={styles.botonSecundarioTexto}>Marcar duplicado</Text>
                 </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Corregir zona de ${reporte.codigo}`}
-                  onPress={() => {
-                    setErrorZona(null);
-                    setMostrarZona(true);
-                  }}
-                  style={({ pressed }) => [
-                    styles.botonSecundario,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.botonSecundarioTexto}>Corregir zona</Text>
-                </Pressable>
+                {sePuedeCorregirZona() ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Corregir zona de ${reporte.codigo}`}
+                    onPress={() => {
+                      setErrorZona(null);
+                      setMostrarZona(true);
+                    }}
+                    style={({ pressed }) => [
+                      styles.botonSecundario,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.botonSecundarioTexto}>Corregir zona</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Asignar ${reporte.codigo}`}

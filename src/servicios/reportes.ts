@@ -6,8 +6,16 @@ import {
   tiposReporteMock,
   zonasMock,
 } from "@/mocks";
+import {
+  enPrueba,
+  pedirLista,
+  pedirReporte,
+  pedirReportes,
+  subirArchivo,
+} from "@/servicios/api";
+import { guardarSecreto, leerSecreto } from "@/servicios/almacen-seguro";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
-import { ErrorServicio } from "@/servicios/error";
+import { ErrorServicio, esErrorServicio } from "@/servicios/error";
 import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
   Adhesion,
@@ -98,7 +106,14 @@ export const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Obtener todos los reportes
+const RUTA_MAPA =
+  "/reportes?porPagina=500&estado=recibido,en_revision,asignado,resuelto,rechazado";
+
 export const obtenerReportes = async (): Promise<Reporte[]> => {
+  if (!enPrueba()) {
+    return pedirReportes(RUTA_MAPA);
+  }
+
   await delay(600);
   return reportesMock.filter((reporte) => reporte.sincronizado);
 };
@@ -107,6 +122,20 @@ export const obtenerReportes = async (): Promise<Reporte[]> => {
 export const obtenerReportePorId = async (
   id: string,
 ): Promise<Reporte | null> => {
+  if (!enPrueba()) {
+    const ruta = /^GCHU-/i.test(id)
+      ? `/reportes/codigo/${encodeURIComponent(id)}`
+      : `/reportes/${encodeURIComponent(id)}`;
+    try {
+      return await pedirReporte(ruta);
+    } catch (error) {
+      if (esErrorServicio(error) && error.codigo === "REPORTE_NO_ENCONTRADO") {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   await delay(400);
   const reporte = reportesMock.find((r) => r.id === id || r.codigo === id);
   return reporte || null;
@@ -253,6 +282,28 @@ export function paramsDeTicket(reporte: Reporte) {
 export const crearReporte = async (
   reporte: Omit<Reporte, "id" | "codigo" | "creadoEn">,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    const fotos = [];
+    for (const foto of reporte.fotos) {
+      const url = /^https?:\/\//.test(foto.url)
+        ? foto.url
+        : await subirArchivo(foto.url);
+      fotos.push({ url });
+    }
+
+    return pedirReporte("/reportes", {
+      method: "POST",
+      body: JSON.stringify({
+        tipoId: reporte.tipoId,
+        descripcion: reporte.descripcion,
+        audioUrl: reporte.audioUrl,
+        fotos,
+        coordenadas: reporte.coordenadas,
+        direccion: reporte.direccion,
+      }),
+    });
+  }
+
   await delay(800);
 
   const nuevoReporte: Reporte = {
@@ -270,6 +321,10 @@ export const crearReporte = async (
 };
 
 export async function sincronizarPendientes(): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    return [];
+  }
+
   await delay(500);
 
   return reportesMock
@@ -283,6 +338,12 @@ export async function sincronizarPendientes(): Promise<Reporte[]> {
 
 // Obtener tipos de reporte
 export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
+  if (!enPrueba()) {
+    const tipos = await pedirLista<TipoDeReporte>("/tipos-de-reporte");
+    tiposReporteMock.splice(0, tiposReporteMock.length, ...tipos);
+    return tipos;
+  }
+
   await delay(300);
   return [...tiposReporteMock];
 };
@@ -291,6 +352,12 @@ export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
 export const obtenerCambiosEstado = async (
   reporteId: string,
 ): Promise<CambioDeEstado[]> => {
+  if (!enPrueba()) {
+    return pedirLista<CambioDeEstado>(
+      `/reportes/${encodeURIComponent(reporteId)}/cambios?porPagina=100`,
+    );
+  }
+
   await delay(400);
   return cambiosEstadoMock.filter((c) => c.reporteId === reporteId);
 };
@@ -338,6 +405,26 @@ export const actualizarEstado = async (
   operadorId: string,
   fotoArregloUrl: string | null = null,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    if (nuevoEstado === "resuelto" && fotoArregloUrl) {
+      const url = /^https?:\/\//.test(fotoArregloUrl)
+        ? fotoArregloUrl
+        : await subirArchivo(fotoArregloUrl);
+      await pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/fotos`, {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+    }
+
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        estado: nuevoEstado,
+        comentario: comentario.trim() || null,
+      }),
+    });
+  }
+
   await delay(600);
 
   const reporte = reporteAbierto(reporteId);
@@ -385,6 +472,13 @@ export const marcarDuplicado = async (
   originalId: string,
   operadorId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/duplicado`, {
+      method: "POST",
+      body: JSON.stringify({ originalId }),
+    });
+  }
+
   await delay(500);
 
   if (reporteId === originalId) {
@@ -421,11 +515,23 @@ export const marcarDuplicado = async (
   return reporte;
 };
 
+/** La API no tiene corrección de zona. En la app el botón queda oculto; los tests siguen el mock. */
+export function sePuedeCorregirZona() {
+  return enPrueba();
+}
+
 export const corregirZona = async (
   reporteId: string,
   zonaId: string,
   operadorId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    throw new ErrorServicio({
+      codigo: "NO_DISPONIBLE",
+      mensaje: "La API todavía no permite corregir la zona.",
+    });
+  }
+
   await delay(400);
 
   const reporte = reportesMock.find((item) => item.id === reporteId);
@@ -466,6 +572,13 @@ export const asignarCuadrilla = async (
   cuadrillaId: string,
   operadorId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/cuadrilla`, {
+      method: "PATCH",
+      body: JSON.stringify({ cuadrillaId }),
+    });
+  }
+
   await delay(500);
 
   const reporte = reportesMock.find((item) => item.id === reporteId);
@@ -526,10 +639,46 @@ function sumarAdhesion(reporte: Reporte, usuarioId: string) {
   reporte.adhesiones = contarAdhesiones(reporte.id);
 }
 
+const CLAVE_ADHESIONES = "adhesiones";
+
+async function leerAdhesionesLocales(): Promise<Record<string, string[]>> {
+  const crudo = await leerSecreto(CLAVE_ADHESIONES);
+  if (!crudo) {
+    return {};
+  }
+  try {
+    const parsed: unknown = JSON.parse(crudo);
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+    return parsed as Record<string, string[]>;
+  } catch {
+    return {};
+  }
+}
+
+async function recordarAdhesion(usuarioId: string, reporteId: string) {
+  const mapa = await leerAdhesionesLocales();
+  const ids = mapa[usuarioId] ?? [];
+  if (!ids.includes(reporteId)) {
+    mapa[usuarioId] = [...ids, reporteId];
+    await guardarSecreto(CLAVE_ADHESIONES, JSON.stringify(mapa));
+  }
+}
+
 export const adherirAReporte = async (
   reporteId: string,
   vecinoId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    const reporte = await pedirReporte(
+      `/reportes/${encodeURIComponent(reporteId)}/adhesiones`,
+      { method: "POST" },
+    );
+    await recordarAdhesion(vecinoId, reporte.id);
+    return reporte;
+  }
+
   const reporte = reportesMock.find((item) => item.id === reporteId);
   if (!reporte) {
     throw new ErrorServicio({
@@ -562,6 +711,15 @@ export const adherirAReporte = async (
 export async function obtenerReportesAdheridos(
   usuarioId: string,
 ): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    const mapa = await leerAdhesionesLocales();
+    const ids = mapa[usuarioId] ?? [];
+    const reportes = await Promise.all(ids.map((id) => obtenerReportePorId(id)));
+    return reportes
+      .filter((reporte): reporte is Reporte => reporte !== null)
+      .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+  }
+
   await delay(400);
   const ids = new Set(
     adhesionesMock
@@ -574,6 +732,10 @@ export async function obtenerReportesAdheridos(
 }
 
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    return pedirReportes("/yo/reportes?porPagina=500");
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 400));
   return reportesMock
     .filter((rep) => rep.autorId === usuarioId)
