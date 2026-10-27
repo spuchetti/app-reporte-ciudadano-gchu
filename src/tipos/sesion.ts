@@ -9,6 +9,8 @@ export interface DatosRegistro {
   nombre: string;
   email: string;
   telefono: string;
+  /** La API la exige. El mock de los tests puede omitirla. */
+  contrasena?: string;
 }
 
 /** Cuerpo de { datos } en login/registro cuando exista la API. */
