@@ -300,6 +300,7 @@ export const crearReporte = async (
         fotos,
         coordenadas: reporte.coordenadas,
         direccion: reporte.direccion,
+        creadoEn: new Date().toISOString(),
       }),
     });
   }
@@ -733,7 +734,7 @@ export async function obtenerReportesAdheridos(
 
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
   if (!enPrueba()) {
-    return pedirReportes("/yo/reportes?porPagina=500");
+    return pedirReportes("/yo/reportes?porPagina=100");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 400));
