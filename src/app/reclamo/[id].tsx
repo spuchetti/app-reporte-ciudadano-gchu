@@ -39,6 +39,7 @@ import {
   asignarCuadrilla,
   corregirZona,
   etiquetaEstado,
+  sePuedeCorregirZona,
   etiquetaParaVecino,
   marcarDuplicado,
   obtenerCambiosEstado,
@@ -591,15 +592,17 @@ export default function DetalleReclamoScreen() {
                     setMostrarDuplicado(true);
                   }}
                 />
-                <Boton
-                  titulo="Corregir zona"
-                  variante="secundario"
-                  onPress={() => {
-                    impactoLigero();
-                    setErrorZona(null);
-                    setMostrarZona(true);
-                  }}
-                />
+                {sePuedeCorregirZona() ? (
+                  <Boton
+                    titulo="Corregir zona"
+                    variante="secundario"
+                    onPress={() => {
+                      impactoLigero();
+                      setErrorZona(null);
+                      setMostrarZona(true);
+                    }}
+                  />
+                ) : null}
                 <Boton
                   titulo="Asignar"
                   variante="primario"

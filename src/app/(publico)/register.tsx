@@ -30,6 +30,7 @@ export default function DatosVecinoScreen() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -37,7 +38,7 @@ export default function DatosVecinoScreen() {
     setError(null);
     setCargando(true);
     try {
-      const datos = { nombre, email, telefono };
+      const datos = { nombre, email, telefono, contrasena };
       if (adhesionId) {
         await adherirPrimerReporte(datos, adhesionId);
         return;
@@ -81,10 +82,10 @@ export default function DatosVecinoScreen() {
           <Text style={styles.titulo}>Tus datos</Text>
           <Text style={styles.subtitulo}>
             {esReingreso
-              ? "Usá el mismo email y teléfono que cuando enviaste un reporte. No hace falta contraseña."
+              ? "Usá el mismo email y contraseña. Si es la primera vez, te creamos la cuenta."
               : adhesionId
-                ? "Los pedimos para sumarte al reporte y avisarte el estado. No hace falta contraseña."
-                : "Los pedimos para enviar el reporte y avisarte el estado. No hace falta contraseña."}
+                ? "Los pedimos para sumarte al reporte y avisarte el estado."
+                : "Los pedimos para enviar el reporte y avisarte el estado."}
           </Text>
 
           <CampoTexto
@@ -119,6 +120,19 @@ export default function DatosVecinoScreen() {
             keyboardType="phone-pad"
             autoComplete="tel"
             textContentType="telephoneNumber"
+            editable={!cargando}
+          />
+          <CampoTexto
+            etiqueta="Contraseña"
+            icono="lock-closed-outline"
+            value={contrasena}
+            onChangeText={setContrasena}
+            placeholder="Mínimo 8 caracteres"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="password"
+            textContentType="password"
             editable={!cargando}
           />
 
