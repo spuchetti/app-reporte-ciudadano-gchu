@@ -60,6 +60,7 @@ jest.mock("@/servicios/reportes", () => ({
   asignarCuadrilla: jest.fn(),
   actualizarEstado: jest.fn(),
   marcarDuplicado: jest.fn(),
+  sePuedeCorregirZona: () => true,
   etiquetaEstado: (estado: string) =>
     ({ en_revision: "en revisión" }[estado] ?? estado),
 }));
