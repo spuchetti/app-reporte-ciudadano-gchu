@@ -13,7 +13,6 @@ import {
   pedirReportes,
   subirArchivo,
 } from "@/servicios/api";
-import { guardarSecreto, leerSecreto } from "@/servicios/almacen-seguro";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio, esErrorServicio } from "@/servicios/error";
 import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
@@ -516,9 +515,8 @@ export const marcarDuplicado = async (
   return reporte;
 };
 
-/** La API no tiene corrección de zona. En la app el botón queda oculto; los tests siguen el mock. */
 export function sePuedeCorregirZona() {
-  return enPrueba();
+  return true;
 }
 
 export const corregirZona = async (
@@ -527,9 +525,9 @@ export const corregirZona = async (
   operadorId: string,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
-    throw new ErrorServicio({
-      codigo: "NO_DISPONIBLE",
-      mensaje: "La API todavía no permite corregir la zona.",
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/zona`, {
+      method: "PATCH",
+      body: JSON.stringify({ zonaId }),
     });
   }
 
@@ -640,44 +638,15 @@ function sumarAdhesion(reporte: Reporte, usuarioId: string) {
   reporte.adhesiones = contarAdhesiones(reporte.id);
 }
 
-const CLAVE_ADHESIONES = "adhesiones";
-
-async function leerAdhesionesLocales(): Promise<Record<string, string[]>> {
-  const crudo = await leerSecreto(CLAVE_ADHESIONES);
-  if (!crudo) {
-    return {};
-  }
-  try {
-    const parsed: unknown = JSON.parse(crudo);
-    if (!parsed || typeof parsed !== "object") {
-      return {};
-    }
-    return parsed as Record<string, string[]>;
-  } catch {
-    return {};
-  }
-}
-
-async function recordarAdhesion(usuarioId: string, reporteId: string) {
-  const mapa = await leerAdhesionesLocales();
-  const ids = mapa[usuarioId] ?? [];
-  if (!ids.includes(reporteId)) {
-    mapa[usuarioId] = [...ids, reporteId];
-    await guardarSecreto(CLAVE_ADHESIONES, JSON.stringify(mapa));
-  }
-}
-
 export const adherirAReporte = async (
   reporteId: string,
   vecinoId: string,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
-    const reporte = await pedirReporte(
+    return pedirReporte(
       `/reportes/${encodeURIComponent(reporteId)}/adhesiones`,
       { method: "POST" },
     );
-    await recordarAdhesion(vecinoId, reporte.id);
-    return reporte;
   }
 
   const reporte = reportesMock.find((item) => item.id === reporteId);
@@ -713,12 +682,7 @@ export async function obtenerReportesAdheridos(
   usuarioId: string,
 ): Promise<Reporte[]> {
   if (!enPrueba()) {
-    const mapa = await leerAdhesionesLocales();
-    const ids = mapa[usuarioId] ?? [];
-    const reportes = await Promise.all(ids.map((id) => obtenerReportePorId(id)));
-    return reportes
-      .filter((reporte): reporte is Reporte => reporte !== null)
-      .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+    return pedirReportes("/yo/adhesiones?porPagina=100");
   }
 
   await delay(400);

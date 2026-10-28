@@ -24,6 +24,10 @@ import {
 } from "@/servicios/auth";
 import { limpiarBorrador } from "@/servicios/borrador";
 import {
+  darDeBajaDispositivo,
+  registrarDispositivo,
+} from "@/servicios/notificaciones";
+import {
   adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
@@ -135,6 +139,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
     if (rol === "vecino") {
       setHuboVecino(true);
     }
+    void registrarDispositivo();
     const metodo = await leerMetodoIngreso(rol);
     setPendienteElegirIngreso(metodo === null);
   }, []);
@@ -294,6 +299,7 @@ export function SesionProvider({ children }: PropsWithChildren) {
       sesion?.esInvitado === false ? sesion.usuario.rol : rolToken;
     const eraVecino = rol === "vecino";
     const eraOperador = rol === "operador";
+    await darDeBajaDispositivo();
     await cerrarSesionServicio();
     setSesion(null);
     setSesionVencida(false);
