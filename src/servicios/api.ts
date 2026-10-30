@@ -1,3 +1,4 @@
+import axios, { isAxiosError } from "axios";
 import { isDevice } from "expo-device";
 import { Platform } from "react-native";
 
@@ -26,6 +27,8 @@ export function urlApi() {
 }
 
 export const URL_API = urlApi();
+
+const cliente = axios.create({ baseURL: URL_API });
 
 const CLAVE_SESION = "sesion";
 
@@ -114,56 +117,54 @@ type OpcionesPedido = {
   json?: boolean;
 };
 
+function errorDeCuerpo(cuerpo: unknown) {
+  if (!cuerpo || typeof cuerpo !== "object" || !("error" in cuerpo)) {
+    return undefined;
+  }
+  return (cuerpo as ErrorCuerpo).error;
+}
+
 export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const token = opciones.token === undefined ? await tokenGuardado() : opciones.token;
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  if (opciones.json !== false && typeof opciones.body === "string") {
+
+  const esArchivo = opciones.json === false;
+  if (!esArchivo && typeof opciones.body === "string") {
     headers["Content-Type"] = "application/json";
   }
 
-  let respuesta: Response;
   try {
-    respuesta = await fetch(`${URL_API}${ruta}`, {
+    const respuesta = await cliente.request<unknown>({
+      url: ruta,
       method: opciones.method ?? "GET",
       headers,
-      body: opciones.body,
+      data: opciones.body,
+      transformRequest: esArchivo ? [(data) => data] : undefined,
     });
-  } catch {
+    return datosDeCuerpo<T>(respuesta.data);
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      const fallo = errorDeCuerpo(error.response.data);
+      throw new ErrorServicio({
+        codigo: fallo?.codigo ?? "ERROR_API",
+        mensaje: fallo?.mensaje ?? "La API no pudo completar el pedido.",
+      });
+    }
+
     throw new ErrorServicio({
       codigo: "RED",
       mensaje: `No hay conexión con la API en ${URL_API}.`,
     });
   }
+}
 
-  const texto = await respuesta.text();
-  let cuerpo: unknown = null;
-  if (texto) {
-    try {
-      cuerpo = JSON.parse(texto);
-    } catch {
-      cuerpo = null;
-    }
-  }
-
-  if (!respuesta.ok) {
-    const error = (cuerpo as ErrorCuerpo | null)?.error;
-    throw new ErrorServicio({
-      codigo: error?.codigo ?? "ERROR_API",
-      mensaje: error?.mensaje ?? "La API no pudo completar el pedido.",
-    });
-  }
-
-  if (
-    cuerpo &&
-    typeof cuerpo === "object" &&
-    "datos" in cuerpo
-  ) {
+function datosDeCuerpo<T>(cuerpo: unknown): T {
+  if (cuerpo && typeof cuerpo === "object" && "datos" in cuerpo) {
     return (cuerpo as { datos: T }).datos;
   }
-
   return cuerpo as T;
 }
 
