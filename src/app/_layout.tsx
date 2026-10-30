@@ -4,6 +4,7 @@ import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useColorScheme } from "react-native";
 
+import { EscuchaAvisos } from "@/components/avisos/escucha-avisos";
 import { PantallaDesbloqueo } from "@/components/ingreso/pantalla-desbloqueo";
 import { SheetPreferenciaIngreso } from "@/components/ingreso/sheet-preferencia";
 import { SesionProvider, useSesion } from "@/contexto/sesion";
@@ -65,18 +66,21 @@ function RootNavigator() {
   const enPublico = !esVecino && !esOperador;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={enPublico}>
-        <Stack.Screen name="(publico)" />
-      </Stack.Protected>
-      <Stack.Protected guard={esVecino}>
-        <Stack.Screen name="(tabs)" />
-      </Stack.Protected>
-      <Stack.Protected guard={esOperador}>
-        <Stack.Screen name="(operador)" />
-      </Stack.Protected>
-      <Stack.Screen name="reporte" />
-      <Stack.Screen name="reclamo/[id]" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={enPublico}>
+          <Stack.Screen name="(publico)" />
+        </Stack.Protected>
+        <Stack.Protected guard={esVecino}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+        <Stack.Protected guard={esOperador}>
+          <Stack.Screen name="(operador)" />
+        </Stack.Protected>
+        <Stack.Screen name="reporte" />
+        <Stack.Screen name="reclamo/[id]" />
+      </Stack>
+      <EscuchaAvisos />
+    </>
   );
 }

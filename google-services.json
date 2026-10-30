@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "276709277050",
+    "project_id": "app-reporte-ciudadano-gchu",
+    "storage_bucket": "app-reporte-ciudadano-gchu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276709277050:android:34804160b13aeb849b2ac3",
+        "android_client_info": {
+          "package_name": "com.anonymous.appreporteciudadanogchu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0x-sA-jIygOzGk3kKEsmJG3Zusjjig1c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
