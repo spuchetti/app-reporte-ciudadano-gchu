@@ -8,6 +8,31 @@ import { enPrueba, pedir } from "@/servicios/api";
 
 const CLAVE_TOKEN = "tokenExpo";
 const PROJECT_ID_PENDIENTE = "tu-project-id-aqui";
+const CANAL_AVISOS = "default";
+
+/** La push de la API manda `reporteId` en `data`. La de prueba no. */
+export function reporteIdDeAviso(datos: unknown): string | null {
+  if (!datos || typeof datos !== "object" || !("reporteId" in datos)) {
+    return null;
+  }
+  const id = (datos as { reporteId?: unknown }).reporteId;
+  if (typeof id !== "string") {
+    return null;
+  }
+  const limpio = id.trim();
+  return limpio === "" ? null : limpio;
+}
+
+async function asegurarCanalAndroid() {
+  if (Platform.OS !== "android") {
+    return;
+  }
+  await Notifications.setNotificationChannelAsync(CANAL_AVISOS, {
+    name: "Avisos",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+  });
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,6 +59,7 @@ export async function registrarDispositivo() {
   }
 
   try {
+    await asegurarCanalAndroid();
     const actual = await Notifications.getPermissionsAsync();
     const permiso =
       actual.status === "granted"
