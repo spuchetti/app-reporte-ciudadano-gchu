@@ -104,7 +104,8 @@
           "touchIDPermission": "Permite usar Touch ID para autenticación segura."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sqlite"
     ],
     "extra": {
       "router": {

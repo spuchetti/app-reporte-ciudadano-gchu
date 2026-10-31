@@ -184,9 +184,7 @@ export default function MisReportesScreen() {
     setError(null);
 
     try {
-      if (esRecarga) {
-        await sincronizarPendientes();
-      }
+      await sincronizarPendientes();
       const [data, sumados] = await Promise.all([
         obtenerMisReportes(autorId),
         obtenerReportesAdheridos(autorId),
