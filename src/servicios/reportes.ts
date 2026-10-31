@@ -13,6 +13,11 @@ import {
   pedirReportes,
   subirArchivo,
 } from "@/servicios/api";
+import {
+  eliminarReportePendienteSQLite,
+  guardarReportePendienteSQLite,
+  listarReportesPendientesSQLite,
+} from "@/servicios/base-datos";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio, esErrorServicio } from "@/servicios/error";
 import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
@@ -282,26 +287,41 @@ export const crearReporte = async (
   reporte: Omit<Reporte, "id" | "codigo" | "creadoEn">,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
-    const fotos = [];
-    for (const foto of reporte.fotos) {
-      const url = /^https?:\/\//.test(foto.url)
-        ? foto.url
-        : await subirArchivo(foto.url);
-      fotos.push({ url });
-    }
+    try {
+      const fotos = [];
+      for (const foto of reporte.fotos) {
+        const url = /^https?:\/\//.test(foto.url)
+          ? foto.url
+          : await subirArchivo(foto.url);
+        fotos.push({ url });
+      }
 
-    return pedirReporte("/reportes", {
-      method: "POST",
-      body: JSON.stringify({
-        tipoId: reporte.tipoId,
-        descripcion: reporte.descripcion,
-        audioUrl: reporte.audioUrl,
-        fotos,
-        coordenadas: reporte.coordenadas,
-        direccion: reporte.direccion,
-        creadoEn: new Date().toISOString(),
-      }),
-    });
+      return await pedirReporte("/reportes", {
+        method: "POST",
+        body: JSON.stringify({
+          tipoId: reporte.tipoId,
+          descripcion: reporte.descripcion,
+          audioUrl: reporte.audioUrl,
+          fotos,
+          coordenadas: reporte.coordenadas,
+          direccion: reporte.direccion,
+          creadoEn: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      if (esErrorServicio(error) && error.codigo === "RED") {
+        const reporteOffline: Reporte = {
+          ...reporte,
+          id: `rep-local-${Date.now()}`,
+          codigo: codigoProvisorio(),
+          creadoEn: new Date().toISOString(),
+          sincronizado: false,
+        };
+        await guardarReportePendienteSQLite(reporteOffline);
+        return reporteOffline;
+      }
+      throw error;
+    }
   }
 
   await delay(800);
@@ -316,24 +336,59 @@ export const crearReporte = async (
 
   // En un mock, agregamos al array (en la vida real, esto sería una API)
   reportesMock.push(nuevoReporte);
+  await guardarReportePendienteSQLite(nuevoReporte);
 
   return nuevoReporte;
 };
 
 export async function sincronizarPendientes(): Promise<Reporte[]> {
   if (!enPrueba()) {
-    return [];
+    const pendientesSQL = await listarReportesPendientesSQLite();
+    const sincronizados: Reporte[] = [];
+
+    for (const pendiente of pendientesSQL) {
+      try {
+        const fotos = [];
+        for (const foto of pendiente.fotos) {
+          const url = /^https?:\/\//.test(foto.url)
+            ? foto.url
+            : await subirArchivo(foto.url);
+          fotos.push({ url });
+        }
+
+        const subido = await pedirReporte("/reportes", {
+          method: "POST",
+          body: JSON.stringify({
+            tipoId: pendiente.tipoId,
+            descripcion: pendiente.descripcion,
+            audioUrl: pendiente.audioUrl,
+            fotos,
+            coordenadas: pendiente.coordenadas,
+            direccion: pendiente.direccion,
+            creadoEn: pendiente.creadoEn,
+          }),
+        });
+
+        await eliminarReportePendienteSQLite(pendiente.id);
+        sincronizados.push(subido);
+      } catch {
+        // Si sigue sin red o falla uno, permanece en la tabla cola_reportes para el próximo intento
+      }
+    }
+
+    return sincronizados;
   }
 
   await delay(500);
 
-  return reportesMock
-    .filter((reporte) => !reporte.sincronizado)
-    .map((reporte) => {
-      reporte.codigo = codigoDefinitivo();
-      reporte.sincronizado = true;
-      return reporte;
-    });
+  const pendientes = reportesMock.filter((reporte) => !reporte.sincronizado);
+  for (const reporte of pendientes) {
+    reporte.codigo = codigoDefinitivo();
+    reporte.sincronizado = true;
+    await eliminarReportePendienteSQLite(reporte.id);
+  }
+
+  return pendientes;
 }
 
 // Obtener tipos de reporte
@@ -698,7 +753,16 @@ export async function obtenerReportesAdheridos(
 
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
   if (!enPrueba()) {
-    return pedirReportes("/yo/reportes?porPagina=100");
+    const [remotos, pendientesLocal] = await Promise.all([
+      pedirReportes("/yo/reportes?porPagina=100"),
+      listarReportesPendientesSQLite(),
+    ]);
+    const propiosPendientes = pendientesLocal.filter(
+      (rep) => rep.autorId === usuarioId,
+    );
+    return [...propiosPendientes, ...remotos].sort(
+      (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
+    );
   }
 
   await new Promise((resolve) => setTimeout(resolve, 400));
