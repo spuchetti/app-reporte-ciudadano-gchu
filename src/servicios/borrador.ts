@@ -41,11 +41,15 @@ export function limpiarBorrador() {
 }
 
 export function marcarPendienteEnvio() {
-  actual = { ...actual, pendienteEnvio: true };
+  actual = { ...actual, pendienteEnvio: true, adherirAId: null };
 }
 
 export function marcarAdhesionPendiente(reporteId: string) {
-  actual = { ...actual, adherirAId: reporteId };
+  actual = { ...actual, adherirAId: reporteId, pendienteEnvio: false };
+}
+
+export function limpiarAdhesionPendiente() {
+  actual = { ...actual, adherirAId: null };
 }
 
 export function borradorListoParaEnviar(
