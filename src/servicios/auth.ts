@@ -2,6 +2,11 @@ import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
 import { ZONA_POR_DEFECTO } from "@/servicios/reportes";
 import {
+  borrarValorKV,
+  guardarValorKV,
+  leerValorKV,
+} from "@/servicios/almacen-kv";
+import {
   borrarSecreto,
   guardarSecreto,
   leerSecreto,
@@ -78,15 +83,15 @@ async function persistirSesion(sesion: SesionAutenticada) {
 }
 
 async function marcarHuboVecino() {
-  await guardarSecreto(CLAVE_HUBO_VECINO, "1");
+  await guardarValorKV(CLAVE_HUBO_VECINO, "1");
 }
 
 async function borrarHuboVecino() {
-  await borrarSecreto(CLAVE_HUBO_VECINO);
+  await borrarValorKV(CLAVE_HUBO_VECINO);
 }
 
 export async function leerHuboVecino(): Promise<boolean> {
-  return (await leerSecreto(CLAVE_HUBO_VECINO)) === "1";
+  return (await leerValorKV(CLAVE_HUBO_VECINO)) === "1";
 }
 
 async function resultadoArranque(

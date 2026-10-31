@@ -3,10 +3,10 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 import {
-  borrarSecreto,
-  guardarSecreto,
-  leerSecreto,
-} from "@/servicios/almacen-seguro";
+  borrarValorKV,
+  guardarValorKV,
+  leerValorKV,
+} from "@/servicios/almacen-kv";
 import { ErrorServicio } from "@/servicios/error";
 import { MetodoIngreso, Rol } from "@/tipos";
 
@@ -16,7 +16,7 @@ const CLAVE_PREFERENCIAS = "preferenciaIngreso";
 type Preferencias = Partial<Record<Rol, { metodo: MetodoIngreso }>>;
 
 async function leerPreferencias(): Promise<Preferencias> {
-  const crudo = await leerSecreto(CLAVE_PREFERENCIAS);
+  const crudo = await leerValorKV(CLAVE_PREFERENCIAS);
   if (!crudo) {
     return {};
   }
@@ -32,7 +32,7 @@ async function leerPreferencias(): Promise<Preferencias> {
 }
 
 async function guardarPreferencias(valor: Preferencias) {
-  await guardarSecreto(CLAVE_PREFERENCIAS, JSON.stringify(valor));
+  await guardarValorKV(CLAVE_PREFERENCIAS, JSON.stringify(valor));
 }
 
 export async function leerMetodoIngreso(rol: Rol): Promise<MetodoIngreso | null> {
@@ -53,19 +53,19 @@ export async function borrarMetodoIngreso(rol: Rol) {
 }
 
 export async function borrarPreferenciasIngreso() {
-  await borrarSecreto(CLAVE_PREFERENCIAS);
+  await borrarValorKV(CLAVE_PREFERENCIAS);
 }
 
 export async function marcarSesionBloqueada() {
-  await guardarSecreto(CLAVE_BLOQUEADA, "1");
+  await guardarValorKV(CLAVE_BLOQUEADA, "1");
 }
 
 export async function marcarSesionDesbloqueada() {
-  await borrarSecreto(CLAVE_BLOQUEADA);
+  await borrarValorKV(CLAVE_BLOQUEADA);
 }
 
 export async function sesionEstaBloqueada(): Promise<boolean> {
-  return (await leerSecreto(CLAVE_BLOQUEADA)) === "1";
+  return (await leerValorKV(CLAVE_BLOQUEADA)) === "1";
 }
 
 export function corriendoEnExpoGo() {

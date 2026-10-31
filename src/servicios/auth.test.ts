@@ -35,6 +35,20 @@ jest.mock("@/servicios/almacen-seguro", () => {
   };
 });
 
+jest.mock("@/servicios/almacen-kv", () => {
+  const memoria = new Map<string, string>();
+  return {
+    guardarValorKV: jest.fn(async (clave: string, valor: string) => {
+      memoria.set(clave, valor);
+    }),
+    leerValorKV: jest.fn(async (clave: string) => memoria.get(clave) ?? null),
+    borrarValorKV: jest.fn(async (clave: string) => {
+      memoria.delete(clave);
+    }),
+    __memoria: memoria,
+  };
+});
+
 jest.mock("expo-constants", () => ({
   __esModule: true,
   default: { executionEnvironment: "bare" },
@@ -55,6 +69,10 @@ jest.mock("expo-local-authentication", () => ({
 
 
 const almacen = jest.requireMock("@/servicios/almacen-seguro") as {
+  __memoria: Map<string, string>;
+};
+
+const almacenKv = jest.requireMock("@/servicios/almacen-kv") as {
   __memoria: Map<string, string>;
 };
 
@@ -94,6 +112,7 @@ describe("servicios/auth", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     almacen.__memoria.clear();
+    almacenKv.__memoria.clear();
     jest.clearAllMocks();
     (Platform as { OS: string }).OS = "ios";
     (LocalAuthentication.hasHardwareAsync as jest.Mock).mockResolvedValue(false);
@@ -281,7 +300,7 @@ describe("servicios/auth", () => {
     await esperar(cerrarSesion());
 
     expect(almacen.__memoria.has("sesion")).toBe(false);
-    expect(almacen.__memoria.get("huboVecino")).toBe("1");
+    expect(almacenKv.__memoria.get("huboVecino")).toBe("1");
 
     const arranque = await esperar(recuperarArranque());
     expect(arranque.sesion).toBeNull();
@@ -389,7 +408,7 @@ describe("servicios/auth", () => {
       rolToken: null,
     });
     expect(almacen.__memoria.has("sesion")).toBe(false);
-    expect(almacen.__memoria.get("huboVecino")).toBe("1");
+    expect(almacenKv.__memoria.get("huboVecino")).toBe("1");
   });
 
   test("si el token es inválido, borra la sesión y avisa que venció", async () => {
@@ -544,7 +563,7 @@ describe("servicios/auth", () => {
     expect(arranque.huboVecino).toBe(false);
     expect(arranque.sesion).toBeNull();
     expect(almacen.__memoria.has("sesion")).toBe(false);
-    expect(almacen.__memoria.has("huboVecino")).toBe(false);
+    expect(almacenKv.__memoria.has("huboVecino")).toBe(false);
   });
 
   test("en web no hay reconocimiento facial", async () => {

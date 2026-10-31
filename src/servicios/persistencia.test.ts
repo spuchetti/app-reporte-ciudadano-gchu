@@ -85,13 +85,14 @@ function crearMockSQLiteDB() {
 }
 
 describe("Persistencia de datos (expo-sqlite/kv-store y SQLite relacional)", () => {
-  it("guarda, lee y borra preferencias o sesión en kv-store", async () => {
+  it("guarda, lee y borra preferencias no sensibles en kv-store", async () => {
     await guardarValorKV("preferencia_tema", "oscuro");
     expect(await leerValorKV("preferencia_tema")).toBe("oscuro");
 
     await borrarValorKV("preferencia_tema");
     expect(await leerValorKV("preferencia_tema")).toBeNull();
   });
+
 
   it("ejecuta migraciones CREATE TABLE y persiste borradores en SQLite", async () => {
     const db = crearMockSQLiteDB();
