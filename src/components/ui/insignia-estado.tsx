@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { Fonts, Paleta } from "@/constants/theme";
+import { COLORES_ESTADO as COLORES_PUNTO } from "@/servicios/mapa";
 import { EstadoReporte } from "@/tipos";
 
-const COLORES_ESTADO = {
+const COLORES_INSIGNIA = {
   recibido: {
     oscuro: { fondo: "#FFF1C2", texto: "#664800" },
     claro: { fondo: "#FFF4D6", texto: "#785500" },
@@ -29,6 +30,7 @@ const COLORES_ESTADO = {
 const COLORES_PENDIENTE = {
   fondo: "#EEF1F4",
   texto: Paleta.inkSoft,
+  punto: Paleta.inkSoft,
 };
 
 type Props = {
@@ -48,10 +50,10 @@ export function InsigniaEstado({
   maxWidth,
   lineas = 2,
 }: Props) {
-  const color = COLORES_ESTADO[estado][sobreFondoOscuro ? "oscuro" : "claro"];
+  const base = COLORES_INSIGNIA[estado][sobreFondoOscuro ? "oscuro" : "claro"];
   const colores = colorOverride
     ? COLORES_PENDIENTE
-    : color;
+    : { ...base, punto: COLORES_PUNTO[estado] };
 
   return (
     <View
@@ -63,6 +65,7 @@ export function InsigniaEstado({
         },
       ]}
     >
+      <View style={[styles.punto, { backgroundColor: colores.punto }]} />
       <Text
         numberOfLines={lineas}
         style={[styles.texto, { color: colores.texto }]}
@@ -77,10 +80,17 @@ const styles = StyleSheet.create({
   insignia: {
     alignSelf: "flex-start",
     minHeight: 32,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
+  },
+  punto: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   texto: {
     fontFamily: Fonts.semiBold,
