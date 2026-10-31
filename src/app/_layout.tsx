@@ -7,6 +7,7 @@ import { type PropsWithChildren } from "react";
 import { Platform, useColorScheme } from "react-native";
 
 import { EscuchaAvisos } from "@/components/avisos/escucha-avisos";
+import { EscuchaRed } from "@/components/avisos/escucha-red";
 import { PantallaDesbloqueo } from "@/components/ingreso/pantalla-desbloqueo";
 import { SheetPreferenciaIngreso } from "@/components/ingreso/sheet-preferencia";
 import { SesionProvider, useSesion } from "@/contexto/sesion";
@@ -107,6 +108,7 @@ function RootNavigator() {
         <Stack.Screen name="reclamo/[id]" />
       </Stack>
       <EscuchaAvisos />
+      <EscuchaRed />
     </>
   );
 }
