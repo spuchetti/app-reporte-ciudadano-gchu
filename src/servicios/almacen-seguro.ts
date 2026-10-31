@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { borrarValorKV, guardarValorKV, leerValorKV } from "@/servicios/almacen-kv";
 
 async function usarSecureStore() {
   if (Platform.OS === "web") {
@@ -9,40 +10,26 @@ async function usarSecureStore() {
 }
 
 export async function guardarSecreto(clave: string, valor: string) {
+  await guardarValorKV(clave, valor);
   if (await usarSecureStore()) {
     await SecureStore.setItemAsync(clave, valor);
-    return;
-  }
-
-  try {
-    localStorage.setItem(clave, valor);
-  } catch (error) {
-    console.error("No se pudo guardar el secreto:", error);
   }
 }
 
 export async function leerSecreto(clave: string): Promise<string | null> {
+  const desdeKV = await leerValorKV(clave);
+  if (desdeKV !== null) {
+    return desdeKV;
+  }
   if (await usarSecureStore()) {
     return SecureStore.getItemAsync(clave);
   }
-
-  try {
-    return localStorage.getItem(clave);
-  } catch (error) {
-    console.error("No se pudo leer el secreto:", error);
-    return null;
-  }
+  return null;
 }
 
 export async function borrarSecreto(clave: string) {
+  await borrarValorKV(clave);
   if (await usarSecureStore()) {
     await SecureStore.deleteItemAsync(clave);
-    return;
-  }
-
-  try {
-    localStorage.removeItem(clave);
-  } catch (error) {
-    console.error("No se pudo borrar el secreto:", error);
   }
 }
