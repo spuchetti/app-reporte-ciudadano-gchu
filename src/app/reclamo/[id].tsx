@@ -22,7 +22,7 @@ import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import {
   haceTiempo,
@@ -72,6 +72,41 @@ function fechaHistorial(fechaHora: string) {
   const dia = fecha.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
   const hora = fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   return `${dia}, ${hora}`;
+}
+
+function tituloHistorial(cambio: CambioDeEstado) {
+  const comentario = cambio.comentario?.trim() ?? "";
+  if (/^zona corregida/i.test(comentario)) {
+    return "Zona corregida";
+  }
+  return etiquetaEstado(cambio.estado);
+}
+
+function detalleHistorial(
+  cambio: CambioDeEstado,
+  nombreCuadrillaActual?: string | null,
+) {
+  const comentario = cambio.comentario?.trim() ?? "";
+  if (/^zona corregida a /i.test(comentario)) {
+    return `A ${comentario.replace(/^zona corregida a /i, "")}`;
+  }
+  if (/^zona corregida/i.test(comentario)) {
+    return null;
+  }
+  if (/^asignado a /i.test(comentario)) {
+    return `A ${comentario.replace(/^asignado a /i, "")}`;
+  }
+  if (cambio.estado === "asignado" && !comentario && nombreCuadrillaActual) {
+    return `A ${nombreCuadrillaActual}`;
+  }
+  if (!cambio.operadorId && !comentario) {
+    return "Reporte creado por el vecino";
+  }
+  return comentario || null;
+}
+
+function esEventoZona(cambio: CambioDeEstado) {
+  return /^zona corregida/i.test(cambio.comentario?.trim() ?? "");
 }
 
 const FONDO_ESTADO: Record<EstadoReporte, string> = {
@@ -619,34 +654,71 @@ export default function DetalleReclamoScreen() {
               <Text style={styles.tituloSeccion}>Historial</Text>
               {historial.length > 0 ? (
                 <View style={styles.listaHistorial}>
-                  {historial.map((cambio) => (
-                    <View key={cambio.id} style={styles.itemHistorial}>
-                      <View style={styles.filaHistorial}>
-                        <View
-                          style={[
-                            styles.punto,
-                            { backgroundColor: COLORES_ESTADO[cambio.estado] },
-                          ]}
-                        />
-                        <Text style={styles.cambioEstado}>
-                          {etiquetaEstado(cambio.estado)}
-                        </Text>
-                        <Text style={styles.cambioFecha}>
-                          {fechaHistorial(cambio.fechaHora)}
-                        </Text>
+                  {historial.map((cambio, index) => {
+                    const esActual = index === historial.length - 1;
+                    const zona = esEventoZona(cambio);
+                    const detalle = detalleHistorial(
+                      cambio,
+                      reporte.cuadrillaId
+                        ? nombreCuadrilla(reporte.cuadrillaId)
+                        : null,
+                    );
+                    return (
+                      <View key={cambio.id} style={styles.itemTimeline}>
+                        <View style={styles.columnaIndicador}>
+                          {zona ? (
+                            <View style={styles.marcaZona}>
+                              <Ionicons
+                                name="phone-portrait-outline"
+                                size={12}
+                                color={PaletaOperador.principal}
+                              />
+                            </View>
+                          ) : (
+                            <View
+                              style={[
+                                styles.marcaHistorial,
+                                esActual && styles.marcaHistorialActual,
+                                {
+                                  backgroundColor: COLORES_ESTADO[cambio.estado],
+                                },
+                              ]}
+                            />
+                          )}
+                          {index < historial.length - 1 ? (
+                            <View style={styles.lineaHistorial} />
+                          ) : null}
+                        </View>
+                        <View style={styles.columnaContenido}>
+                          <View style={styles.filaTituloFecha}>
+                            <Text
+                              style={[
+                                styles.cambioEstado,
+                                esActual && styles.cambioEstadoActual,
+                              ]}
+                            >
+                              {tituloHistorial(cambio)}
+                            </Text>
+                            <Text style={styles.cambioFecha}>
+                              {fechaHistorial(cambio.fechaHora)}
+                            </Text>
+                          </View>
+                          {detalle ? (
+                            <Text
+                              style={[
+                                styles.cambioTexto,
+                                !zona &&
+                                  cambio.estado === "rechazado" &&
+                                  styles.comentarioRechazado,
+                              ]}
+                            >
+                              {detalle}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
-                      {cambio.comentario ? (
-                        <Text
-                          style={[
-                            styles.cambioTexto,
-                            cambio.estado === "rechazado" && styles.comentarioRechazado,
-                          ]}
-                        >
-                          {cambio.comentario}
-                        </Text>
-                      ) : null}
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               ) : (
                 <Text style={styles.meta}>
@@ -666,6 +738,14 @@ export default function DetalleReclamoScreen() {
         error={errorEstado}
         onCerrar={() => {
           if (!guardandoEstado) setMostrarEstado(false);
+        }}
+        onAsignarCuadrilla={() => {
+          if (guardandoEstado) {
+            return;
+          }
+          setMostrarEstado(false);
+          setErrorAsignar(null);
+          setMostrarAsignar(true);
         }}
         onConfirmar={(estado, comentario, fotoArregloUrl) => {
           void onCambiarEstado(estado, comentario, fotoArregloUrl);
@@ -889,25 +969,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  historial: {
-    gap: 10,
-  },
   listaHistorial: {
-    gap: 12,
+    gap: 0,
   },
-  itemHistorial: {
+  itemTimeline: {
+    flexDirection: "row",
+    gap: 12,
+    paddingBottom: 16,
+  },
+  columnaIndicador: {
+    width: 18,
+    alignItems: "center",
+    position: "relative",
+  },
+  marcaHistorial: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+    zIndex: 2,
+  },
+  marcaHistorialActual: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginTop: 1,
+  },
+  marcaZona: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8EEF4",
+    zIndex: 2,
+  },
+  lineaHistorial: {
+    position: "absolute",
+    top: 18,
+    bottom: -16,
+    left: 8,
+    width: 2,
+    backgroundColor: Paleta.line,
+    zIndex: 1,
+  },
+
+  columnaContenido: {
+    flex: 1,
     gap: 4,
   },
-  filaHistorial: {
+  filaTituloFecha: {
     flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     gap: 8,
   },
   cambioEstado: {
     flex: 1,
     fontFamily: Fonts.semiBold,
     color: Paleta.ink,
-    fontSize: 15,
+    fontSize: 14,
+  },
+  cambioEstadoActual: {
+    fontSize: 16,
   },
   cambioFecha: {
     fontFamily: Fonts.regular,

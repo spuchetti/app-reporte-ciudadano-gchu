@@ -83,4 +83,18 @@ export const cuadrillasMock: Cuadrilla[] = [
     especialidad: "Reparación de veredas",
     activa: false,
   },
+  {
+    id: "cua-06",
+    nombre: "Cuadrilla 6 - Espacios verdes",
+    zonaId: "zon-este",
+    especialidad: "Poda y árboles",
+    activa: true,
+  },
+  {
+    id: "cua-07",
+    nombre: "Cuadrilla 7 - Agua y cloacas",
+    zonaId: "zon-este",
+    especialidad: "Obras sanitarias",
+    activa: true,
+  },
 ];

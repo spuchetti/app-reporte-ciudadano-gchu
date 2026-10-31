@@ -47,10 +47,10 @@ describe("servicios/zonas", () => {
     expect(inactiva?.activa).toBe(false);
   });
 
-  test("este no tiene cuadrillas", async () => {
+  test("este tiene dos cuadrillas activas", async () => {
     const cuadrillas = await esperar(obtenerCuadrillasPorZona("zon-este"));
 
-    expect(cuadrillas).toEqual([]);
+    expect(cuadrillas.map((item) => item.id)).toEqual(["cua-06", "cua-07"]);
   });
 
   test("agrupa cada zona con sus cuadrillas", async () => {
@@ -60,7 +60,7 @@ describe("servicios/zonas", () => {
 
     expect(grupos).toHaveLength(4);
     expect(norte?.cuadrillas).toHaveLength(2);
-    expect(este?.cuadrillas).toEqual([]);
+    expect(este?.cuadrillas).toHaveLength(2);
   });
 
   test("copia las cuadrillas y no muta el mock", async () => {

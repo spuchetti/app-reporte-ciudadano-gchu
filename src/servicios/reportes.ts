@@ -572,9 +572,13 @@ export const asignarCuadrilla = async (
   operadorId: string,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
+    const nombre = cuadrillasMock.find((item) => item.id === cuadrillaId)?.nombre;
     return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/cuadrilla`, {
       method: "PATCH",
-      body: JSON.stringify({ cuadrillaId }),
+      body: JSON.stringify({
+        cuadrillaId,
+        comentario: nombre ? `Asignado a ${nombre}` : null,
+      }),
     });
   }
 
