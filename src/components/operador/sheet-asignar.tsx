@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text } from "react-native";
 
 import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
 import { cuadrillasParaReporte, nombreZona } from "@/servicios/bandeja";
+import { obtenerCuadrillas } from "@/servicios/zonas";
 import { ZONA_FUERA } from "@/servicios/ubicacion";
+import { Cuadrilla } from "@/tipos";
 
 type Props = {
   visible: boolean;
@@ -21,8 +24,46 @@ export function SheetAsignar({
   onCerrar,
   onElegir,
 }: Props) {
-  const cuadrillas = zonaId ? cuadrillasParaReporte(zonaId) : [];
+  const [cuadrillas, setCuadrillas] = useState<Cuadrilla[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const fuera = zonaId === ZONA_FUERA;
+
+  useEffect(() => {
+    if (!visible || !zonaId) {
+      setCuadrillas([]);
+      setErrorCarga(null);
+      return;
+    }
+
+    let activo = true;
+    setCargando(true);
+    setErrorCarga(null);
+
+    obtenerCuadrillas()
+      .then(() => {
+        if (!activo) {
+          return;
+        }
+        setCuadrillas(cuadrillasParaReporte(zonaId));
+      })
+      .catch(() => {
+        if (!activo) {
+          return;
+        }
+        setCuadrillas(cuadrillasParaReporte(zonaId));
+        setErrorCarga("No pudimos actualizar las cuadrillas. Mostramos las que ya teníamos.");
+      })
+      .finally(() => {
+        if (activo) {
+          setCargando(false);
+        }
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [visible, zonaId]);
 
   return (
     <Modal
@@ -40,9 +81,13 @@ export function SheetAsignar({
               : "La cuadrilla queda a cargo de resolver el reporte."}
           </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error || errorCarga ? (
+            <Text style={styles.error}>{error ?? errorCarga}</Text>
+          ) : null}
 
-          {cuadrillas.length === 0 ? (
+          {cargando ? (
+            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
+          ) : cuadrillas.length === 0 ? (
             <Text style={styles.vacio}>No hay cuadrillas activas para esta zona.</Text>
           ) : (
             cuadrillas.map((cuadrilla) => (

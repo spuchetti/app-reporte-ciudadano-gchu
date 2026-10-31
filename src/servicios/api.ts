@@ -114,7 +114,6 @@ type OpcionesPedido = {
   method?: string;
   body?: BodyInit;
   token?: string | null;
-  json?: boolean;
 };
 
 function errorDeCuerpo(cuerpo: unknown) {
@@ -130,9 +129,7 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Pro
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-
-  const esArchivo = opciones.json === false;
-  if (!esArchivo && typeof opciones.body === "string") {
+  if (typeof opciones.body === "string") {
     headers["Content-Type"] = "application/json";
   }
 
@@ -142,7 +139,6 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Pro
       method: opciones.method ?? "GET",
       headers,
       data: opciones.body,
-      transformRequest: esArchivo ? [(data) => data] : undefined,
     });
     return datosDeCuerpo<T>(respuesta.data);
   } catch (error) {
@@ -182,7 +178,8 @@ export async function pedirReportes(ruta: string): Promise<Reporte[]> {
   return lista.map(adaptarReporte);
 }
 
-/** Sube un archivo local y devuelve la URL que hay que mandar en el reporte. */
+/** Sube un archivo local y devuelve la URL que hay que mandar en el reporte.
+ * En Android el FormData de Axios suele fallar; acá se usa fetch. */
 export async function subirArchivo(uri: string): Promise<string> {
   const nombre = uri.split("/").pop()?.split("?")[0] || "foto.jpg";
   const form = new FormData();
@@ -202,10 +199,43 @@ export async function subirArchivo(uri: string): Promise<string> {
     } as unknown as Blob);
   }
 
-  const subido = await pedir<{ url: string }>("/archivos", {
-    method: "POST",
-    body: form,
-    json: false,
-  });
-  return subido.url;
+  const headers: Record<string, string> = {};
+  const token = await tokenGuardado();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${URL_API}/archivos`, {
+      method: "POST",
+      headers,
+      body: form,
+    });
+  } catch {
+    throw new ErrorServicio({
+      codigo: "RED",
+      mensaje: `No hay conexión con la API en ${URL_API}.`,
+    });
+  }
+
+  const texto = await respuesta.text();
+  let cuerpo: unknown = null;
+  if (texto) {
+    try {
+      cuerpo = JSON.parse(texto);
+    } catch {
+      cuerpo = null;
+    }
+  }
+
+  if (!respuesta.ok) {
+    const fallo = errorDeCuerpo(cuerpo);
+    throw new ErrorServicio({
+      codigo: fallo?.codigo ?? "ERROR_API",
+      mensaje: fallo?.mensaje ?? "La API no pudo completar el pedido.",
+    });
+  }
+
+  return datosDeCuerpo<{ url: string }>(cuerpo).url;
 }
