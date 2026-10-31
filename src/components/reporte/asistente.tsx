@@ -25,6 +25,7 @@ import {
   actualizarBorrador,
   borradorListoParaEnviar,
   leerBorrador,
+  limpiarAdhesionPendiente,
   marcarAdhesionPendiente,
   marcarPendienteEnvio,
   PASOS_REPORTE,
@@ -100,6 +101,13 @@ export function AsistenteReporte() {
     setDireccion(texto);
   }, []);
 
+  const onElegirCercano = useCallback((reporte: Reporte | null) => {
+    if (!reporte) {
+      limpiarAdhesionPendiente();
+    }
+    setCercanoElegido(reporte);
+  }, []);
+
   const tipoElegido = tipos.find((tipo) => tipo.id === tipoId);
 
   function puedeAvanzar() {
@@ -137,6 +145,9 @@ export function AsistenteReporte() {
     if (paso === 3 && cercanoElegido) {
       void onSumarse(cercanoElegido);
       return;
+    }
+    if (paso === 3) {
+      limpiarAdhesionPendiente();
     }
     if (paso === 3 && direccion.trim().length < 5) {
       setDireccion("Gualeguaychú");
@@ -273,7 +284,7 @@ export function AsistenteReporte() {
               longitud={longitud}
               direccion={direccion}
               onUbicacion={onUbicacion}
-              onElegirCercano={setCercanoElegido}
+              onElegirCercano={onElegirCercano}
               onMapaOcupado={setMapaOcupado}
               sumando={sumando}
             />
