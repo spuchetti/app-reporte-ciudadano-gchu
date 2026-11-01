@@ -1,3 +1,8 @@
+import {
+  eliminarBorradorDeSQLite,
+  guardarBorradorEnSQLite,
+  leerBorradorDesdeSQLite,
+} from "@/servicios/base-datos";
 import { BorradorEnCurso, DatosBorradorReporte } from "@/tipos";
 
 export const PASOS_REPORTE = 5;
@@ -17,6 +22,21 @@ const vacio: BorradorEnCurso = {
 
 let actual: BorradorEnCurso = { ...vacio, fotos: [] };
 
+export async function hidratarBorradorDesdeSQLite(): Promise<BorradorEnCurso> {
+  try {
+    const guardado = await leerBorradorDesdeSQLite();
+    if (guardado) {
+      actual = {
+        ...guardado,
+        fotos: [...guardado.fotos],
+      };
+    }
+  } catch {
+    // Si SQLite no está disponible aún, mantiene el estado en memoria
+  }
+  return leerBorrador();
+}
+
 export function leerBorrador(): BorradorEnCurso {
   return {
     ...actual,
@@ -30,10 +50,12 @@ export function actualizarBorrador(parcial: Partial<BorradorEnCurso>) {
     ...parcial,
     fotos: parcial.fotos ? [...parcial.fotos] : [...actual.fotos],
   };
+  void guardarBorradorEnSQLite(actual).catch(() => {});
 }
 
 export function iniciarBorradorNuevo() {
   actual = { ...vacio, fotos: [] };
+  void eliminarBorradorDeSQLite().catch(() => {});
 }
 
 export function limpiarBorrador() {
@@ -41,11 +63,18 @@ export function limpiarBorrador() {
 }
 
 export function marcarPendienteEnvio() {
-  actual = { ...actual, pendienteEnvio: true };
+  actual = { ...actual, pendienteEnvio: true, adherirAId: null };
+  void guardarBorradorEnSQLite(actual).catch(() => {});
 }
 
 export function marcarAdhesionPendiente(reporteId: string) {
-  actual = { ...actual, adherirAId: reporteId };
+  actual = { ...actual, adherirAId: reporteId, pendienteEnvio: false };
+  void guardarBorradorEnSQLite(actual).catch(() => {});
+}
+
+export function limpiarAdhesionPendiente() {
+  actual = { ...actual, adherirAId: null };
+  void guardarBorradorEnSQLite(actual).catch(() => {});
 }
 
 export function borradorListoParaEnviar(

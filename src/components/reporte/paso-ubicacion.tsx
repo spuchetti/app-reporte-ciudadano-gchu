@@ -105,6 +105,11 @@ export function PasoUbicacion({
   const idsCercanos = cercanos.map((item) => item.reporte.id).join("|");
 
   useEffect(() => {
+    // La UI arranca en "nuevo"; alinear el padre si quedó una adhesión de un intento anterior.
+    onElegirCercano(null);
+  }, [onElegirCercano]);
+
+  useEffect(() => {
     if (eleccion === "nuevo") {
       return;
     }

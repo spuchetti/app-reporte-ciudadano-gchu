@@ -1,6 +1,8 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+import { borrarValorKV } from "@/servicios/almacen-kv";
+
 async function usarSecureStore() {
   if (Platform.OS === "web") {
     return false;
@@ -8,7 +10,11 @@ async function usarSecureStore() {
   return SecureStore.isAvailableAsync();
 }
 
+/** Tokens y sesión: solo SecureStore (o localStorage en web). Nunca kv-store. */
 export async function guardarSecreto(clave: string, valor: string) {
+  // Limpia copias accidentales en kv-store (no cifrado).
+  await borrarValorKV(clave).catch(() => undefined);
+
   if (await usarSecureStore()) {
     await SecureStore.setItemAsync(clave, valor);
     return;
@@ -35,6 +41,8 @@ export async function leerSecreto(clave: string): Promise<string | null> {
 }
 
 export async function borrarSecreto(clave: string) {
+  await borrarValorKV(clave).catch(() => undefined);
+
   if (await usarSecureStore()) {
     await SecureStore.deleteItemAsync(clave);
     return;

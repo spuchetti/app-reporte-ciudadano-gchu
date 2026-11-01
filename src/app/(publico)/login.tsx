@@ -156,7 +156,8 @@ export default function LoginOperadorScreen() {
             <View style={styles.ayuda}>
               <Text style={styles.ayudaTitulo}>Cuenta de prueba</Text>
               <Text style={styles.ayudaTexto}>
-                Operador: jorge.fernandez@gualeguaychu.gov.ar / operador123
+                Norte: operador.norte@demo.ar / demo1234{"\n"}
+                Sur: operador.sur@demo.ar / demo1234
               </Text>
             </View>
           </View>
