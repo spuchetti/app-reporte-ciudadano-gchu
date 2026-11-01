@@ -35,6 +35,7 @@ Aplicación móvil para reportar baches, luminarias, residuos y otros reclamos c
 - [Notificaciones push](#notificaciones-push)
 - [Flujo de trabajo Git](#flujo-de-trabajo-git)
 - [API relacionada](#api-relacionada)
+- [Contribuir](#contribuir)
 - [Licencia](#licencia)
 
 ---
@@ -81,7 +82,7 @@ Aplicación móvil para reportar baches, luminarias, residuos y otros reclamos c
 npm ci
 ```
 
-Creá un `.env` en la raíz *(no se versiona)*:
+Copiá [`.env.example`](./.env.example) a `.env` *(no se versiona)* y ajustá las URLs:
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:3000
@@ -203,9 +204,11 @@ Push al autor  →  toque abre /reclamo/:id
 develop ──► feature/… o fix/… ──► PR ──► CI + review ──► merge
 ```
 
+Detalle en [CONTRIBUTING.md](./CONTRIBUTING.md). Resumen:
+
 1. Partir de `develop`.
-2. Rama `feature/...` o `fix/...`.
-3. PR hacia `develop`.
+2. Rama `feature/...`, `fix/...`, `docs/...` o `chore/...`.
+3. PR hacia `develop` (hay plantilla en `.github/`).
 4. CI verde + review → merge.
 
 Commits en español, enfocados en el *porqué*.
@@ -217,6 +220,12 @@ Commits en español, enfocados en el *porqué*.
 Backend: **api-reporte-ciudadano** (Compose, seeds de zonas / cuadrillas / reportes).
 
 Este repo **no** incluye el Compose de la API: levantala en ese proyecto y apuntá el `.env` a su URL.
+
+---
+
+## Contribuir
+
+Leé [CONTRIBUTING.md](./CONTRIBUTING.md). Para bugs o ideas usá las plantillas de **Issues** en GitHub.
 
 ---
 

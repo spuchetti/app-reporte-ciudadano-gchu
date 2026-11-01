@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: README del proyecto
+    url: https://github.com/spuchetti/app-reporte-ciudadano-gchu#readme
+    about: Setup, roles, persistencia y push.
