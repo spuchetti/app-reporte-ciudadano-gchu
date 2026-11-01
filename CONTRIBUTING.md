@@ -50,9 +50,10 @@ Podés usar la plantilla de PR del repo.
 ## Qué no subir
 
 - `.env` real, tokens, claves privadas.
+- `google-services.json` real (usá `google-services.json.example` como plantilla).
 - `node_modules/`, builds (`.expo/`, APK, etc.).
 
-`google-services.json` puede estar en el repo del equipo para builds; no copies ahí secretos personales extra.
+Para FCM: copiá el JSON de Firebase a la raíz (gitignored) o cargalo como secret de archivo en EAS (`GOOGLE_SERVICES_FILE` / `googleServicesFile`).
 
 ## Tests y lint
 

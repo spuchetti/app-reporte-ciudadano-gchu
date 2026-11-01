@@ -95,12 +95,13 @@ EXPO_PUBLIC_API_URL_TELEFONO=http://<IP-DE-TU-PC>:3000
 | `EXPO_PUBLIC_API_URL` | PC / web |
 | `EXPO_PUBLIC_API_URL_EMULADOR` | Emulador Android (`10.0.2.2`) |
 | `EXPO_PUBLIC_API_URL_TELEFONO` | Teléfono físico (IP de la PC en el Wi‑Fi) |
+| `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Maps en Android (`app.config.js`) |
 
 **También necesitás:**
 
 1. API accesible desde el dispositivo (misma red; en el teléfono no uses `localhost`).
-2. `google-services.json` en la raíz (FCM).
-3. Clave de Google Maps configurada para Android.
+2. `google-services.json` en la raíz **(no se versiona)**: descargalo de Firebase o copiá desde `google-services.json.example` y completalo. En EAS, subilo como archivo secreto del build.
+3. Clave de Maps en `.env` (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`), restringida en Google Cloud (package + SHA-1).
 
 ---
 
