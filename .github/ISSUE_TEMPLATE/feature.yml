@@ -1,0 +1,18 @@
+name: Mejora o feature
+description: Propuesta de cambio o funcionalidad
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema o necesidad
+      description: Qué falta o qué duele hoy.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Propuesta
+      description: Cómo lo resolverías (alto nivel).
+    validations:
+      required: true
