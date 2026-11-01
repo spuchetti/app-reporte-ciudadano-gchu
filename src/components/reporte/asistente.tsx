@@ -54,7 +54,6 @@ export function AsistenteReporte() {
   const [sumando, setSumando] = useState(false);
   const [revisandoFoto, setRevisandoFoto] = useState(inicial.fotos.length > 0);
   const [cercanoElegido, setCercanoElegido] = useState<Reporte | null>(null);
-  const [mapaOcupado, setMapaOcupado] = useState(false);
 
   const vecinoIdentificado =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
@@ -78,7 +77,6 @@ export function AsistenteReporte() {
   }, []);
 
   useEffect(() => {
-    setMapaOcupado(false);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [paso]);
 
@@ -247,7 +245,6 @@ export function AsistenteReporte() {
       <StatusBar style="dark" />
       <ScrollView
         ref={scrollRef}
-        scrollEnabled={!mapaOcupado}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scroll,
@@ -285,7 +282,6 @@ export function AsistenteReporte() {
               direccion={direccion}
               onUbicacion={onUbicacion}
               onElegirCercano={onElegirCercano}
-              onMapaOcupado={setMapaOcupado}
               sumando={sumando}
             />
           ) : null}
