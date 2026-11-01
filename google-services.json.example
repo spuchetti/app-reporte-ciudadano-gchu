@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "276709277050",
-    "project_id": "app-reporte-ciudadano-gchu",
-    "storage_bucket": "app-reporte-ciudadano-gchu.firebasestorage.app"
+    "project_number": "TU_PROJECT_NUMBER",
+    "project_id": "tu-proyecto-firebase",
+    "storage_bucket": "tu-proyecto-firebase.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:276709277050:android:34804160b13aeb849b2ac3",
+        "mobilesdk_app_id": "1:TU_PROJECT_NUMBER:android:TU_APP_ID",
         "android_client_info": {
           "package_name": "com.anonymous.appreporteciudadanogchu"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB0x-sA-jIygOzGk3kKEsmJG3Zusjjig1c"
+          "current_key": "TU_API_KEY_DE_FIREBASE"
         }
       ],
       "services": {
