@@ -1,13 +1,28 @@
 import {
+  adhesionesMock,
   cambiosEstadoMock,
   cuadrillasMock,
   reportesMock,
   tiposReporteMock,
+  zonasMock,
 } from "@/mocks";
-import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
-import { ErrorServicio } from "@/servicios/error";
-import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import {
+  enPrueba,
+  pedirLista,
+  pedirReporte,
+  pedirReportes,
+  subirArchivo,
+} from "@/servicios/api";
+import {
+  eliminarReportePendienteSQLite,
+  guardarReportePendienteSQLite,
+  listarReportesPendientesSQLite,
+} from "@/servicios/base-datos";
+import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
+import { ErrorServicio, esErrorServicio } from "@/servicios/error";
+import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
+import {
+  Adhesion,
   CambioDeEstado,
   DatosBorradorReporte,
   EstadoReporte,
@@ -40,6 +55,40 @@ export function etiquetaEstado(estado: EstadoReporte) {
   return ETIQUETA_ESTADO[estado];
 }
 
+export const ETIQUETA_PENDIENTE_SYNC = "Pendiente de sincronización";
+
+export function etiquetaParaVecino(
+  reporte: Pick<Reporte, "estado" | "sincronizado">,
+) {
+  if (!reporte.sincronizado) {
+    return ETIQUETA_PENDIENTE_SYNC;
+  }
+  return etiquetaEstado(reporte.estado);
+}
+
+function codigoProvisorio() {
+  const usados = new Set(reportesMock.map((reporte) => reporte.codigo));
+  let codigo = "";
+  do {
+    codigo = `LOCAL-${Math.floor(Math.random() * 0xffffff)
+      .toString(16)
+      .toUpperCase()
+      .padStart(6, "0")}`;
+  } while (usados.has(codigo));
+  return codigo;
+}
+
+function codigoDefinitivo() {
+  const usados = new Set(reportesMock.map((reporte) => reporte.codigo));
+  let secuencia = reportesMock.filter((reporte) => reporte.sincronizado).length + 1;
+  let codigo = "";
+  do {
+    codigo = `GCHU-2026-${String(secuencia).padStart(5, "0")}`;
+    secuencia += 1;
+  } while (usados.has(codigo));
+  return codigo;
+}
+
 export function resumenReportesCerca(cantidad: number) {
   if (cantidad <= 0) {
     return "No hay reportes cerca tuyo";
@@ -61,17 +110,38 @@ export const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Obtener todos los reportes
+const RUTA_MAPA =
+  "/reportes?porPagina=500&estado=recibido,en_revision,asignado,resuelto,rechazado";
+
 export const obtenerReportes = async (): Promise<Reporte[]> => {
+  if (!enPrueba()) {
+    return pedirReportes(RUTA_MAPA);
+  }
+
   await delay(600);
-  return [...reportesMock];
+  return reportesMock.filter((reporte) => reporte.sincronizado);
 };
 
 // Obtener un reporte por ID
 export const obtenerReportePorId = async (
   id: string,
 ): Promise<Reporte | null> => {
+  if (!enPrueba()) {
+    const ruta = /^GCHU-/i.test(id)
+      ? `/reportes/codigo/${encodeURIComponent(id)}`
+      : `/reportes/${encodeURIComponent(id)}`;
+    try {
+      return await pedirReporte(ruta);
+    } catch (error) {
+      if (esErrorServicio(error) && error.codigo === "REPORTE_NO_ENCONTRADO") {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   await delay(400);
-  const reporte = reportesMock.find((r) => r.id === id);
+  const reporte = reportesMock.find((r) => r.id === id || r.codigo === id);
   return reporte || null;
 };
 
@@ -91,7 +161,7 @@ export const obtenerReportesPorZona = async (
   if (!zonaId) {
     return [];
   }
-  return reportesMock.filter((r) => r.zonaId === zonaId);
+  return reportesMock.filter((r) => r.zonaId === zonaId && r.sincronizado);
 };
 
 export const obtenerAvisosDeEstado = async (
@@ -203,8 +273,12 @@ export function paramsDeTicket(reporte: Reporte) {
   return {
     codigo: reporte.codigo,
     tipoNombre: tipo?.nombre ?? "Reporte",
+    tipoId: reporte.tipoId,
     area: tipo?.areaResponsable ?? "",
     direccion: reporte.direccion,
+    estado: etiquetaParaVecino(reporte),
+    estadoClave: reporte.estado,
+    pendiente: reporte.sincronizado ? "0" : "1",
   };
 }
 
@@ -212,23 +286,119 @@ export function paramsDeTicket(reporte: Reporte) {
 export const crearReporte = async (
   reporte: Omit<Reporte, "id" | "codigo" | "creadoEn">,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    try {
+      const fotos = [];
+      for (const foto of reporte.fotos) {
+        const url = /^https?:\/\//.test(foto.url)
+          ? foto.url
+          : await subirArchivo(foto.url);
+        fotos.push({ url });
+      }
+
+      return await pedirReporte("/reportes", {
+        method: "POST",
+        body: JSON.stringify({
+          tipoId: reporte.tipoId,
+          descripcion: reporte.descripcion,
+          audioUrl: reporte.audioUrl,
+          fotos,
+          coordenadas: reporte.coordenadas,
+          direccion: reporte.direccion,
+          creadoEn: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      if (esErrorServicio(error) && error.codigo === "RED") {
+        const reporteOffline: Reporte = {
+          ...reporte,
+          id: `rep-local-${Date.now()}`,
+          codigo: codigoProvisorio(),
+          creadoEn: new Date().toISOString(),
+          sincronizado: false,
+        };
+        await guardarReportePendienteSQLite(reporteOffline);
+        return reporteOffline;
+      }
+      throw error;
+    }
+  }
+
   await delay(800);
 
   const nuevoReporte: Reporte = {
     ...reporte,
     id: `rep-${String(reportesMock.length + 1).padStart(3, "0")}`,
-    codigo: `GCHU-2026-${String(reportesMock.length + 1).padStart(5, "0")}`,
+    codigo: codigoProvisorio(),
     creadoEn: new Date().toISOString(),
+    sincronizado: false,
   };
 
   // En un mock, agregamos al array (en la vida real, esto sería una API)
   reportesMock.push(nuevoReporte);
+  await guardarReportePendienteSQLite(nuevoReporte);
 
   return nuevoReporte;
 };
 
+export async function sincronizarPendientes(): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    const pendientesSQL = await listarReportesPendientesSQLite();
+    const sincronizados: Reporte[] = [];
+
+    for (const pendiente of pendientesSQL) {
+      try {
+        const fotos = [];
+        for (const foto of pendiente.fotos) {
+          const url = /^https?:\/\//.test(foto.url)
+            ? foto.url
+            : await subirArchivo(foto.url);
+          fotos.push({ url });
+        }
+
+        const subido = await pedirReporte("/reportes", {
+          method: "POST",
+          body: JSON.stringify({
+            tipoId: pendiente.tipoId,
+            descripcion: pendiente.descripcion,
+            audioUrl: pendiente.audioUrl,
+            fotos,
+            coordenadas: pendiente.coordenadas,
+            direccion: pendiente.direccion,
+            creadoEn: pendiente.creadoEn,
+          }),
+        });
+
+        await eliminarReportePendienteSQLite(pendiente.id);
+        sincronizados.push(subido);
+      } catch {
+        // Si sigue sin red o falla uno, permanece en la tabla cola_reportes para el próximo intento
+      }
+    }
+
+    return sincronizados;
+  }
+
+  await delay(500);
+
+  const pendientes = reportesMock.filter((reporte) => !reporte.sincronizado);
+  for (const reporte of pendientes) {
+    reporte.codigo = codigoDefinitivo();
+    reporte.sincronizado = true;
+    await eliminarReportePendienteSQLite(reporte.id);
+  }
+
+  return pendientes;
+}
+
 // Obtener tipos de reporte
 export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
+  if (!enPrueba()) {
+    const tipos = await pedirLista<TipoDeReporte>("/tipos-de-reporte");
+    tiposReporteMock.splice(0, tiposReporteMock.length, ...tipos);
+    return tipos;
+  }
+
   await delay(300);
   return [...tiposReporteMock];
 };
@@ -237,6 +407,12 @@ export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
 export const obtenerCambiosEstado = async (
   reporteId: string,
 ): Promise<CambioDeEstado[]> => {
+  if (!enPrueba()) {
+    return pedirLista<CambioDeEstado>(
+      `/reportes/${encodeURIComponent(reporteId)}/cambios?porPagina=100`,
+    );
+  }
+
   await delay(400);
   return cambiosEstadoMock.filter((c) => c.reporteId === reporteId);
 };
@@ -284,6 +460,26 @@ export const actualizarEstado = async (
   operadorId: string,
   fotoArregloUrl: string | null = null,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    if (nuevoEstado === "resuelto" && fotoArregloUrl) {
+      const url = /^https?:\/\//.test(fotoArregloUrl)
+        ? fotoArregloUrl
+        : await subirArchivo(fotoArregloUrl);
+      await pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/fotos`, {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+    }
+
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        estado: nuevoEstado,
+        comentario: comentario.trim() || null,
+      }),
+    });
+  }
+
   await delay(600);
 
   const reporte = reporteAbierto(reporteId);
@@ -322,11 +518,22 @@ export const actualizarEstado = async (
   return reporte;
 };
 
+export function textoDuplicado(originalId: string) {
+  return `Reclamo duplicado de este: ${originalId}`;
+}
+
 export const marcarDuplicado = async (
   reporteId: string,
   originalId: string,
   operadorId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/duplicado`, {
+      method: "POST",
+      body: JSON.stringify({ originalId }),
+    });
+  }
+
   await delay(500);
 
   if (reporteId === originalId) {
@@ -353,10 +560,62 @@ export const marcarDuplicado = async (
 
   reporte.duplicadoDe = original.id;
   reporte.estado = "rechazado";
+  sumarAdhesion(original, reporte.autorId);
   registrarCambio(
     reporteId,
     "rechazado",
-    `Duplicado de ${original.codigo}`,
+    textoDuplicado(original.id),
+    operadorId,
+  );
+  return reporte;
+};
+
+export function sePuedeCorregirZona() {
+  return true;
+}
+
+export const corregirZona = async (
+  reporteId: string,
+  zonaId: string,
+  operadorId: string,
+): Promise<Reporte> => {
+  if (!enPrueba()) {
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/zona`, {
+      method: "PATCH",
+      body: JSON.stringify({ zonaId }),
+    });
+  }
+
+  await delay(400);
+
+  const reporte = reportesMock.find((item) => item.id === reporteId);
+  if (!reporte) {
+    throw new ErrorServicio({
+      codigo: "REPORTE_NO_ENCONTRADO",
+      mensaje: "No encontramos ese reporte.",
+    });
+  }
+
+  const zona = zonasMock.find((item) => item.id === zonaId);
+  if (!zona) {
+    throw new ErrorServicio({
+      codigo: "ZONA_INVALIDA",
+      mensaje: "Elegí una de las cuatro zonas.",
+    });
+  }
+
+  reporte.zonaId = zona.id;
+  if (reporte.cuadrillaId) {
+    const cuadrilla = cuadrillasMock.find((item) => item.id === reporte.cuadrillaId);
+    if (!cuadrilla || cuadrilla.zonaId !== zona.id) {
+      reporte.cuadrillaId = null;
+    }
+  }
+
+  registrarCambio(
+    reporteId,
+    reporte.estado,
+    `Zona corregida a ${zona.nombre}`,
     operadorId,
   );
   return reporte;
@@ -367,6 +626,17 @@ export const asignarCuadrilla = async (
   cuadrillaId: string,
   operadorId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    const nombre = cuadrillasMock.find((item) => item.id === cuadrillaId)?.nombre;
+    return pedirReporte(`/reportes/${encodeURIComponent(reporteId)}/cuadrilla`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        cuadrillaId,
+        comentario: nombre ? `Asignado a ${nombre}` : null,
+      }),
+    });
+  }
+
   await delay(500);
 
   const reporte = reportesMock.find((item) => item.id === reporteId);
@@ -385,7 +655,9 @@ export const asignarCuadrilla = async (
     });
   }
 
-  if (cuadrilla.zonaId !== reporte.zonaId) {
+  if (reporte.zonaId === ZONA_FUERA) {
+    reporte.zonaId = cuadrilla.zonaId;
+  } else if (cuadrilla.zonaId !== reporte.zonaId) {
     throw new ErrorServicio({
       codigo: "CUADRILLA_OTRA_ZONA",
       mensaje: "La cuadrilla no pertenece a la zona del reporte.",
@@ -407,12 +679,35 @@ export const asignarCuadrilla = async (
   return reporte;
 };
 
-const vecinosAdheridos = new Map<string, Set<string>>();
+export function adhesionesDelReporte(reporteId: string): Adhesion[] {
+  return adhesionesMock.filter((item) => item.reporteId === reporteId);
+}
+
+function contarAdhesiones(reporteId: string) {
+  return adhesionesDelReporte(reporteId).length;
+}
+
+function sumarAdhesion(reporte: Reporte, usuarioId: string) {
+  adhesionesMock.push({
+    id: `adh-${String(adhesionesMock.length + 1).padStart(3, "0")}`,
+    reporteId: reporte.id,
+    usuarioId,
+    creadoEn: new Date().toISOString(),
+  });
+  reporte.adhesiones = contarAdhesiones(reporte.id);
+}
 
 export const adherirAReporte = async (
   reporteId: string,
   vecinoId: string,
 ): Promise<Reporte> => {
+  if (!enPrueba()) {
+    return pedirReporte(
+      `/reportes/${encodeURIComponent(reporteId)}/adhesiones`,
+      { method: "POST" },
+    );
+  }
+
   const reporte = reportesMock.find((item) => item.id === reporteId);
   if (!reporte) {
     throw new ErrorServicio({
@@ -430,18 +725,50 @@ export const adherirAReporte = async (
 
   await delay(400);
 
-  const adheridos = vecinosAdheridos.get(reporteId) ?? new Set<string>();
-  if (adheridos.has(vecinoId)) {
+  const yaSumado = adhesionesMock.some(
+    (item) => item.reporteId === reporteId && item.usuarioId === vecinoId,
+  );
+  if (yaSumado) {
+    reporte.adhesiones = contarAdhesiones(reporteId);
     return reporte;
   }
 
-  adheridos.add(vecinoId);
-  vecinosAdheridos.set(reporteId, adheridos);
-  reporte.adhesiones += 1;
+  sumarAdhesion(reporte, vecinoId);
   return reporte;
 };
 
+export async function obtenerReportesAdheridos(
+  usuarioId: string,
+): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    return pedirReportes("/yo/adhesiones?porPagina=100");
+  }
+
+  await delay(400);
+  const ids = new Set(
+    adhesionesMock
+      .filter((item) => item.usuarioId === usuarioId)
+      .map((item) => item.reporteId),
+  );
+  return reportesMock
+    .filter((reporte) => ids.has(reporte.id))
+    .sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
+}
+
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
+  if (!enPrueba()) {
+    const [remotos, pendientesLocal] = await Promise.all([
+      pedirReportes("/yo/reportes?porPagina=100"),
+      listarReportesPendientesSQLite(),
+    ]);
+    const propiosPendientes = pendientesLocal.filter(
+      (rep) => rep.autorId === usuarioId,
+    );
+    return [...propiosPendientes, ...remotos].sort(
+      (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
+    );
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 400));
   return reportesMock
     .filter((rep) => rep.autorId === usuarioId)

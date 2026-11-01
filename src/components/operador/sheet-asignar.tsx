@@ -1,7 +1,11 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text } from "react-native";
 
-import { Paleta } from "@/constants/theme";
-import { cuadrillasParaReporte } from "@/servicios/bandeja";
+import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { cuadrillasParaReporte, nombreZona } from "@/servicios/bandeja";
+import { obtenerCuadrillas } from "@/servicios/zonas";
+import { ZONA_FUERA } from "@/servicios/ubicacion";
+import { Cuadrilla } from "@/tipos";
 
 type Props = {
   visible: boolean;
@@ -20,7 +24,46 @@ export function SheetAsignar({
   onCerrar,
   onElegir,
 }: Props) {
-  const cuadrillas = zonaId ? cuadrillasParaReporte(zonaId) : [];
+  const [cuadrillas, setCuadrillas] = useState<Cuadrilla[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  const fuera = zonaId === ZONA_FUERA;
+
+  useEffect(() => {
+    if (!visible || !zonaId) {
+      setCuadrillas([]);
+      setErrorCarga(null);
+      return;
+    }
+
+    let activo = true;
+    setCargando(true);
+    setErrorCarga(null);
+
+    obtenerCuadrillas()
+      .then(() => {
+        if (!activo) {
+          return;
+        }
+        setCuadrillas(cuadrillasParaReporte(zonaId));
+      })
+      .catch(() => {
+        if (!activo) {
+          return;
+        }
+        setCuadrillas(cuadrillasParaReporte(zonaId));
+        setErrorCarga("No pudimos actualizar las cuadrillas. Mostramos las que ya teníamos.");
+      })
+      .finally(() => {
+        if (activo) {
+          setCargando(false);
+        }
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [visible, zonaId]);
 
   return (
     <Modal
@@ -33,12 +76,18 @@ export function SheetAsignar({
         <Pressable style={styles.panel} onPress={() => {}}>
           <Text style={styles.titulo}>Asignar cuadrilla</Text>
           <Text style={styles.subtitulo}>
-            La cuadrilla queda a cargo de resolver el reporte.
+            {fuera
+              ? "El reporte está fuera de zona. Al asignar, pasa a la zona de la cuadrilla."
+              : "La cuadrilla queda a cargo de resolver el reporte."}
           </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error || errorCarga ? (
+            <Text style={styles.error}>{error ?? errorCarga}</Text>
+          ) : null}
 
-          {cuadrillas.length === 0 ? (
+          {cargando ? (
+            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
+          ) : cuadrillas.length === 0 ? (
             <Text style={styles.vacio}>No hay cuadrillas activas para esta zona.</Text>
           ) : (
             cuadrillas.map((cuadrilla) => (
@@ -54,13 +103,17 @@ export function SheetAsignar({
                 ]}
               >
                 <Text style={styles.opcionNombre}>{cuadrilla.nombre}</Text>
-                <Text style={styles.opcionMeta}>{cuadrilla.especialidad}</Text>
+                <Text style={styles.opcionMeta}>
+                  {fuera
+                    ? `${nombreZona(cuadrilla.zonaId)} · ${cuadrilla.especialidad}`
+                    : cuadrilla.especialidad}
+                </Text>
               </Pressable>
             ))
           )}
 
           {asignando ? (
-            <ActivityIndicator color={Paleta.orange} style={styles.cargando} />
+            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -93,20 +146,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titulo: {
+    fontFamily: Fonts.semiBold,
     fontSize: 18,
-    fontWeight: "700",
     color: Paleta.ink,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Paleta.inkSoft,
     marginBottom: 8,
   },
   error: {
+    fontFamily: Fonts.medium,
     fontSize: 13,
     color: Paleta.rojo,
   },
   vacio: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     paddingVertical: 12,
@@ -114,7 +170,7 @@ const styles = StyleSheet.create({
   opcion: {
     borderWidth: 1,
     borderColor: Paleta.line,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
     backgroundColor: Paleta.paper,
@@ -123,12 +179,13 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   opcionNombre: {
+    fontFamily: Fonts.semiBold,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.ink,
   },
   opcionMeta: {
     marginTop: 2,
+    fontFamily: Fonts.regular,
     fontSize: 12,
     color: Paleta.inkSoft,
   },
@@ -140,8 +197,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cancelarTexto: {
+    fontFamily: Fonts.medium,
     fontSize: 14,
-    fontWeight: "600",
     color: Paleta.inkSoft,
   },
 });

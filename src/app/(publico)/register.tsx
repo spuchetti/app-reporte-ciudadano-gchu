@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Boton } from "@/components/ui/boton";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Paleta } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { borradorListoParaEnviar, leerBorrador } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
@@ -30,6 +30,7 @@ export default function DatosVecinoScreen() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -37,7 +38,7 @@ export default function DatosVecinoScreen() {
     setError(null);
     setCargando(true);
     try {
-      const datos = { nombre, email, telefono };
+      const datos = { nombre, email, telefono, contrasena };
       if (adhesionId) {
         await adherirPrimerReporte(datos, adhesionId);
         return;
@@ -81,14 +82,15 @@ export default function DatosVecinoScreen() {
           <Text style={styles.titulo}>Tus datos</Text>
           <Text style={styles.subtitulo}>
             {esReingreso
-              ? "Usá el mismo email y teléfono que cuando enviaste un reporte. No hace falta contraseña."
+              ? "Usá el mismo email y contraseña. Si es la primera vez, te creamos la cuenta."
               : adhesionId
-                ? "Los pedimos para sumarte al reporte y avisarte el estado. No hace falta contraseña."
-                : "Los pedimos para enviar el reporte y avisarte el estado. No hace falta contraseña."}
+                ? "Los pedimos para sumarte al reporte y avisarte el estado."
+                : "Los pedimos para enviar el reporte y avisarte el estado."}
           </Text>
 
           <CampoTexto
             etiqueta="Nombre"
+            icono="person-outline"
             value={nombre}
             onChangeText={setNombre}
             placeholder="Tu nombre"
@@ -98,6 +100,7 @@ export default function DatosVecinoScreen() {
           />
           <CampoTexto
             etiqueta="Email"
+            icono="mail-outline"
             value={email}
             onChangeText={setEmail}
             placeholder="tu@email.com"
@@ -110,12 +113,26 @@ export default function DatosVecinoScreen() {
           />
           <CampoTexto
             etiqueta="Teléfono"
+            icono="call-outline"
             value={telefono}
             onChangeText={setTelefono}
             placeholder="3446-123456"
             keyboardType="phone-pad"
             autoComplete="tel"
             textContentType="telephoneNumber"
+            editable={!cargando}
+          />
+          <CampoTexto
+            etiqueta="Contraseña"
+            icono="lock-closed-outline"
+            value={contrasena}
+            onChangeText={setContrasena}
+            placeholder="Mínimo 8 caracteres"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="password"
+            textContentType="password"
             editable={!cargando}
           />
 
@@ -154,22 +171,24 @@ const styles = StyleSheet.create({
   },
   formInner: {
     width: "100%",
-    maxWidth: 320,
+    maxWidth: 440,
     alignSelf: "center",
+    padding: 4,
   },
   titulo: {
-    fontFamily: Platform.select({ ios: "Georgia", android: "serif", default: "serif" }),
-    fontSize: 28,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
+    fontSize: 30,
     color: Paleta.ink,
     marginBottom: 8,
   },
   subtitulo: {
+    fontFamily: Fonts.regular,
     fontSize: 14,
     color: Paleta.inkSoft,
     marginBottom: 32,
   },
   error: {
+    fontFamily: Fonts.medium,
     color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,

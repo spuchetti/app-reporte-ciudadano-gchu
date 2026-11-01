@@ -1,5 +1,6 @@
 import { reportesMock } from "@/mocks";
 import {
+  RADIO_CERCA_M,
   RADIO_DUPLICADO_M,
   etiquetaEstadoPublico,
   estadosDeFiltroPublico,
@@ -29,6 +30,21 @@ describe("servicios/mapa", () => {
     expect(metrosEntre(origen, a80m)).toBeGreaterThan(RADIO_DUPLICADO_M);
   });
 
+  test("cerca tuyo llega hasta 100 metros", () => {
+    const a90m = {
+      ...origen,
+      latitud: origen.latitud + 90 / 111_320,
+    };
+    const a120m = {
+      ...origen,
+      latitud: origen.latitud + 120 / 111_320,
+    };
+
+    expect(RADIO_CERCA_M).toBe(100);
+    expect(metrosEntre(origen, a90m)).toBeLessThanOrEqual(RADIO_CERCA_M);
+    expect(metrosEntre(origen, a120m)).toBeGreaterThan(RADIO_CERCA_M);
+  });
+
   test("el aviso de duplicado usa el mismo tipo y reportes abiertos", () => {
     const duplicados = reportesDentroDeRadio({
       reportes: reportesMock,
@@ -42,6 +58,35 @@ describe("servicios/mapa", () => {
     expect(duplicados.every((item) => item.reporte.tipoId === "tip-bache")).toBe(
       true,
     );
+  });
+
+  test("un duplicado no cuenta como reclamo separado", () => {
+    const original = reportesMock[0];
+    const duplicado = {
+      ...original,
+      id: "rep-dup",
+      codigo: "GCHU-DUP",
+      estado: "rechazado" as const,
+      duplicadoDe: original.id,
+    };
+    const lista = [...reportesMock, duplicado];
+
+    const filtrados = filtrarReportesMapa({
+      reportes: lista,
+      tipoId: null,
+      estados: ["rechazado"],
+      origen: null,
+      soloCerca: false,
+    });
+    const cerca = reportesDentroDeRadio({
+      reportes: lista,
+      origen: original.coordenadas,
+      radioMetros: 10,
+    });
+
+    expect(filtrados.some((item) => item.id === "rep-dup")).toBe(false);
+    expect(cerca.some((item) => item.reporte.id === "rep-dup")).toBe(false);
+    expect(cerca.some((item) => item.reporte.id === original.id)).toBe(true);
   });
 
   test("filtra el mapa público por tipo y estado", () => {

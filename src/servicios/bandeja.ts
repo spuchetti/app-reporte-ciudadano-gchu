@@ -4,6 +4,7 @@ import {
   usuariosMock,
   zonasMock,
 } from "@/mocks";
+import { ZONA_FUERA } from "@/servicios/ubicacion";
 import { Cuadrilla, EstadoReporte, Reporte } from "@/tipos";
 
 export type PestanaBandeja = "todos" | "pendientes" | "mi_zona";
@@ -30,6 +31,37 @@ export const ESTADOS_GESTION: EstadoReporte[] = [
   "rechazado",
 ];
 
+/** Destinos válidos de `PATCH /estado` (asignado se alcanza con cuadrilla). */
+const DESTINOS_ESTADO: Record<EstadoReporte, readonly EstadoReporte[]> = {
+  recibido: ["en_revision", "rechazado"],
+  en_revision: ["rechazado"],
+  asignado: ["resuelto", "en_revision", "rechazado"],
+  resuelto: [],
+  rechazado: [],
+};
+
+export function estadosSiguientes(estadoActual: EstadoReporte | null): EstadoReporte[] {
+  if (!estadoActual) {
+    return [];
+  }
+  return [...DESTINOS_ESTADO[estadoActual]];
+}
+
+/** Resuelto no se elige acá: hace falta asignar cuadrilla primero. */
+export function resueltoRequiereAsignacion(
+  estadoActual: EstadoReporte | null,
+): boolean {
+  return estadoActual === "recibido" || estadoActual === "en_revision";
+}
+
+/** Tip corto solo cuando Resuelto ya es alcanzable en el sheet. */
+export function avisoGestionEstado(estadoActual: EstadoReporte | null): string | null {
+  if (estadoActual === "asignado") {
+    return "Si lo cerrás como resuelto, subí la foto del arreglo.";
+  }
+  return null;
+}
+
 export function puedeGestionar(reporte: Pick<Reporte, "estado" | "duplicadoDe">) {
   return esPendiente(reporte.estado) && reporte.duplicadoDe === null;
 }
@@ -41,6 +73,9 @@ export function reportesParaDuplicar(reportes: Reporte[], reporteId: string) {
 }
 
 export function nombreZona(zonaId: string) {
+  if (zonaId === ZONA_FUERA) {
+    return "Fuera de zona";
+  }
   return zonasMock.find((zona) => zona.id === zonaId)?.nombre ?? "Zona";
 }
 
@@ -150,9 +185,15 @@ export function nombreCuadrilla(cuadrillaId: string) {
 }
 
 export function cuadrillasParaReporte(zonaId: string): Cuadrilla[] {
-  return cuadrillasMock.filter(
-    (cuadrilla) => cuadrilla.activa && cuadrilla.zonaId === zonaId,
-  );
+  return cuadrillasMock.filter((cuadrilla) => {
+    if (!cuadrilla.activa) {
+      return false;
+    }
+    if (zonaId === ZONA_FUERA) {
+      return true;
+    }
+    return cuadrilla.zonaId === zonaId;
+  });
 }
 
 export function resumenFiltros({

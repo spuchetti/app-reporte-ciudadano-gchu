@@ -1,10 +1,13 @@
 import { reportesMock } from "@/mocks";
 import {
+  avisoGestionEstado,
   cuadrillasParaReporte,
   esPendiente,
+  estadosSiguientes,
   filtrarReportesBandeja,
   haceTiempo,
   reportesParaDuplicar,
+  resueltoRequiereAsignacion,
   textoFotos,
 } from "@/servicios/bandeja";
 
@@ -30,6 +33,21 @@ describe("servicios/bandeja", () => {
     expect(esPendiente("asignado")).toBe(true);
     expect(esPendiente("resuelto")).toBe(false);
     expect(esPendiente("rechazado")).toBe(false);
+  });
+
+  test("sólo ofrece estados que la API acepta por PATCH", () => {
+    expect(estadosSiguientes("en_revision")).toEqual(["rechazado"]);
+    expect(estadosSiguientes("asignado")).toEqual([
+      "resuelto",
+      "en_revision",
+      "rechazado",
+    ]);
+    expect(estadosSiguientes("recibido")).toEqual(["en_revision", "rechazado"]);
+    expect(resueltoRequiereAsignacion("en_revision")).toBe(true);
+    expect(resueltoRequiereAsignacion("recibido")).toBe(true);
+    expect(resueltoRequiereAsignacion("asignado")).toBe(false);
+    expect(avisoGestionEstado("en_revision")).toBeNull();
+    expect(avisoGestionEstado("asignado")).toMatch(/foto del arreglo/i);
   });
 
   test("escribe el tiempo relativo en español", () => {
@@ -107,7 +125,20 @@ describe("servicios/bandeja", () => {
     const sur = cuadrillasParaReporte("zon-sur");
 
     expect(norte.map((item) => item.id)).toEqual(["cua-01", "cua-02"]);
-    expect(este).toEqual([]);
+    expect(este.map((item) => item.id)).toEqual(["cua-06", "cua-07"]);
     expect(sur.map((item) => item.id)).toEqual(["cua-03"]);
+  });
+
+  test("fuera de zona ofrece todas las cuadrillas activas", () => {
+    const fuera = cuadrillasParaReporte("zon-fuera");
+
+    expect(fuera.map((item) => item.id)).toEqual([
+      "cua-01",
+      "cua-02",
+      "cua-03",
+      "cua-04",
+      "cua-06",
+      "cua-07",
+    ]);
   });
 });

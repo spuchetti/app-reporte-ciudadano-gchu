@@ -49,6 +49,20 @@ jest.mock("@/components/operador/sheet-duplicado", () => ({
   SheetDuplicado: () => null,
 }));
 
+jest.mock("@/components/operador/sheet-zona", () => ({
+  SheetZona: () => null,
+}));
+
+jest.mock("@/components/mapa", () => {
+  const ReactLib = require("react");
+  const { View } = require("react-native");
+  return {
+    MapView: ({ children }: { children?: React.ReactNode }) =>
+      ReactLib.createElement(View, { testID: "mapa" }, children),
+    Marker: () => null,
+  };
+});
+
 jest.mock("@/servicios/reportes", () => ({
   obtenerReportePorId: jest.fn(async () => null),
   obtenerCambiosEstado: jest.fn(async () => []),
@@ -56,6 +70,7 @@ jest.mock("@/servicios/reportes", () => ({
   asignarCuadrilla: jest.fn(),
   actualizarEstado: jest.fn(),
   marcarDuplicado: jest.fn(),
+  sePuedeCorregirZona: () => true,
   etiquetaEstado: (estado: string) =>
     ({ en_revision: "en revisión" }[estado] ?? estado),
 }));
@@ -94,7 +109,7 @@ describe("Detalle operador", () => {
     obtenerLista.mockResolvedValue([reporteAbierto]);
   });
 
-  test("un reporte abierto ofrece cambiar estado, duplicado y asignar", async () => {
+  test("un reporte abierto ofrece cambiar estado, más acciones y asignar", async () => {
     obtenerUno.mockResolvedValue(reporteAbierto);
     let tree: ReactTestRenderer;
     await act(async () => {
@@ -103,7 +118,7 @@ describe("Detalle operador", () => {
 
     const texto = arbolComoTexto(tree!.toJSON());
     expect(texto).toContain("Cambiar estado");
-    expect(texto).toContain("Marcar duplicado");
+    expect(texto).toContain("Más acciones");
     expect(texto).toContain("Asignar");
   });
 
@@ -125,6 +140,8 @@ describe("Detalle operador", () => {
     const texto = arbolComoTexto(tree!.toJSON());
     expect(texto).toContain("Foto del arreglo");
     expect(texto).not.toContain("Cambiar estado");
+    expect(texto).not.toContain("Más acciones");
     expect(texto).not.toContain("Marcar duplicado");
   });
 });
+

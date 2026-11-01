@@ -1,6 +1,5 @@
 import { CambioDeEstado, Reporte, TipoDeReporte } from "@/tipos";
 
-const ahora = new Date().toISOString();
 const hace2Dias = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 const hace5Dias = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
 const hace7Dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -28,7 +27,7 @@ export const reportesMock: Reporte[] = [
     cuadrillaId: null,
     duplicadoDe: null,
     fotoArreglo: null,
-    adhesiones: 3,
+    adhesiones: 1,
     creadoEn: hace2Dias,
     sincronizado: true,
   },
@@ -70,7 +69,7 @@ export const reportesMock: Reporte[] = [
     cuadrillaId: "cua-03",
     duplicadoDe: null,
     fotoArreglo: null,
-    adhesiones: 5,
+    adhesiones: 2,
     creadoEn: hace7Dias,
     sincronizado: true,
   },

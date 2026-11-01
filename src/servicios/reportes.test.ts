@@ -1,19 +1,27 @@
-import { cambiosEstadoMock, reportesMock } from "@/mocks";
+import { adhesionesMock, cambiosEstadoMock, reportesMock } from "@/mocks";
 import {
   actualizarEstado,
   asignarCuadrilla,
+  corregirZona,
   adherirAReporte,
+  adhesionesDelReporte,
+  obtenerReportesAdheridos,
   crearReporte,
   datosCreacionDesdeBorrador,
+  ETIQUETA_PENDIENTE_SYNC,
+  etiquetaParaVecino,
   marcarDuplicado,
   obtenerAvisosDeEstado,
+  obtenerReportePorId,
+  obtenerReportes,
   obtenerReportesPorZona,
+  sincronizarPendientes,
   paramsDeTicket,
   resumenReportesCerca,
   ultimosReportesPublicos,
   validarBorradorReporte,
 } from "@/servicios/reportes";
-import { zonaParaCoordenadas } from "@/servicios/ubicacion";
+import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { DatosBorradorReporte } from "@/tipos";
 
 const reportesIniciales = reportesMock.length;
@@ -42,6 +50,14 @@ describe("servicios/reportes", () => {
   afterEach(() => {
     reportesMock.splice(reportesIniciales);
     jest.useRealTimers();
+  });
+
+  test("busca un reporte por ID o por el código impreso en su QR", async () => {
+    const esperado = reportesMock[0];
+
+    await expect(esperar(obtenerReportePorId(esperado.codigo))).resolves.toEqual(
+      esperado,
+    );
   });
 
   test("exige un tipo de problema", () => {
@@ -142,13 +158,32 @@ describe("servicios/reportes", () => {
 
     expect(reporte.autorId).toBe("usr-ana");
     expect(reporte.descripcion).toBeNull();
-    expect(reporte.codigo).toMatch(/^GCHU-2026-/);
+    expect(reporte.codigo).toMatch(/^LOCAL-[0-9A-F]{6}$/);
+    expect(reporte.sincronizado).toBe(false);
+    expect(etiquetaParaVecino(reporte)).toBe(ETIQUETA_PENDIENTE_SYNC);
     expect(reportesMock.some((item) => item.id === reporte.id)).toBe(true);
     expect(paramsDeTicket(reporte)).toMatchObject({
       codigo: reporte.codigo,
       tipoNombre: "Luminaria",
       direccion: "Rocamora 1240",
+      estado: ETIQUETA_PENDIENTE_SYNC,
     });
+
+    const publico = await esperar(obtenerReportes());
+    expect(publico.some((item) => item.id === reporte.id)).toBe(false);
+
+    const [registrado] = await esperar(sincronizarPendientes());
+    expect(registrado.codigo).toMatch(/^GCHU-2026-/);
+    expect(registrado.sincronizado).toBe(true);
+    expect(etiquetaParaVecino(registrado)).toBe("Recibido");
+
+    const visible = await esperar(obtenerReportes());
+    expect(visible.some((item) => item.codigo === registrado.codigo)).toBe(true);
+
+    const indice = reportesMock.findIndex((item) => item.id === reporte.id);
+    if (indice >= 0) {
+      reportesMock.splice(indice, 1);
+    }
   });
 
   test("asigna una cuadrilla activa y deja el reporte asignado", async () => {
@@ -167,6 +202,33 @@ describe("servicios/reportes", () => {
     expect(actualizado.estado).toBe("asignado");
     expect(actualizado.cuadrillaId).toBe("cua-02");
 
+    original.estado = estadoPrev;
+    original.cuadrillaId = cuadrillaPrev;
+    cambiosEstadoMock.splice(cambiosPrev);
+  });
+
+  test("corrige la zona y, si está fuera, asignar la cuadrilla la ubica", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-002");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+    const zonaPrev = original.zonaId;
+    const estadoPrev = original.estado;
+    const cuadrillaPrev = original.cuadrillaId;
+    const cambiosPrev = cambiosEstadoMock.length;
+
+    original.zonaId = ZONA_FUERA;
+    const corregido = await esperar(corregirZona("rep-002", "zon-sur", "usr-100"));
+    expect(corregido.zonaId).toBe("zon-sur");
+
+    original.zonaId = ZONA_FUERA;
+    original.cuadrillaId = null;
+    const asignado = await esperar(asignarCuadrilla("rep-002", "cua-02", "usr-100"));
+    expect(asignado.zonaId).toBe("zon-norte");
+    expect(asignado.cuadrillaId).toBe("cua-02");
+    expect(asignado.estado).toBe("asignado");
+
+    original.zonaId = zonaPrev;
     original.estado = estadoPrev;
     original.cuadrillaId = cuadrillaPrev;
     cambiosEstadoMock.splice(cambiosPrev);
@@ -288,9 +350,15 @@ describe("servicios/reportes", () => {
     if (!copia) {
       throw new Error("faltaba el reporte de prueba");
     }
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte original");
+    }
     const estadoPrev = copia.estado;
     const duplicadoPrev = copia.duplicadoDe;
     const cambiosPrev = cambiosEstadoMock.length;
+    const adhesionesPrev = original.adhesiones;
+    const adhesionesCantidadPrev = adhesionesMock.length;
 
     try {
       const actualizado = await esperar(
@@ -298,11 +366,19 @@ describe("servicios/reportes", () => {
       );
       expect(actualizado.duplicadoDe).toBe("rep-001");
       expect(actualizado.estado).toBe("rechazado");
-      expect(cambiosEstadoMock.at(-1)?.comentario).toBe("Duplicado de GCHU-2026-00412");
+      expect(cambiosEstadoMock.at(-1)?.comentario).toBe(
+        "Reclamo duplicado de este: rep-001",
+      );
+      expect(original.adhesiones).toBe(adhesionesPrev + 1);
+      expect(
+        adhesionesDelReporte("rep-001").filter((item) => item.usuarioId === copia.autorId),
+      ).toHaveLength(1);
     } finally {
       copia.estado = estadoPrev;
       copia.duplicadoDe = duplicadoPrev;
       cambiosEstadoMock.splice(cambiosPrev);
+      adhesionesMock.splice(adhesionesCantidadPrev);
+      original.adhesiones = adhesionesPrev;
     }
   });
 
@@ -349,8 +425,30 @@ describe("servicios/reportes", () => {
 
     expect(primera.adhesiones).toBe(adhesionesPrev + 1);
     expect(segunda.adhesiones).toBe(adhesionesPrev + 1);
+    expect(
+      adhesionesDelReporte("rep-001").filter((item) => item.usuarioId === "usr-002"),
+    ).toHaveLength(1);
 
-    original.adhesiones = adhesionesPrev;
+    const suyos = await esperar(obtenerReportesAdheridos("usr-002"));
+    expect(suyos.some((item) => item.id === "rep-001")).toBe(true);
+
+    const indice = adhesionesMock.findIndex(
+      (item) => item.reporteId === "rep-001" && item.usuarioId === "usr-002",
+    );
+    if (indice >= 0) {
+      adhesionesMock.splice(indice, 1);
+    }
+    original.adhesiones = adhesionesDelReporte("rep-001").length;
+  });
+
+  test("lista quién se sumó y los reportes de ese vecino", async () => {
+    const delReporte = adhesionesDelReporte("rep-004");
+
+    expect(delReporte.map((item) => item.usuarioId)).toEqual(["usr-002", "usr-003"]);
+    expect(delReporte.every((item) => item.reporteId === "rep-004")).toBe(true);
+
+    const suyos = await esperar(obtenerReportesAdheridos("usr-003"));
+    expect(suyos.map((item) => item.id).sort()).toEqual(["rep-001", "rep-004"]);
   });
 
   test("rechaza sumarse al propio reporte", async () => {
