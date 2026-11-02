@@ -29,6 +29,7 @@ import {
   nombreAutor,
   nombreCuadrilla,
   nombreTipo,
+  puedeAsignar,
   puedeGestionar,
   reportesParaDuplicar,
 } from "@/servicios/bandeja";
@@ -640,15 +641,17 @@ export default function DetalleReclamoScreen() {
                     }}
                   />
                 ) : null}
-                <Boton
-                  titulo="Asignar"
-                  variante="primario"
-                  onPress={() => {
-                    impactoLigero();
-                    setErrorAsignar(null);
-                    setMostrarAsignar(true);
-                  }}
-                />
+                {puedeAsignar(reporte) ? (
+                  <Boton
+                    titulo="Asignar"
+                    variante="primario"
+                    onPress={() => {
+                      impactoLigero();
+                      setErrorAsignar(null);
+                      setMostrarAsignar(true);
+                    }}
+                  />
+                ) : null}
               </View>
             ) : null}
 
@@ -741,14 +744,18 @@ export default function DetalleReclamoScreen() {
         onCerrar={() => {
           if (!guardandoEstado) setMostrarEstado(false);
         }}
-        onAsignarCuadrilla={() => {
-          if (guardandoEstado) {
-            return;
-          }
-          setMostrarEstado(false);
-          setErrorAsignar(null);
-          setMostrarAsignar(true);
-        }}
+        onAsignarCuadrilla={
+          reporte && puedeAsignar(reporte)
+            ? () => {
+                if (guardandoEstado) {
+                  return;
+                }
+                setMostrarEstado(false);
+                setErrorAsignar(null);
+                setMostrarAsignar(true);
+              }
+            : undefined
+        }
         onConfirmar={(estado, comentario, fotoArregloUrl) => {
           void onCambiarEstado(estado, comentario, fotoArregloUrl);
         }}

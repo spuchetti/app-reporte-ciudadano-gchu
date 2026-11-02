@@ -368,7 +368,7 @@ export default function BandejaOperadorScreen() {
                 >
                   <Text style={styles.textoRevisar}>Revisar</Text>
                 </Pressable>
-                {puedeAsignar(item.estado) ? (
+                {puedeAsignar(item) ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Asignar ${item.codigo}`}

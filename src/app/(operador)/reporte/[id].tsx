@@ -29,6 +29,7 @@ import {
   nombreCuadrilla,
   nombreTipo,
   nombreZona,
+  puedeAsignar,
   puedeGestionar,
   reportesParaDuplicar,
   textoFotos,
@@ -518,17 +519,19 @@ export default function DetalleOperadorScreen() {
           >
             <Text style={styles.botonSecundarioTexto}>Cambiar estado</Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Asignar ${reporte.codigo}`}
-            onPress={() => {
-              setErrorAsignar(null);
-              setMostrarAsignar(true);
-            }}
-            style={styles.botonAsignar}
-          >
-            <Text style={styles.botonAsignarTexto}>Asignar</Text>
-          </Pressable>
+          {puedeAsignar(reporte) ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Asignar ${reporte.codigo}`}
+              onPress={() => {
+                setErrorAsignar(null);
+                setMostrarAsignar(true);
+              }}
+              style={styles.botonAsignar}
+            >
+              <Text style={styles.botonAsignarTexto}>Asignar</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 
@@ -584,14 +587,18 @@ export default function DetalleOperadorScreen() {
             setMostrarEstado(false);
           }
         }}
-        onAsignarCuadrilla={() => {
-          if (guardandoEstado) {
-            return;
-          }
-          setMostrarEstado(false);
-          setErrorAsignar(null);
-          setMostrarAsignar(true);
-        }}
+        onAsignarCuadrilla={
+          reporte && puedeAsignar(reporte)
+            ? () => {
+                if (guardandoEstado) {
+                  return;
+                }
+                setMostrarEstado(false);
+                setErrorAsignar(null);
+                setMostrarAsignar(true);
+              }
+            : undefined
+        }
         onConfirmar={(estado, comentario, fotoArregloUrl) => {
           void onCambiarEstado(estado, comentario, fotoArregloUrl);
         }}

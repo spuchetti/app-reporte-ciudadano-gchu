@@ -744,6 +744,9 @@ export const actualizarEstado = async (
   }
 
   reporte.estado = nuevoEstado;
+  if (nuevoEstado === "en_revision") {
+    reporte.cuadrillaId = null;
+  }
   if (nuevoEstado === "resuelto" && fotoArregloUrl) {
     reporte.fotoArreglo = {
       id: `foto-arreglo-${reporte.id}`,
@@ -882,6 +885,20 @@ export const asignarCuadrilla = async (
     throw new ErrorServicio({
       codigo: "REPORTE_NO_ENCONTRADO",
       mensaje: "No encontramos ese reporte.",
+    });
+  }
+
+  if (reporte.cuadrillaId || reporte.estado === "asignado") {
+    throw new ErrorServicio({
+      codigo: "YA_ASIGNADO",
+      mensaje: "Este reporte ya tiene cuadrilla. No se puede reasignar.",
+    });
+  }
+
+  if (reporte.estado !== "en_revision") {
+    throw new ErrorServicio({
+      codigo: "TRANSICION_INVALIDA",
+      mensaje: "Ese cambio de estado no es posible desde el estado actual.",
     });
   }
 

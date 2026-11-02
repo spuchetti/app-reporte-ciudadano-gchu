@@ -21,8 +21,11 @@ export function esPendiente(estado: EstadoReporte) {
   return estado !== "resuelto" && estado !== "rechazado";
 }
 
-export function puedeAsignar(estado: EstadoReporte) {
-  return esPendiente(estado);
+/** Solo la primera asignación: `en_revision` y sin cuadrilla. */
+export function puedeAsignar(
+  reporte: Pick<Reporte, "estado" | "cuadrillaId">,
+) {
+  return reporte.estado === "en_revision" && !reporte.cuadrillaId;
 }
 
 export const ESTADOS_GESTION: EstadoReporte[] = [

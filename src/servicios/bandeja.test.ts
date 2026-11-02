@@ -6,6 +6,7 @@ import {
   estadosSiguientes,
   filtrarReportesBandeja,
   haceTiempo,
+  puedeAsignar,
   reportesParaDuplicar,
   resueltoRequiereAsignacion,
   textoFotos,
@@ -33,6 +34,24 @@ describe("servicios/bandeja", () => {
     expect(esPendiente("asignado")).toBe(true);
     expect(esPendiente("resuelto")).toBe(false);
     expect(esPendiente("rechazado")).toBe(false);
+  });
+
+  test("solo permite asignar en en_revision sin cuadrilla", () => {
+    expect(
+      puedeAsignar({ estado: "recibido", cuadrillaId: null }),
+    ).toBe(false);
+    expect(
+      puedeAsignar({ estado: "en_revision", cuadrillaId: null }),
+    ).toBe(true);
+    expect(
+      puedeAsignar({ estado: "asignado", cuadrillaId: "cua-01" }),
+    ).toBe(false);
+    expect(
+      puedeAsignar({ estado: "en_revision", cuadrillaId: "cua-01" }),
+    ).toBe(false);
+    expect(
+      puedeAsignar({ estado: "resuelto", cuadrillaId: null }),
+    ).toBe(false);
   });
 
   test("sólo ofrece estados que la API acepta por PATCH", () => {

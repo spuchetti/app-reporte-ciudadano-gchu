@@ -109,8 +109,11 @@ describe("Detalle operador", () => {
     obtenerLista.mockResolvedValue([reporteAbierto]);
   });
 
-  test("un reporte abierto ofrece cambiar estado, más acciones y asignar", async () => {
-    obtenerUno.mockResolvedValue(reporteAbierto);
+  test("un reporte en revisión sin cuadrilla ofrece cambiar estado, más acciones y asignar", async () => {
+    obtenerUno.mockResolvedValue({
+      ...reporteAbierto,
+      estado: "en_revision",
+    });
     let tree: ReactTestRenderer;
     await act(async () => {
       tree = create(<DetalleOperadorScreen />);
@@ -120,6 +123,18 @@ describe("Detalle operador", () => {
     expect(texto).toContain("Cambiar estado");
     expect(texto).toContain("Más acciones");
     expect(texto).toContain("Asignar");
+  });
+
+  test("un reporte recibido no ofrece asignar", async () => {
+    obtenerUno.mockResolvedValue(reporteAbierto);
+    let tree: ReactTestRenderer;
+    await act(async () => {
+      tree = create(<DetalleOperadorScreen />);
+    });
+
+    const texto = arbolComoTexto(tree!.toJSON());
+    expect(texto).toContain("Cambiar estado");
+    expect(texto).not.toContain("Asignar");
   });
 
   test("un reporte resuelto muestra la foto del arreglo y no las acciones", async () => {
