@@ -87,6 +87,29 @@ describe("servicios/reportes", () => {
     }
   });
 
+  test("rechaza un pin fuera de la ciudad sin encolar", () => {
+    try {
+      validarBorradorReporte({
+        ...borradorValido,
+        latitud: -32.9,
+        longitud: -58.4,
+      });
+      throw new Error("debía rechazar fuera de la ciudad");
+    } catch (error) {
+      expect(error).toMatchObject({
+        codigo: "FUERA_DE_LA_CIUDAD",
+        mensaje: "Ese punto queda fuera de Gualeguaychú. Corregilo en el mapa.",
+      });
+    }
+
+    expect(() =>
+      datosCreacionDesdeBorrador(
+        { ...borradorValido, latitud: -32.9, longitud: -58.4 },
+        "usr-nuevo",
+      ),
+    ).toThrow(/fuera de Gualeguaychú/);
+  });
+
   test("arma el reporte con foto, coordenadas y estado recibido", () => {
     const datos = datosCreacionDesdeBorrador(
       { ...borradorValido, descripcion: "Pozo grande" },
