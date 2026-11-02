@@ -19,11 +19,16 @@ import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { IndicadorRecarga } from "@/components/ui/indicador-recarga";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
 import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
-import { obtenerReportes } from "@/servicios/reportes";
+import {
+  alActualizarColaReportes,
+  alEstadoSincronizacionRed,
+  obtenerReportes,
+} from "@/servicios/reportes";
 import {
   COLORES_ESTADO,
   FILTROS_ESTADO_PUBLICO,
@@ -57,6 +62,7 @@ export function MapaCiudadano() {
   const [origen, setOrigen] = useState<Coordenadas | null>(null);
   const [region, setRegion] = useState(REGION_GCHU);
   const [ubicando, setUbicando] = useState(false);
+  const [sincronizandoRed, setSincronizandoRed] = useState(false);
   const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
   const [altoTarjeta, setAltoTarjeta] = useState(0);
   const mapaRef = useRef<ComponentRef<typeof MapView>>(null);
@@ -107,13 +113,17 @@ export function MapaCiudadano() {
   useEffect(() => {
     let activo = true;
 
-    obtenerReportes()
-      .then((lista) => {
-        if (activo) {
-          setReportes(lista);
-        }
-      })
-      .catch(() => {});
+    function cargarReportes() {
+      obtenerReportes()
+        .then((lista) => {
+          if (activo) {
+            setReportes(lista);
+          }
+        })
+        .catch(() => {});
+    }
+
+    cargarReportes();
 
     obtenerUbicacionActual()
       .then((coords) => {
@@ -124,8 +134,20 @@ export function MapaCiudadano() {
       })
       .catch(() => {});
 
+    const dejarDeEscucharCola = alActualizarColaReportes(() => {
+      cargarReportes();
+    });
+    const dejarDeEscucharSync = alEstadoSincronizacionRed((activo) => {
+      setSincronizandoRed(activo);
+      if (!activo) {
+        cargarReportes();
+      }
+    });
+
     return () => {
       activo = false;
+      dejarDeEscucharCola();
+      dejarDeEscucharSync();
     };
   }, []);
 
@@ -274,6 +296,7 @@ export function MapaCiudadano() {
             );
           })}
         </MapView>
+        <IndicadorRecarga visible={sincronizandoRed} />
 
         <View style={styles.resumen} accessibilityRole="text">
           <Text style={styles.resumenTexto}>{resumen}</Text>

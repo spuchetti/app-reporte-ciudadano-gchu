@@ -10,7 +10,9 @@ import {
 } from "react";
 
 import {
+  alActualizarSesion,
   cerrarSesion as cerrarSesionServicio,
+  crearSesionLocalPendiente,
   desbloquearConPin as desbloquearConPinServicio,
   desbloquearConRostro as desbloquearConRostroServicio,
   elegirMetodoIngreso,
@@ -23,10 +25,12 @@ import {
   recuperarArranque,
 } from "@/servicios/auth";
 import { limpiarBorrador } from "@/servicios/borrador";
+import { esErrorServicio } from "@/servicios/error";
 import {
   darDeBajaDispositivo,
   registrarDispositivo,
 } from "@/servicios/notificaciones";
+import { hayInternet } from "@/servicios/red";
 import {
   adherirAReporte,
   crearReporte,
@@ -40,6 +44,7 @@ import {
   Reporte,
   Rol,
   Sesion,
+  SesionAutenticada,
 } from "@/tipos";
 
 type ValorSesion = {
@@ -130,6 +135,19 @@ export function SesionProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  useEffect(() => {
+    return alActualizarSesion((siguiente: SesionAutenticada) => {
+      setSesion(siguiente);
+      setSesionVencida(false);
+      setSesionBloqueada(false);
+      setPendienteDesbloqueo(false);
+      setRolToken(siguiente.usuario.rol);
+      if (siguiente.usuario.rol === "vecino") {
+        setHuboVecino(true);
+      }
+    });
+  }, []);
+
   const despuesDeEntrar = useCallback(async (siguiente: Sesion, rol: Rol) => {
     setSesion(siguiente);
     setSesionVencida(false);
@@ -170,7 +188,22 @@ export function SesionProvider({ children }: PropsWithChildren) {
 
   const enviarPrimerReporte = useCallback(
     async (datos: DatosRegistro, borrador: DatosBorradorReporte) => {
-      const siguiente = await identificarVecino(datos);
+      let siguiente: SesionAutenticada;
+      const online = await hayInternet();
+      if (!online) {
+        siguiente = await crearSesionLocalPendiente(datos);
+      } else {
+        try {
+          siguiente = await identificarVecino(datos);
+        } catch (error) {
+          if (esErrorServicio(error) && error.codigo === "RED") {
+            siguiente = await crearSesionLocalPendiente(datos);
+          } else {
+            throw error;
+          }
+        }
+      }
+
       const reporte = await crearReporte(
         datosCreacionDesdeBorrador(borrador, siguiente.usuario.id),
       );
@@ -229,6 +262,11 @@ export function SesionProvider({ children }: PropsWithChildren) {
 
   const adherirPrimerReporte = useCallback(
     async (datos: DatosRegistro, reporteId: string) => {
+      if (!(await hayInternet())) {
+        throw new Error(
+          "Necesitás conexión a internet para sumarte a un reporte de otro vecino.",
+        );
+      }
       const siguiente = await identificarVecino(datos);
       const reporte = await adherirAReporte(reporteId, siguiente.usuario.id);
       limpiarBorrador();

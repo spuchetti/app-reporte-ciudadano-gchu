@@ -37,8 +37,8 @@ export default function ReporteEnviadoScreen() {
   const estado = textoParam(params.estado);
   const tipoId = textoParam(params.tipoId);
   const estadoClave = textoParam(params.estadoClave);
-  const provisorio = codigo.startsWith("LOCAL-");
-  const pendiente = textoParam(params.pendiente) === "1" || provisorio;
+  const pendiente =
+    textoParam(params.pendiente) === "1" || codigo.startsWith("LOCAL-");
   const sumado = textoParam(params.modo) === "sumado";
   const adhesiones = textoParam(params.adhesiones);
   const titulo = sumado ? "Te sumaste al reporte" : "Reporte enviado";
@@ -68,8 +68,8 @@ export default function ReporteEnviadoScreen() {
           ? adhesiones
             ? `Cuantos más vecinos se suman, más arriba va. Ya hay ${adhesiones} adhesiones.`
             : "Cuantos más vecinos se suman, más arriba va en la lista de Obras."
-          : provisorio
-            ? "Este número es del dispositivo. Cuando haya señal, lo reemplazamos por el código del municipio."
+          : pendiente
+            ? "Tu reporte quedó guardado en el teléfono. Cuando haya internet se envía solo y vas a recibir el código del municipio."
             : "Guardá este número de seguimiento. Con él vas a poder ver el estado."}
       </Text>
       <TicketReporte

@@ -25,6 +25,8 @@ export default function DatosVecinoScreen() {
   const adhesionId = leerBorrador().adherirAId;
   const borrador = borradorListoParaEnviar();
   const esReingreso = !adhesionId && !borrador;
+  const esAdhesion = Boolean(adhesionId);
+  const esPrimerReporte = !esReingreso && !esAdhesion;
   const desbloqueo = useDesbloqueoAlEntrar("vecino", esReingreso);
 
   const [nombre, setNombre] = useState("");
@@ -33,6 +35,31 @@ export default function DatosVecinoScreen() {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+
+  function mensajeError(err: unknown) {
+    if (esErrorServicio(err)) {
+      if (err.codigo === "SIN_CONEXION" || err.codigo === "RED") {
+        if (esAdhesion) {
+          return "Necesitás conexión a internet para sumarte a un reporte.";
+        }
+        if (esPrimerReporte) {
+          return "Sin conexión el reporte se guarda en el teléfono y se envía solo cuando vuelva internet.";
+        }
+        return "Necesitás conexión a internet para ingresar.";
+      }
+      return err.mensaje;
+    }
+    if (err instanceof Error) {
+      return err.message;
+    }
+    if (esReingreso) {
+      return "No se pudo identificar. Intentá de nuevo.";
+    }
+    if (esAdhesion) {
+      return "No se pudo sumarte al reporte. Intentá de nuevo.";
+    }
+    return "No se pudo enviar el reporte. Intentá de nuevo.";
+  }
 
   async function onSubmit() {
     setError(null);
@@ -50,13 +77,7 @@ export default function DatosVecinoScreen() {
 
       await enviarPrimerReporte(datos, borrador);
     } catch (err) {
-      setError(
-        esErrorServicio(err)
-          ? err.message
-          : esReingreso
-            ? "No se pudo identificar. Intentá de nuevo."
-            : "No se pudo enviar el reporte. Intentá de nuevo.",
-      );
+      setError(mensajeError(err));
     } finally {
       setCargando(false);
     }
@@ -83,9 +104,9 @@ export default function DatosVecinoScreen() {
           <Text style={styles.subtitulo}>
             {esReingreso
               ? "Usá el mismo email y contraseña. Si es la primera vez, te creamos la cuenta."
-              : adhesionId
+              : esAdhesion
                 ? "Los pedimos para sumarte al reporte y avisarte el estado."
-                : "Los pedimos para enviar el reporte y avisarte el estado."}
+                : "Los pedimos para enviar el reporte y avisarte el estado. Sin internet se guarda en el teléfono y se envía después."}
           </Text>
 
           <CampoTexto
@@ -141,7 +162,13 @@ export default function DatosVecinoScreen() {
           ) : null}
 
           <Boton
-            titulo={esReingreso ? "Ingresar" : adhesionId ? "Sumarme al reporte" : "Enviar reporte"}
+            titulo={
+              esReingreso
+                ? "Ingresar"
+                : esAdhesion
+                  ? "Sumarme al reporte"
+                  : "Enviar reporte"
+            }
             cargando={cargando || desbloqueo.desbloqueando}
             disabled={cargando || desbloqueo.desbloqueando}
             onPress={onSubmit}

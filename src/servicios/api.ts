@@ -178,10 +178,36 @@ export async function pedirReportes(ruta: string): Promise<Reporte[]> {
   return lista.map(adaptarReporte);
 }
 
+function tipoMimeDesdeNombre(nombre: string): string {
+  const ext = nombre.split(".").pop()?.toLowerCase() ?? "";
+  switch (ext) {
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "m4a":
+      return "audio/mp4";
+    case "aac":
+      return "audio/aac";
+    case "mp3":
+      return "audio/mpeg";
+    case "wav":
+      return "audio/wav";
+    case "caf":
+      return "audio/x-caf";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 /** Sube un archivo local y devuelve la URL que hay que mandar en el reporte.
  * En Android el FormData de Axios suele fallar; acá se usa fetch. */
 export async function subirArchivo(uri: string): Promise<string> {
   const nombre = uri.split("/").pop()?.split("?")[0] || "foto.jpg";
+  const tipo = tipoMimeDesdeNombre(nombre);
   const form = new FormData();
   const enNavegador =
     uri.startsWith("blob:") ||
@@ -195,7 +221,7 @@ export async function subirArchivo(uri: string): Promise<string> {
     form.append("archivo", {
       uri,
       name: nombre,
-      type: "image/jpeg",
+      type: tipo,
     } as unknown as Blob);
   }
 

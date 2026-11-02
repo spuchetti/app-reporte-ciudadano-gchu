@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +25,8 @@ import { useSesion } from '@/contexto/sesion';
 import { useOrigenReporte } from '@/contexto/origen-reporte';
 import { nombreTipo } from '@/servicios/bandeja';
 import {
+  alActualizarColaReportes,
+  alEstadoSincronizacionRed,
   etiquetaEstado,
   etiquetaParaVecino,
   obtenerMisReportes,
@@ -87,13 +89,20 @@ interface TarjetaReporteProps {
   onPress: () => void;
 }
 
+const COLOR_SIN_ENVIAR = '#9A6700';
+
 function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
   const pendiente = !reporte.sincronizado;
-  const colorEstado = COLORES_ESTADO[reporte.estado] ?? Paleta.inkSoft;
+  const colorEstado = pendiente
+    ? COLOR_SIN_ENVIAR
+    : (COLORES_ESTADO[reporte.estado] ?? Paleta.inkSoft);
+  const colorTextoEstado = pendiente
+    ? COLOR_SIN_ENVIAR
+    : (TEXTO_ESTADO[reporte.estado] ?? Paleta.inkSoft);
   const categoria = obtenerCategoriaVisual(reporte.tipoId) ?? CATEGORIA_POR_DEFECTO;
   const tipo = nombreTipo(reporte.tipoId);
-  const estado = etiquetaEstado(reporte.estado);
-  const avance = AVANCE_ESTADO[reporte.estado] ?? 0.28;
+  const estado = pendiente ? 'Sin enviar' : etiquetaEstado(reporte.estado);
+  const avance = pendiente ? 0.12 : (AVANCE_ESTADO[reporte.estado] ?? 0.28);
 
   return (
     <Pressable
@@ -121,7 +130,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
             </View>
             <View style={styles.estado}>
               <View style={[styles.punto, { backgroundColor: colorEstado }]} />
-              <Text style={[styles.estadoTexto, { color: TEXTO_ESTADO[reporte.estado] }]}>
+              <Text style={[styles.estadoTexto, { color: colorTextoEstado }]}>
                 {estado}
               </Text>
             </View>
@@ -139,7 +148,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
             <Text style={styles.antiguedad}>{fechaCorta(reporte.creadoEn)}</Text>
             {pendiente ? (
               <>
-                <Ionicons name="cloud-offline-outline" size={14} color="#9A6700" />
+                <Ionicons name="cloud-offline-outline" size={14} color={COLOR_SIN_ENVIAR} />
                 <Text style={styles.sinEnviar}>Sin enviar</Text>
               </>
             ) : null}
@@ -184,19 +193,38 @@ export default function MisReportesScreen() {
     setError(null);
 
     try {
-      await sincronizarPendientes();
+      await sincronizarPendientes().catch(() => undefined);
       const [data, sumados] = await Promise.all([
         obtenerMisReportes(autorId),
         obtenerReportesAdheridos(autorId),
       ]);
       setReportes(data);
       setAdheridos(sumados);
+      setError(null);
     } catch {
-      setError('No pudimos cargar tus reclamos. Verificá la conexión y volvé a intentar.');
-      setAdheridos([]);
+      setError(
+        'No pudimos cargar tus reclamos. Verificá la conexión y volvé a intentar.',
+      );
     } finally {
       setCargando(false);
       setRecargando(false);
+    }
+  }, [autorId]);
+
+  const refrescarTrasSync = useCallback(async () => {
+    if (!autorId) {
+      return;
+    }
+    try {
+      const [data, sumados] = await Promise.all([
+        obtenerMisReportes(autorId),
+        obtenerReportesAdheridos(autorId),
+      ]);
+      setReportes(data);
+      setAdheridos(sumados);
+      setError(null);
+    } catch {
+      // El aviso de cola / lista previa se mantiene.
     }
   }, [autorId]);
 
@@ -207,8 +235,25 @@ export default function MisReportesScreen() {
     }, [cargarDatos, establecerOrigen])
   );
 
+  useEffect(() => {
+    return alActualizarColaReportes(() => {
+      void refrescarTrasSync();
+    });
+  }, [refrescarTrasSync]);
+
+  useEffect(() => {
+    return alEstadoSincronizacionRed((activo) => {
+      setRecargando(activo);
+      if (!activo) {
+        void refrescarTrasSync();
+      }
+    });
+  }, [refrescarTrasSync]);
+
   const lista = pestana === 'propios' ? reportes : adheridos;
   const pendientes = reportes.filter((reporte) => !reporte.sincronizado).length;
+  const hayListaLocal = reportes.length > 0 || adheridos.length > 0;
+  const mostrarErrorBloqueante = Boolean(error) && !hayListaLocal;
 
   const irAlDetalle = (id: Reporte['id']) => {
     router.push(`/reclamo/${id}`);
@@ -270,18 +315,12 @@ export default function MisReportesScreen() {
         </Pressable>
       </View>
 
-      {pendientes > 0 && pestana === 'propios' && !cargando && !error ? (
+      {pendientes > 0 && pestana === 'propios' && !cargando && !mostrarErrorBloqueante ? (
         <View style={styles.aviso}>
-          <Ionicons name="warning-outline" size={18} color="#9A6700" />
-          <Text style={styles.avisoTexto}>{textoPendientes(pendientes)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Reintentar envío"
-            onPress={() => cargarDatos(true)}
-            hitSlop={8}
-          >
-            <Text style={styles.reintentar}>Reintentar</Text>
-          </Pressable>
+          <Ionicons name="cloud-offline-outline" size={18} color="#9A6700" />
+          <Text style={styles.avisoTexto}>
+            {textoPendientes(pendientes)}. Se envían solos cuando vuelva la conexión.
+          </Text>
         </View>
       ) : null}
 
@@ -290,7 +329,7 @@ export default function MisReportesScreen() {
           <ActivityIndicator size="large" color={Paleta.teal} />
           <Text style={styles.textoCarga}>Cargando tus reportes…</Text>
         </View>
-      ) : error ? (
+      ) : mostrarErrorBloqueante ? (
         <View style={styles.centrado}>
           <Text style={styles.tituloError}>Aviso</Text>
           <Text style={styles.textoError}>{error}</Text>
@@ -463,12 +502,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: '#7A5B00',
-  },
-  reintentar: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 13,
-    color: Paleta.ink,
-    textDecorationLine: 'underline',
   },
   centrado: {
     flex: 1,

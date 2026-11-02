@@ -9,11 +9,17 @@ import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { IndicadorRecarga } from "@/components/ui/indicador-recarga";
 import { Fonts, Paleta } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
-import { COORDENADAS_CENTRO, obtenerReportes } from "@/servicios/reportes";
+import {
+  alActualizarColaReportes,
+  alEstadoSincronizacionRed,
+  COORDENADAS_CENTRO,
+  obtenerReportes,
+} from "@/servicios/reportes";
 import {
   COLORES_ESTADO,
   FILTROS_ESTADO_PUBLICO,
@@ -49,6 +55,7 @@ export default function MapaPublicoScreen() {
   const [origen, setOrigen] = useState<Coordenadas | null>(null);
   const [region, setRegion] = useState(REGION_GCHU);
   const [ubicando, setUbicando] = useState(false);
+  const [sincronizandoRed, setSincronizandoRed] = useState(false);
   const [altoPie, setAltoPie] = useState(220);
   const mapaRef = useRef<ComponentRef<typeof MapView>>(null);
 
@@ -68,15 +75,19 @@ export default function MapaPublicoScreen() {
   useEffect(() => {
     let activo = true;
 
-    obtenerReportes()
-      .then((lista) => {
-        if (activo) {
-          setReportes(lista);
-        }
-      })
-      .catch(() => {
-        // El mapa igual se muestra; los pines quedan vacíos.
-      });
+    function cargarReportes() {
+      obtenerReportes()
+        .then((lista) => {
+          if (activo) {
+            setReportes(lista);
+          }
+        })
+        .catch(() => {
+          // El mapa igual se muestra; los pines quedan vacíos.
+        });
+    }
+
+    cargarReportes();
 
     obtenerUbicacionActual()
       .then((coords) => {
@@ -89,8 +100,20 @@ export default function MapaPublicoScreen() {
         // Sin GPS seguimos en el centro de la ciudad.
       });
 
+    const dejarDeEscucharCola = alActualizarColaReportes(() => {
+      cargarReportes();
+    });
+    const dejarDeEscucharSync = alEstadoSincronizacionRed((activo) => {
+      setSincronizandoRed(activo);
+      if (!activo) {
+        cargarReportes();
+      }
+    });
+
     return () => {
       activo = false;
+      dejarDeEscucharCola();
+      dejarDeEscucharSync();
     };
   }, []);
 
@@ -132,6 +155,7 @@ export default function MapaPublicoScreen() {
             />
           ))}
         </MapView>
+        <IndicadorRecarga visible={sincronizandoRed} />
       </View>
 
       <Pressable

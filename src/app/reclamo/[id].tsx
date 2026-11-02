@@ -173,11 +173,7 @@ export default function DetalleReclamoScreen() {
       setError(null);
     }
     try {
-      const [item, cambios, lista] = await Promise.all([
-        obtenerReportePorId(id),
-        obtenerCambiosEstado(id),
-        obtenerReportes(),
-      ]);
+      const item = await obtenerReportePorId(id);
       if (!sigueActivo()) return;
       if (!item) {
         setReporte(null);
@@ -185,11 +181,17 @@ export default function DetalleReclamoScreen() {
         return;
       }
       setReporte(item);
+      setError(null);
+
+      const [cambios, lista] = await Promise.all([
+        obtenerCambiosEstado(id).catch(() => [] as typeof historial),
+        obtenerReportes().catch(() => [] as Reporte[]),
+      ]);
+      if (!sigueActivo()) return;
       setCatalogo(lista);
       setHistorial(
         [...cambios].sort((a, b) => a.fechaHora.localeCompare(b.fechaHora)),
       );
-      setError(null);
     } catch {
       if (sigueActivo()) {
         setError("No se pudo cargar el reclamo.");
