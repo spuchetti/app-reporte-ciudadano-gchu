@@ -65,6 +65,8 @@ jest.mock("react-native-safe-area-context", () => ({
 
 jest.mock("@/servicios/reportes", () => ({
   obtenerReportes: jest.fn(async () => []),
+  alActualizarColaReportes: jest.fn(() => () => undefined),
+  alEstadoSincronizacionRed: jest.fn(() => () => undefined),
 }));
 
 jest.mock("@/servicios/ubicacion", () => ({
