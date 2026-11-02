@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte Ciudadano · Gualeguaychú — Especificación de Producto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12232E;
+    --ink-soft:#3E5560;
+    --paper:#F1F4F3;
+    --paper-raised:#FFFFFF;
+    --teal:#1F6F78;
+    --teal-deep:#144D53;
+    --orange:#E8630C;
+    --amarillo:#F2B705;
+    --azul:#2E6E9E;
+    --verde:#2F9E52;
+    --rojo:#D64545;
+    --line:rgba(18,35,46,0.12);
+    --line-soft:rgba(18,35,46,0.07);
+    --shadow:0 1px 2px rgba(18,35,46,0.06);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:'Fraunces',serif;
+    color:var(--ink);
+    margin:0 0 .4em 0;
+    letter-spacing:-0.01em;
+  }
+  p{margin:0 0 1em 0;}
+  a{color:var(--teal-deep);}
+  code, .mono{
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* ---------- layout shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:272px 1fr;
+    max-width:1240px;
+    margin:0 auto;
+  }
+  @media (max-width:920px){
+    .shell{grid-template-columns:1fr;}
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+    padding:28px 20px 40px 32px;
+    border-right:1px solid var(--line);
+  }
+  @media (max-width:920px){
+    .sidebar{
+      position:relative;
+      height:auto;
+      border-right:none;
+      border-bottom:1px solid var(--line);
+      padding:20px 24px;
+    }
+  }
+  .sidebar-brand{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-bottom:26px;
+  }
+  .sidebar-brand .mark{
+    width:11px;height:11px;border-radius:3px;
+    background:var(--orange);
+    display:inline-block;
+    transform:translateY(1px);
+  }
+  .sidebar-brand span{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    letter-spacing:.02em;
+  }
+  .nav-group{margin-bottom:20px;}
+  .nav-group-title{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+    margin:0 0 6px 2px;
+  }
+  .nav-group a{
+    display:block;
+    padding:5px 8px 5px 10px;
+    margin-left:-10px;
+    border-radius:7px;
+    color:var(--ink-soft);
+    text-decoration:none;
+    font-size:14px;
+    border-left:2px solid transparent;
+    transition:background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .nav-group a:hover{background:var(--line-soft); color:var(--ink);}
+  .nav-group a.active{
+    color:var(--teal-deep);
+    border-left-color:var(--orange);
+    font-weight:600;
+    background:rgba(232,99,12,0.06);
+  }
+
+  /* ---------- main ---------- */
+  main{padding:0 40px 100px 40px;}
+  @media (max-width:920px){main{padding:0 22px 70px 22px;}}
+
+  .hero{
+    padding:64px 0 44px 0;
+    border-bottom:1px solid var(--line);
+    margin-bottom:52px;
+  }
+  .hero .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--teal-deep);
+    margin-bottom:18px;
+  }
+  .hero .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--verde);}
+  .hero h1{
+    font-size:clamp(34px,5vw,54px);
+    font-weight:600;
+    line-height:1.06;
+    max-width:14ch;
+  }
+  .hero .lede{
+    font-size:18px;
+    color:var(--ink-soft);
+    max-width:56ch;
+    margin-top:16px;
+  }
+  .stat-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-top:36px;
+  }
+  @media (max-width:640px){.stat-strip{grid-template-columns:repeat(2,1fr);}}
+  .stat-strip div{
+    background:var(--paper-raised);
+    padding:18px 20px;
+  }
+  .stat-strip .num{
+    font-family:'Fraunces',serif;
+    font-size:30px;
+    font-weight:600;
+    color:var(--ink);
+    display:block;
+  }
+  .stat-strip .lbl{
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+
+  section{margin-bottom:64px; scroll-margin-top:24px;}
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:8px;
+  }
+  .section-head h2{font-size:27px; font-weight:600;}
+  .section-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    background:var(--line-soft);
+    padding:3px 8px;
+    border-radius:5px;
+    white-space:nowrap;
+  }
+  .section-intro{
+    color:var(--ink-soft);
+    max-width:68ch;
+    margin-bottom:30px;
+    font-size:15.5px;
+  }
+
+  /* role banner */
+  .role-banner{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 18px;
+    border-radius:var(--radius);
+    margin-bottom:32px;
+    font-size:14px;
+    color:var(--ink-soft);
+  }
+  .role-banner.vecino{background:rgba(31,111,120,0.08); border:1px solid rgba(31,111,120,0.22);}
+  .role-banner.operador{background:rgba(232,99,12,0.07); border:1px solid rgba(232,99,12,0.22);}
+  .role-banner strong{color:var(--ink); font-weight:600;}
+
+  /* screen card */
+  .screen{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-raised);
+    padding:26px 28px;
+    margin-bottom:22px;
+  }
+  .screen-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .screen-head h3{font-size:19px; font-weight:600;}
+  .screen-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .screen-path{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--teal-deep);
+    background:rgba(31,111,120,0.07);
+    padding:2px 8px;
+    border-radius:5px;
+    display:inline-block;
+  }
+  .screen ul{
+    margin:0;
+    padding-left:0;
+    list-style:none;
+  }
+  .screen ul li{
+    position:relative;
+    padding-left:16px;
+    margin-bottom:7px;
+    font-size:14.5px;
+    color:var(--ink-soft);
+  }
+  .screen ul li::before{
+    content:"";
+    position:absolute;
+    left:0; top:9px;
+    width:5px;height:5px;
+    border-radius:50%;
+    background:var(--orange);
+  }
+  .screen-two-col{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+  }
+  @media (max-width:700px){.screen-two-col{grid-template-columns:1fr;}}
+  .screen-two-col h4{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+
+  /* mock preview block (styled like a phone list card, drawn from real content) */
+  .mock{
+    background:var(--ink);
+    color:#EAF1F0;
+    border-radius:9px;
+    padding:16px 18px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    line-height:1.7;
+    margin-top:10px;
+  }
+  .mock .r{display:flex; justify-content:space-between; gap:10px; opacity:.92;}
+  .mock hr{border:none; border-top:1px solid rgba(255,255,255,0.14); margin:8px 0;}
+
+  /* status legend */
+  .status-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:14px 0 4px 0;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:500;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+  }
+  .chip .d{width:9px;height:9px;border-radius:50%;flex:none;}
+  .chip.recibido .d{background:var(--amarillo);}
+  .chip.revision .d{background:var(--azul);}
+  .chip.asignado .d{background:var(--orange);}
+  .chip.resuelto .d{background:var(--verde);}
+  .chip.rechazado .d{background:var(--rojo);}
+
+  /* icon grid (tipos de problema) */
+  .type-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-top:12px;
+  }
+  @media (max-width:600px){.type-grid{grid-template-columns:repeat(2,1fr);}}
+  .type-grid div{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    background:var(--paper);
+  }
+
+  /* component grid */
+  .comp-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+  }
+  @media (max-width:820px){.comp-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:560px){.comp-grid{grid-template-columns:1fr;}}
+  .comp{
+    border:1px solid var(--line);
+    border-left:3px solid var(--teal);
+    border-radius:8px;
+    padding:14px 16px;
+    background:var(--paper-raised);
+  }
+  .comp .name{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink);
+    display:block;
+    margin-bottom:4px;
+  }
+  .comp .desc{font-size:13px; color:var(--ink-soft);}
+
+  /* flow */
+  .flow{
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-raised);
+    padding:8px 26px;
+    margin-bottom:26px;
+  }
+  .flow-title{
+    font-size:15px;
+    font-weight:700;
+    padding:16px 0 4px 0;
+  }
+  .flow-step{
+    display:flex;
+    gap:16px;
+    padding:14px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .flow-step:first-of-type{border-top:none;}
+  .flow-step .num{
+    flex:none;
+    width:26px;height:26px;
+    border-radius:50%;
+    background:var(--teal);
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    margin-top:1px;
+  }
+  .flow-step.branch .num{background:var(--orange);}
+  .flow-step .body strong{display:block; font-size:14.5px; margin-bottom:2px;}
+  .flow-step .body span{font-size:13.5px; color:var(--ink-soft);}
+
+  /* file tree */
+  .tree{
+    background:var(--ink);
+    color:#D8E6E4;
+    border-radius:var(--radius);
+    padding:22px 26px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.75;
+    overflow-x:auto;
+    white-space:pre;
+  }
+  .tree .c1{color:#7FD1C8;}
+  .tree .c2{color:#F2C265;}
+  .tree .cm{color:#7C93A0;}
+
+  /* phases */
+  .phase-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+  }
+  @media (max-width:820px){.phase-grid{grid-template-columns:1fr;}}
+  .phase{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-raised);
+    padding:22px 22px 20px 22px;
+  }
+  .phase .ph-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .phase .ph-head h4{font-family:'Fraunces',serif; font-size:18px; font-weight:600; margin:0;}
+  .phase .ph-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    padding:3px 8px;
+    border-radius:5px;
+    color:#fff;
+  }
+  .phase:nth-child(1) .ph-tag{background:var(--verde);}
+  .phase:nth-child(2) .ph-tag{background:var(--azul);}
+  .phase:nth-child(3) .ph-tag{background:var(--orange);}
+  .phase ul{list-style:none; margin:0; padding:0;}
+  .phase li{
+    display:flex;
+    gap:9px;
+    align-items:flex-start;
+    font-size:13.8px;
+    color:var(--ink-soft);
+    padding:6px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .phase li:first-child{border-top:none;}
+  .phase li::before{
+    content:"✓";
+    color:var(--verde);
+    font-weight:700;
+    font-size:12px;
+    margin-top:1px;
+  }
+
+  /* tech table */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  thead th{
+    text-align:left;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    padding:12px 18px;
+    background:var(--line-soft);
+    border-bottom:1px solid var(--line);
+  }
+  tbody td{
+    padding:13px 18px;
+    font-size:14px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.tech-name{font-family:'JetBrains Mono',monospace; font-size:12.8px; color:var(--teal-deep);}
+
+  .doc-footer, footer{
+    border-top:1px solid var(--line);
+    padding:28px 0 60px 0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  .mobile-toggle{display:none;}
+  @media (max-width:920px){
+    .mobile-toggle{
+      display:block;
+      width:100%;
+      text-align:left;
+      background:var(--paper-raised);
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:10px 14px;
+      font-family:'Inter',sans-serif;
+      font-size:13.5px;
+      color:var(--ink);
+      margin-top:14px;
+    }
+    .nav-scroll{display:none;}
+    .nav-scroll.open{display:block;}
+  }
+
+  .callout{
+    border-left:3px solid var(--orange);
+    background:rgba(232,99,12,0.06);
+    border-radius:8px;
+    padding:14px 18px;
+    font-size:14px;
+    color:var(--ink-soft);
+    margin:16px 0;
+  }
+  .callout strong{color:var(--ink);}
+  .callout code{background:rgba(18,35,46,0.06); padding:1px 5px; border-radius:4px; font-size:12.5px;}
+  .callout.warn{border-left-color:var(--rojo); background:rgba(214,69,69,0.06);}
+  .callout ul{margin:8px 0 0 0; padding-left:18px;}
+  .callout li{font-size:13.5px; margin-bottom:4px;}
+
+  .quote{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-size:19px;
+    color:var(--ink);
+    border-left:3px solid var(--teal);
+    padding-left:20px;
+    margin:26px 0 0 0;
+    max-width:56ch;
+  }
+  .quote span{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-style:normal;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:8px;
+  }
+
+  h3.sub{font-size:15.5px; margin:26px 0 8px 0;}
+
+  /* ---------- long identifiers must be able to break on narrow screens ---------- */
+  code, .mono, .tech-name, .screen-path, .comp .name{
+    overflow-wrap:break-word;
+    word-break:break-word;
+  }
+
+  @media (max-width:640px){
+    body{font-size:15px;}
+    .hero{padding:44px 0 32px 0;}
+    .hero .lede{font-size:16px;}
+    section{margin-bottom:44px;}
+    .section-head{flex-wrap:wrap; row-gap:6px;}
+    .section-head h2{font-size:22px;}
+    .screen{padding:20px 18px;}
+    .screen-head{gap:8px;}
+
+    /* tables: shrink and let long single-word content wrap instead of forcing horizontal scroll */
+    table{table-layout:fixed;}
+    thead th{padding:9px 10px; font-size:11px;}
+    tbody td{padding:10px 10px; font-size:12.8px;}
+
+    /* wide monospace blocks (file tree, JSON, API examples) keep their own horizontal scroll */
+    .tree{padding:16px 16px; font-size:11.8px;}
+
+    .comp{padding:12px 14px;}
+    .flow{padding:6px 18px;}
+    .flow-step{gap:12px;}
+
+    /* bigger, easier tap targets on the mobile nav */
+    .mobile-toggle{padding:13px 16px; font-size:14.5px;}
+    .nav-group a{padding:10px 10px 10px 12px; font-size:15px;}
+  }
+
+
+  @media print{
+    @page{margin:9mm 8mm;}
+    html,body{background:#fff !important;}
+    .sidebar,.mobile-toggle{display:none !important;}
+    .shell{display:block; max-width:none; margin:0;}
+    main{padding:0 !important;}
+    a{text-decoration:none; color:inherit;}
+    body{font-size:12px; line-height:1.32;}
+    p{margin:0 0 .4em 0;}
+    .hero{padding:0 0 8px 0; margin-bottom:10px;}
+    .hero .eyebrow{margin-bottom:5px; font-size:10.5px;}
+    .hero h1{font-size:24px; max-width:none;}
+    .hero .lede{font-size:12.5px; margin-top:5px;}
+    .stat-strip{margin-top:8px;}
+    .stat-strip div{padding:7px 9px;}
+    .stat-strip .num{font-size:18px;}
+    .stat-strip .lbl{font-size:10px;}
+    section{margin-bottom:10px; scroll-margin-top:0;}
+    .section-head{margin-bottom:2px; gap:6px;}
+    .section-head h2{font-size:15.5px;}
+    .section-intro{margin-bottom:6px; font-size:12px; max-width:none;}
+    .role-banner{padding:6px 9px; margin-bottom:7px; font-size:11.5px;}
+    .screen{padding:8px 10px; margin-bottom:6px;}
+    .screen-head{margin-bottom:5px;}
+    .screen ul{margin:0; padding-left:15px;}
+    .screen li{margin-bottom:1px; font-size:12px;}
+    /* Sin CSS Grid en print: Chrome deja huecos al fragmentar grillas */
+    .screen-two-col,
+    .comp-grid,
+    .phase-grid,
+    .stat-strip{
+      display:block !important;
+    }
+    .stat-strip div{
+      display:inline-block;
+      width:48%;
+      vertical-align:top;
+      box-sizing:border-box;
+      border-bottom:1px solid var(--line);
+    }
+    .screen-two-col > *{margin-bottom:8px;}
+    .comp{display:block; padding:7px 10px; margin:0 0 6px 0; height:auto;}
+    .phase{display:block; padding:10px 12px; margin:0 0 8px 0; height:auto;}
+    .mock{display:none !important;}
+    .callout{padding:8px 12px; margin:8px 0; font-size:12px;}
+    .quote{font-size:14px; margin:12px 0 0 0; padding-left:12px;}
+    .comp .name{font-size:11.5px;}
+    .comp .desc{font-size:12px;}
+    .flow{padding:4px 12px; margin-bottom:10px;}
+    .flow-title{padding:8px 0 2px 0; font-size:13px;}
+    .flow-step{padding:6px 0; gap:10px;}
+    .flow-step .num{width:22px; height:22px; font-size:11px;}
+    .flow-step .body strong{font-size:12.5px;}
+    .flow-step .body span{font-size:12px;}
+    .tree{padding:10px 12px; font-size:10.5px; line-height:1.5;}
+    .phase .ph-head{margin-bottom:6px;}
+    .phase .ph-head h4{font-size:14px;}
+    .phase li{font-size:12px; padding:3px 0;}
+    table{font-size:12px;}
+    thead th{padding:6px 8px; font-size:11px;}
+    tbody td{padding:6px 8px; font-size:12px;}
+    h3.sub{font-size:13px; margin:10px 0 4px 0;}
+    .type-grid{
+      display:flex !important;
+      flex-wrap:wrap;
+      gap:5px;
+      margin-top:6px;
+    }
+    .type-grid div{padding:5px 8px; font-size:11.5px; flex:1 1 22%; box-sizing:border-box;}
+    .status-legend{gap:5px; margin-top:6px;}
+    .doc-footer{
+      padding:6px 0 0 0 !important;
+      font-size:10.5px;
+      margin-top:8px !important;
+      border-top:1px solid var(--line);
+      break-before:avoid !important;
+      page-break-before:avoid !important;
+    }
+    *{
+      orphans:2;
+      widows:2;
+    }
+    section,.screen,.phase,.flow,.comp,.tree,table,.callout,.quote,.role-banner,.comp-grid,.phase-grid{
+      break-inside:auto !important;
+      page-break-inside:auto !important;
+    }
+    /* Evitar páginas casi vacías por tablas/bloques empujados enteros */
+    table, thead, tbody, tr, .tree, .flow, .screen{
+      break-inside:auto !important;
+      page-break-inside:auto !important;
+    }
+    h2,h3,.section-head,.screen-head,.flow-title{
+      break-after:avoid;
+      page-break-after:avoid;
+    }
+    html{
+      zoom:0.86;
+    }
+    /* Sin bordes en print: Chrome fragmenta cajas y deja huecos enormes */
+    *{box-shadow:none !important;}
+    .screen,.comp,.phase,.flow,.callout,.tree,.role-banner,.hero,
+    .stat-strip,.stat-strip div,.chip,.section-tag,.quote,.type-grid div,
+    table,thead,tbody,tr,th,td,.doc-footer{
+      border:none !important;
+      border-radius:0 !important;
+      outline:none !important;
+    }
+    .screen,.comp,.phase,.flow,.callout,.role-banner{
+      background:transparent !important;
+      padding:2px 0 2px 0 !important;
+      margin:0 0 5px 0 !important;
+    }
+    .screen-head,.section-head{margin-bottom:3px !important;}
+    .flow-step{border:none !important; padding:4px 0 !important;}
+    .flow-step .num{
+      background:var(--teal) !important;
+      color:#fff !important;
+    }
+    .tree{
+      background:var(--ink) !important;
+      color:#D8E6E4 !important;
+      padding:8px 10px !important;
+    }
+    table{background:transparent !important;}
+    thead th{background:rgba(18,35,46,0.06) !important; padding:5px 8px !important;}
+    tbody td{padding:5px 8px !important; border-bottom:1px solid rgba(18,35,46,0.08) !important;}
+    .stat-strip{background:transparent !important; margin-top:8px !important;}
+    .stat-strip div{background:rgba(18,35,46,0.04) !important; padding:6px 8px !important;}
+    .chip{background:rgba(18,35,46,0.05) !important; padding:3px 8px !important;}
+    .mock{display:none !important;}
+    .doc-footer{border-top:1px solid rgba(18,35,46,0.15) !important; padding-top:6px !important;}
+  }
+
+  @media (max-width:400px){
+    .stat-strip{grid-template-columns:1fr 1fr;}
+    thead th{font-size:10.3px; padding:8px;}
+    tbody td{font-size:12px; padding:8px;}
+    .hero h1{font-size:30px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="mark"></span><span>GCHU · APP-REPORTES</span></div>
+
+    <button class="mobile-toggle" id="navToggle">☰ Índice de secciones</button>
+
+    <div class="nav-scroll" id="navScroll">
+      <div class="nav-group">
+        <div class="nav-group-title">General</div>
+        <a href="#resumen" class="">Resumen del proyecto</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Sin sesión</div>
+        <a href="#p1" class="">1. Mapa público</a>
+        <a href="#p2" class="">2. Registro</a>
+        <a href="#p3" class="">3. Login del operador</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Vecino</div>
+        <a href="#p4" class="">4. Home</a>
+        <a href="#p5" class="">5. Crear reporte</a>
+        <a href="#p6" class="">6. Número de seguimiento</a>
+        <a href="#p7" class="">7. Mis reportes</a>
+        <a href="#p8" class="">8. Detalle del reclamo</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operador</div>
+        <a href="#p9" class="">9. Bandeja</a>
+        <a href="#p10" class="">10. Detalle de gestión</a>
+        <a href="#p11" class="">11. Zonas y cuadrillas</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Ingeniería</div>
+        <a href="#componentes" class="">Componentes compartidos</a>
+        <a href="#flujos" class="">Flujos principales</a>
+        <a href="#estructura" class="">Estructura de archivos</a>
+        <a href="#prioridades" class="">Prioridades de desarrollo</a>
+        <a href="#alcance" class="">Fuera de esta versión</a>
+        <a href="#accesibilidad" class="">Reglas no negociables</a>
+        <a href="#tecnologias" class="active">Stack y tecnologías</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Contrato de datos</div>
+        <a href="#modelo" class="">Modelo de datos</a>
+        <a href="#api" class="">Contrato de API</a>
+        <a href="#mocks" class="">Estrategia de mocks</a>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div class="eyebrow"><span class="dot"></span>Especificación de producto · para el equipo de desarrollo</div>
+      <h1>App de Reporte Ciudadano</h1>
+      <p class="lede">Gualeguaychú — una app para que el vecino reporte baches, luminarias, basura y otros problemas de la vía pública en cinco pasos, y para que el municipio los reciba, asigne a cuadrilla y resuelva con trazabilidad completa.</p>
+      <div class="stat-strip">
+        <div><span class="num">11</span><span class="lbl">pantallas principales</span></div>
+        <div><span class="num">3</span><span class="lbl">modos: vecino, operador e invitado</span></div>
+        <div><span class="num">4</span><span class="lbl">flujos críticos</span></div>
+        <div><span class="num">3</span><span class="lbl">fases ya cubiertas</span></div>
+      </div>
+    </div>
+
+    <section id="resumen">
+      <div class="section-head"><h2>Resumen del proyecto</h2><span class="section-tag">contexto</span></div>
+      <p class="section-intro">
+        La app corre sobre <strong>Expo SDK 54</strong> y habla con la API hermana <code>api-reporte-ciudadano</code> (Compose). Del lado del <strong>vecino</strong>, el flujo de reporte es de cinco pasos con foto obligatoria, GPS, texto o voz, adhesión a duplicados cercanos, cola offline en SQLite y push al cambiar el estado. Del lado del <strong>operador</strong>, la bandeja filtra y asigna; el detalle cambia estado, marca duplicado, corrige zona y sube la foto del arreglo; también se puede escanear el QR. El <strong>invitado</strong> mira el mapa público sin cuenta. Las zonas se consultan, no se administran. Abajo: pantallas, componentes, estructura y contrato con la API.
+      </p>
+      <div class="callout">
+        <strong>Por qué existe esta app.</strong> Hoy el Centro de Atención al Vecino carga todo a mano en una planilla compartida. El trimestre pasado cargaron catorce veces el mismo bache por llamadas repetidas, una rama mal anotada tardó tres semanas en atenderse y cortó la luz de media manzana, y el intendente se enteró de un pozo por Facebook en vez de por el propio equipo. La detección de duplicados a 50&nbsp;m, el número de seguimiento y los avisos automáticos existen puntualmente para que esas tres cosas no vuelvan a pasar.
+      </div>
+      <div class="quote">"El vecino no se enoja porque el bache tarde. Se enoja porque nadie le dice nada."<span>— Claudia Benítez, Centro de Atención al Vecino de Gualeguaychú</span></div>
+    </section>
+
+    <!-- ===================== VECINO ===================== -->
+    <div class="role-banner vecino"><strong>Sin sesión / invitado</strong> — el mapa se mira sin cuenta. El vecino se identifica en <code>register</code> (también sirve para reingresar); el operador entra por <code>login</code>.</div>
+
+    <section id="p1">
+      <div class="screen">
+        <div class="screen-head">
+          <div>
+            <span class="screen-num">Pantalla 1</span>
+            <h3>Mapa público</h3>
+          </div>
+          <span class="screen-path">src/app/(publico)/index.tsx</span>
+        </div>
+        <ul>
+          <li>Mapa de la ciudad con los reportes públicos. No muestra quién los hizo</li>
+          <li>Filtros por tipo de problema y por estado, y la opción "Cerca mío"</li>
+          <li>Resumen: "Hay X reportes cerca tuyo"</li>
+          <li>Salidas: Generar reporte (o Identificarme / No soy yo si ya hubo vecino), y "Acceso para operadores municipales"</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="p2">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 2</span><h3>Registro del vecino</h3></div>
+          <span class="screen-path">src/app/(publico)/register.tsx</span>
+        </div>
+        <ul>
+          <li>Nombre, email, teléfono y <strong>contraseña</strong> (mínimo 8 caracteres). La API la exige</li>
+          <li>Sirve para tres casos: primer reporte (o adhesión) creando la cuenta, reingreso del vecino, y sumarse a un reporte existente</li>
+          <li>Sin internet, el primer reporte se encola en el teléfono y se sube al volver la conexión</li>
+          <li>Reingreso rápido con rostro o PIN vía <code>expo-local-authentication</code>, si el vecino lo eligió</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="p3">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 3</span><h3>Login del operador</h3></div>
+          <span class="screen-path">src/app/(publico)/login.tsx</span>
+        </div>
+        <ul>
+          <li>Email y contraseña de la cuenta municipal</li>
+          <li>Preferencia de reingreso: rostro, PIN o datos. El token vive en <code>expo-secure-store</code> (nunca en el kv-store)</li>
+          <li>Al entrar, el layout raíz muestra el grupo <code>(operador)</code> y oculta el mapa público</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="role-banner vecino"><strong>Vecino identificado</strong> — tabs: Inicio, Reportar y Mis reportes. El detalle del reclamo es ruta aparte. No hay pantalla de perfil.</div>
+
+    <section id="p4">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 4</span><h3>Home</h3></div>
+          <span class="screen-path">src/app/(tabs)/index.tsx → MapaCiudadano</span>
+        </div>
+        <ul>
+          <li>Saludo con el nombre del vecino sobre el mapa de la ciudad</li>
+          <li>Mapa con reportes coloreados por estado; filtros por tipo y estado; chip "Cerca mío"</li>
+          <li>Resumen "Hay X reportes cerca tuyo" / "Mostramos los reportes de la ciudad"</li>
+          <li>Al tocar un pin, tarjeta con acceso al detalle <code>/reclamo/:id</code></li>
+          <li>Reportar y Mis reportes viven en la barra de tabs (FAB central → <code>/reporte/nuevo</code>)</li>
+          <li>Cerrar sesión desde el avatar</li>
+          <li>Los avisos push al cambiar el estado los maneja <code>expo-notifications</code> + <code>POST /dispositivos</code> (si <code>avisosActivos</code>)</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="p5">
+      <div class="section-head"><h2>5. Crear reporte</h2><span class="section-tag">src/app/reporte/nuevo.tsx</span></div>
+      <p class="section-intro">Una sola pantalla, el asistente de cinco pasos. No hay una ruta por paso. Al enviar, navega al ticket.</p>
+
+      <div class="screen">
+        <div class="screen-two-col">
+          <div>
+            <h4>Paso 1 — Tipo de problema</h4>
+            <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:0;">Grid de iconos, selección única.</p>
+            <div class="type-grid">
+              <div>🚧 Bache</div>
+              <div>💡 Luminaria</div>
+              <div>🗑️ Basura</div>
+              <div>🌳 Rama / árbol</div>
+              <div>💧 Agua / cloaca</div>
+              <div>🚦 Semáforo</div>
+              <div>🚶 Vereda</div>
+              <div>📌 Otro</div>
+            </div>
+          </div>
+          <div>
+            <h4>Paso 2 — Foto (obligatoria)</h4>
+            <ul>
+              <li>Cámara en pantalla completa vía <code>expo-camera</code></li>
+              <li>Opción "Elegir de galería"</li>
+              <li>Vista previa con opción "Retomar"</li>
+              <li>"Agregar segunda foto" (opcional)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-two-col">
+          <div>
+            <h4>Paso 3 — Ubicación</h4>
+            <ul>
+              <li>GPS automático vía <code>expo-location</code></li>
+              <li>Pin arrastrable para corregir la posición</li>
+              <li>Dirección invertida (geocoding)</li>
+              <li>Atajo "Usar ubicación actual". Si niega el permiso, igual puede poner el punto a mano</li>
+              <li>Si hay un reporte del mismo tipo a menos de 50&nbsp;m, pregunta si es el mismo y deja sumarse</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Paso 4 — Descripción</h4>
+            <ul>
+              <li>Textarea con placeholder orientativo</li>
+              <li>Botón "Grabar nota de voz" vía <code>expo-audio</code></li>
+              <li>Timer de grabación en pantalla</li>
+              <li>Reproducción de la nota antes de enviar</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <h4 style="margin-bottom:10px;">Paso 5 — Confirmación</h4>
+        <div class="screen-two-col">
+          <ul>
+            <li>Preview de la foto tomada</li>
+            <li>Tipo de problema seleccionado</li>
+            <li>Ubicación en un mapa pequeño</li>
+            <li>Descripción o nota de voz adjunta</li>
+            <li>Zona calculada con el pin (<code>zonaParaCoordenadas</code>). No usa la zona del usuario</li>
+            <li>Si el pin cae fuera de los cuatro polígonos, queda en Zona Centro</li>
+            <li>Botón "Enviar reporte"</li>
+          </ul>
+          <div class="mock">
+            <div class="r"><span>GCHU-2026-00412</span><span>🎉</span></div>
+            <hr>
+            <div class="r"><span>Bache</span><span>Obras Públicas</span></div>
+            <div class="r"><span>Rocamora 1240</span><span>📍</span></div>
+            <div class="r"><span>Estado</span><span>Recibido</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="p6">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 6</span><h3>Número de seguimiento</h3></div>
+          <span class="screen-path">src/app/reporte/enviado.tsx</span>
+        </div>
+        <ul>
+          <li>Número de seguimiento visible, con el tipo, el área y la dirección</li>
+          <li>Si el vecino se sumó a un reporte existente, el ticket lo dice en vez de mostrar un alta nueva</li>
+          <li>Vuelta al inicio</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-soft);margin:16px 0 4px 0;">Los cinco estados, con el mismo color en el mapa, la bandeja y el detalle:</p>
+        <div class="status-legend">
+          <span class="chip recibido"><span class="d"></span>Recibido</span>
+          <span class="chip revision"><span class="d"></span>En revisión</span>
+          <span class="chip asignado"><span class="d"></span>Asignado</span>
+          <span class="chip resuelto"><span class="d"></span>Resuelto</span>
+          <span class="chip rechazado"><span class="d"></span>Rechazado</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="p7">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 7</span><h3>Mis reportes</h3></div>
+          <span class="screen-path">src/app/(tabs)/mis-reportes.tsx</span>
+        </div>
+        <ul>
+          <li>Pestañas <strong>Propios</strong> y <strong>Sumados</strong> (adhesiones)</li>
+          <li>Lista del más nuevo al más viejo; cada ítem muestra estado, dirección y antigüedad</li>
+          <li>Los pendientes offline aparecen como "Sin enviar" y se sincronizan al recuperar red o al abrir la pantalla</li>
+          <li>Entrar a uno abre <code>/reclamo/:id</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="p8">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 8</span><h3>Detalle del reclamo</h3></div>
+          <span class="screen-path">src/app/reclamo/[id].tsx</span>
+        </div>
+        <div class="screen-two-col">
+          <ul>
+            <li>Código de seguimiento, por ejemplo GCHU-2026-00412, y el QR para abrirlo en el mostrador sin tipear</li>
+            <li>Tipo y dirección</li>
+            <li>Estado: recibido, en revisión, asignado a cuadrilla, resuelto o rechazado</li>
+            <li>Cuántos vecinos se sumaron</li>
+            <li>Foto del problema y, si ya se resolvió, la foto del arreglo</li>
+            <li>Línea de tiempo: fecha, estado y comentario. Si está rechazado, el motivo está escrito</li>
+          </ul>
+          <div class="mock">
+            <div class="r"><span>GCHU-2026-00412</span><span>QR</span></div>
+            <hr>
+            <div class="r"><span>Bache · Rocamora 1240</span></div>
+            <div class="r"><span>Estado</span><span>Asignado a cuadrilla</span></div>
+            <div class="r"><span>3 vecinos se sumaron</span></div>
+            <hr>
+            <div class="r"><span>14/09 Recibido</span></div>
+            <div class="r"><span>15/09 En revisión</span></div>
+            <div class="r"><span>"Verificado en el lugar"</span></div>
+            <div class="r"><span>18/09 Asignado · Cuadrilla 2</span></div>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- ===================== OPERADOR ===================== -->
+    <div class="role-banner operador"><strong>Pantallas de operador</strong> — requieren autenticación municipal. El vecino no entra acá.</div>
+
+    <section id="p9">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 9</span><h3>Bandeja del operador</h3></div>
+          <span class="screen-path">src/app/(operador)/index.tsx</span>
+        </div>
+        <div class="screen-two-col">
+          <ul>
+            <li>Buscador de reportes</li>
+            <li>Pestañas: todos, pendientes, mi zona</li>
+            <li>Filtros por zona, tipo de problema y estado. Las opciones salen de los servicios</li>
+            <li>Por ítem: "Revisar" abre el detalle y "Asignar" abre el sheet de cuadrillas de esa zona</li>
+            <li>Escaneo de QR del reclamo (<code>QRScanner</code>) para abrir el detalle sin tipear el código</li>
+            <li>"Zonas y cuadrillas" abre <code>/zonas</code>; Cerrar sesión está en el header</li>
+            <li>Cambio de estado, duplicado, foto de arreglo y corrección de zona viven en el detalle</li>
+          </ul>
+          <div class="mock">
+            <div class="r"><span>GCHU-2026-00412 ⏳</span></div>
+            <div class="r"><span>Bache · Rocamora 1240</span></div>
+            <div class="r"><span>Zona Norte · hace 2 días</span></div>
+            <div class="r"><span>Norma Pereyra · 2 fotos</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="p10">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 10</span><h3>Detalle de gestión</h3></div>
+          <span class="screen-path">src/app/(operador)/reporte/[id].tsx</span>
+        </div>
+        <div class="screen-two-col">
+          <div>
+            <h4>Información visible</h4>
+            <ul>
+              <li>Código, estado, tipo, dirección y zona</li>
+              <li>Autor, cantidad de fotos y, si hay cuadrilla, su nombre</li>
+              <li>Foto del problema y, si existe, la foto del arreglo</li>
+              <li>Si es duplicado, el código del reporte original</li>
+              <li>Historial de cambios, con el comentario (incluye eventos de zona corregida)</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Acciones, cada una en su sheet</h4>
+            <ul>
+              <li><strong>Cambiar estado</strong> (<code>SheetEstado</code>): comentario obligatorio. Si el estado nuevo es resuelto, la foto del arreglo también</li>
+              <li><strong>Marcar duplicado</strong> (<code>SheetDuplicado</code>): elige otro reporte que no sea ya un duplicado</li>
+              <li><strong>Asignar</strong> (<code>SheetAsignar</code>): solo cuadrillas activas de la zona del reporte</li>
+              <li><strong>Corregir zona</strong> (<code>SheetZona</code>): si el pin cayó en la zona equivocada</li>
+              <li>Un reporte resuelto, rechazado o ya marcado como duplicado no se vuelve a gestionar</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="p11">
+      <div class="screen">
+        <div class="screen-head">
+          <div><span class="screen-num">Pantalla 11</span><h3>Zonas y cuadrillas</h3></div>
+          <span class="screen-path">src/app/(operador)/zonas.tsx</span>
+        </div>
+        <ul>
+          <li>Las cuatro zonas se listan siempre. La del operador se marca "Tu zona" y no se ocultan las demás</li>
+          <li>Cada tarjeta muestra nombre, referente y "N cuadrillas"</li>
+          <li>Debajo, cada cuadrilla con su nombre, especialidad y un chip Activa / Inactiva. El chip se lee, no se toca</li>
+          <li>Zona Este, sin cuadrillas: "Todavía no hay cuadrillas en esta zona."</li>
+          <li>El operador no da de alta ni de baja zonas ni cuadrillas. El pedido no lo incluye, y <code>Zona</code> no tiene un campo de estado</li>
+          <li>La zona del reporte sale del pin al crearlo, no de esta pantalla. El filtro por zona está en la bandeja</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== COMPONENTES ===================== -->
+    <section id="componentes">
+      <div class="section-head"><h2>Componentes</h2><span class="section-tag">src/components/</span></div>
+      <p class="section-intro">Agrupados por carpeta. Las pantallas arman la navegación; estas piezas arman el contenido.</p>
+      <div class="comp-grid">
+        <div class="comp"><span class="name">reporte/asistente</span><span class="desc">Los cinco pasos en una sola pantalla, más el borrador en curso.</span></div>
+        <div class="comp"><span class="name">reporte/paso-*</span><span class="desc">Tipo, foto, ubicación, descripción y confirmación. La confirmación muestra la zona del pin.</span></div>
+        <div class="comp"><span class="name">reporte/ticket · nota-de-voz</span><span class="desc">Constancia con el código; grabación y reproducción de audio con expo-audio.</span></div>
+        <div class="comp"><span class="name">operador/sheet-estado</span><span class="desc">Cambio de estado con comentario. Pide la foto del arreglo si se resuelve.</span></div>
+        <div class="comp"><span class="name">operador/sheet-duplicado · sheet-asignar</span><span class="desc">Original del duplicado; cuadrillas activas de la zona del reporte.</span></div>
+        <div class="comp"><span class="name">operador/sheet-zona · qr-scanner</span><span class="desc">Corregir zona del reclamo; escanear el QR desde la bandeja.</span></div>
+        <div class="comp"><span class="name">operador/tarjeta-zona</span><span class="desc">Zona, referente, cantidad de cuadrillas y el chip de solo lectura.</span></div>
+        <div class="comp"><span class="name">mapa/ · foto/</span><span class="desc">Mapa nativo/web y captura a pantalla completa con expo-camera.</span></div>
+        <div class="comp"><span class="name">ingreso/ · avisos/</span><span class="desc">Desbloqueo (rostro/PIN) para vecino y operador; escucha de push y de red para la cola.</span></div>
+        <div class="comp"><span class="name">ui/</span><span class="desc">Botón, campo, carga, insignia de estado, icono de categoría y header naranja del operador.</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== FLUJOS ===================== -->
+    <section id="flujos">
+      <div class="section-head"><h2>Flujos principales</h2><span class="section-tag">end-to-end</span></div>
+      <p class="section-intro">Cuatro recorridos que atraviesan varias pantallas y definen la lógica de negocio de la app.</p>
+
+      <div class="flow">
+        <div class="flow-title">Flujo 1 — Crear reporte (vecino)</div>
+        <div class="flow-step"><div class="num">1</div><div class="body"><strong>Seleccionar tipo de problema</strong></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="body"><strong>Tomar foto</strong><span>Obligatoria antes de continuar</span></div></div>
+        <div class="flow-step"><div class="num">3</div><div class="body"><strong>Confirmar ubicación</strong><span>Por GPS o ajuste manual del pin</span></div></div>
+        <div class="flow-step"><div class="num">4</div><div class="body"><strong>Describir el problema</strong><span>Por texto o nota de voz</span></div></div>
+        <div class="flow-step"><div class="num">5</div><div class="body"><strong>Confirmar y enviar</strong></div></div>
+        <div class="flow-step"><div class="num">6</div><div class="body"><strong>Mostrar número de seguimiento</strong></div></div>
+        <div class="flow-step branch"><div class="num">7</div><div class="body"><strong>Sin señal</strong><span>Entra a SQLite cola_reportes con sincronizado: false</span></div></div>
+        <div class="flow-step branch"><div class="num">8</div><div class="body"><strong>Recupera señal</strong><span>expo-network dispara el sync; también al abrir Mis reportes</span></div></div>
+      </div>
+
+      <div class="flow">
+        <div class="flow-title">Flujo 2 — Detección de duplicados</div>
+        <div class="flow-step"><div class="num">1</div><div class="body"><strong>El vecino selecciona la ubicación</strong></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="body"><strong>El sistema busca reportes a menos de 50&nbsp;m</strong></div></div>
+        <div class="flow-step branch"><div class="num">3a</div><div class="body"><strong>"¿Es este el mismo problema?" → Sí</strong><span>El vecino se adhiere al reporte existente</span></div></div>
+        <div class="flow-step branch"><div class="num">3b</div><div class="body"><strong>"¿Es este el mismo problema?" → No</strong><span>Continúa con la carga de un reporte nuevo</span></div></div>
+      </div>
+
+      <div class="flow">
+        <div class="flow-title">Flujo 3 — Gestión del operador</div>
+        <div class="flow-step"><div class="num">1</div><div class="body"><strong>Inicia sesión</strong></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="body"><strong>Ve la bandeja</strong><span>Pestañas todos, pendientes y mi zona, más filtros</span></div></div>
+        <div class="flow-step"><div class="num">3</div><div class="body"><strong>Abre el detalle</strong><span>Fotos, zona, autor e historial</span></div></div>
+        <div class="flow-step"><div class="num">4</div><div class="body"><strong>Cambia el estado</strong><span>Con comentario. Si lo resuelve, sube la foto del arreglo</span></div></div>
+        <div class="flow-step"><div class="num">5</div><div class="body"><strong>Asigna una cuadrilla activa de esa zona</strong><span>Desde la bandeja o desde el detalle. No ofrece las de otra zona</span></div></div>
+        <div class="flow-step"><div class="num">6</div><div class="body"><strong>O lo marca como duplicado / corrige la zona</strong></div></div>
+        <div class="flow-step"><div class="num">7</div><div class="body"><strong>El vecino lo ve en el detalle del reclamo</strong><span>Y recibe push si tiene avisosActivos y el dispositivo registrado</span></div></div>
+      </div>
+
+      <div class="flow">
+        <div class="flow-title">Flujo 4 — Seguir el reclamo (vecino)</div>
+        <div class="flow-step"><div class="num">1</div><div class="body"><strong>Entra a Mis reportes</strong><span>Del más nuevo al más viejo</span></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="body"><strong>Abre el detalle</strong><span>Estado, foto, adhesiones e historial con comentario</span></div></div>
+        <div class="flow-step"><div class="num">3</div><div class="body"><strong>Si está resuelto, ve la foto del arreglo</strong></div></div>
+        <div class="flow-step"><div class="num">4</div><div class="body"><strong>Si está rechazado, lee el motivo</strong></div></div>
+        <div class="flow-step"><div class="num">5</div><div class="body"><strong>En el mostrador muestra el QR</strong><span>La ventanilla abre el mismo reporte sin tipear el código</span></div></div>
+      </div>
+    </section>
+
+    <!-- ===================== ESTRUCTURA ===================== -->
+    <section id="estructura">
+      <div class="section-head"><h2>Estructura de archivos</h2><span class="section-tag">Expo Router</span></div>
+      <p class="section-intro">Carpetas reales del proyecto. Las pantallas viven en <code>src/app</code> con Expo Router. Los datos no se importan desde las pantallas: pasan por <code>src/servicios</code>.</p>
+      <div class="tree">src/
+├── app/
+│   ├── _layout.tsx                 <span class="cm"># Público, vecino u operador</span>
+│   ├── (publico)/
+│   │   ├── index.tsx               <span class="cm"># Mapa público / invitado</span>
+│   │   ├── register.tsx            <span class="cm"># Identificación del vecino (+ contraseña)</span>
+│   │   └── login.tsx               <span class="cm"># Login del operador</span>
+│   ├── (tabs)/                     <span class="cm"># Vecino identificado</span>
+│   │   ├── index.tsx               <span class="cm"># Inicio → MapaCiudadano</span>
+│   │   ├── reportar.tsx            <span class="cm"># Redirige a /reporte/nuevo</span>
+│   │   └── mis-reportes.tsx        <span class="cm"># Propios, sumados y cola offline</span>
+│   ├── reclamo/
+│   │   └── <span class="c2">[id]</span>.tsx                <span class="cm"># Detalle del vecino + QR</span>
+│   ├── (operador)/
+│   │   ├── index.tsx               <span class="cm"># Bandeja + escáner QR</span>
+│   │   ├── zonas.tsx               <span class="cm"># Listado, sin alta ni baja</span>
+│   │   └── reporte/
+│   │       └── <span class="c2">[id]</span>.tsx            <span class="cm"># Detalle de gestión</span>
+│   └── reporte/
+│       ├── nuevo.tsx               <span class="c1">Asistente de 5 pasos</span>
+│       └── enviado.tsx             <span class="c1">Ticket</span>
+│
+├── components/
+│   ├── reporte/                    <span class="cm"># asistente, pasos, ticket, nota de voz</span>
+│   ├── operador/                   <span class="cm"># sheets, QR, tarjeta de zona</span>
+│   ├── mapa/ · foto/ · avisos/     <span class="cm"># mapa, cámara, push/red</span>
+│   ├── ingreso/                    <span class="cm"># rostro / PIN / preferencia</span>
+│   └── ui/
+│
+├── servicios/                      <span class="cm"># api, auth, reportes, bandeja, zonas, push, SQLite…</span>
+├── mocks/                          <span class="cm"># datos de demo / tests</span>
+├── tipos/
+└── contexto/                       <span class="cm"># sesion + origen-reporte</span></div>
+    </section>
+
+    <!-- ===================== PRIORIDADES ===================== -->
+    <section id="prioridades">
+      <div class="section-head"><h2>Prioridades de desarrollo</h2><span class="section-tag">roadmap</span></div>
+      <p class="section-intro">Tres fases de entrega. En el código actual las tres están cubiertas (MVP, core y mejoras: push, voz, QR, adhesiones, foto de arreglo).</p>
+      <div class="phase-grid">
+        <div class="phase">
+          <div class="ph-head"><h4>Fase 1</h4><span class="ph-tag">MVP</span></div>
+          <ul>
+            <li>Login y registro</li>
+            <li>Flujo completo de creación de reporte</li>
+            <li>Lista "Mis reportes"</li>
+            <li>Detalle de reporte</li>
+            <li>Persistencia local sin señal</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="ph-head"><h4>Fase 2</h4><span class="ph-tag">Core</span></div>
+          <ul>
+            <li>Mapa de la ciudad</li>
+            <li>Detección de duplicados</li>
+            <li>Bandeja de operador</li>
+            <li>Cambios de estado</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="ph-head"><h4>Fase 3</h4><span class="ph-tag">Mejoras</span></div>
+          <ul>
+            <li>Notificaciones push</li>
+            <li>Nota de voz</li>
+            <li>Fotos de arreglo</li>
+            <li>Código QR</li>
+            <li>Adhesiones a reportes</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ALCANCE ===================== -->
+    <section id="alcance">
+      <div class="section-head"><h2>Fuera de esta versión</h2><span class="section-tag">scope</span></div>
+      <p class="section-intro">Cosas que Claudia pidió dejar afuera de la primera entrega. Escritas acá para no sumarlas "de paso" y correr la fecha sin darnos cuenta.</p>
+      <div class="callout warn">
+        <ul>
+          <li>Turnos, trámites y pagos municipales — esto es solo reclamos</li>
+          <li>Chat entre el vecino y el operador — alcanza con los cambios de estado con comentario</li>
+          <li>Estadísticas y tableros para las secretarías</li>
+          <li>Integración con el sistema de expedientes de la Municipalidad</li>
+          <li>Encuesta de satisfacción al cerrar el reclamo</li>
+          <li>Alta y baja de zonas o cuadrillas. El operador las consulta; no las crea ni las activa o desactiva</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== REGLAS NO NEGOCIABLES ===================== -->
+    <section id="accesibilidad">
+      <div class="section-head"><h2>Reglas no negociables</h2><span class="section-tag">cruzan todas las pantallas</span></div>
+      <p class="section-intro">No son de una pantalla puntual — aplican en toda la app y son las que Claudia remarcó como no negociables.</p>
+      <div class="screen">
+        <ul>
+          <li>Sin foto no hay reporte. Si el vecino no da permiso de cámara, la app se lo explica con buenos modos y le ofrece abrir la configuración del sistema — no lo deja trabado sin salida.</li>
+          <li>Si niega la ubicación, tiene que poder reportar igual poniendo el punto a mano en el mapa.</li>
+          <li>Buena parte de quienes reclaman tiene más de 60 años: letra grande, botones grandes, y la nota de voz como alternativa real a escribir, no un agregado menor.</li>
+          <li>El mapa público muestra el reporte, nunca quién lo hizo.</li>
+          <li>Sin señal la app anda igual: el reporte se guarda en el teléfono con <code>sincronizado: false</code> y se sube solo al volver la conexión, sin que el vecino tenga que acordarse de nada.</li>
+          <li>Crear un reporte tiene que poder hacerse parado en la vereda, en menos de un minuto.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== TECNOLOGÍAS ===================== -->
+    <section id="tecnologias">
+      <div class="section-head"><h2>Con qué se construye</h2><span class="section-tag">stack base</span></div>
+      <table>
+        <thead><tr><th>Qué</th><th>Con qué</th></tr></thead>
+        <tbody>
+          <tr><td>Framework</td><td class="tech-name">Expo SDK 54 · React Native 0.81 · React 19</td></tr>
+          <tr><td>Lenguaje</td><td class="tech-name">TypeScript 5.9</td></tr>
+          <tr><td>Navegación</td><td class="tech-name">Expo Router (file-based)</td></tr>
+          <tr><td>HTTP</td><td class="tech-name">Axios → api-reporte-ciudadano</td></tr>
+          <tr><td>Estilos</td><td class="tech-name">StyleSheet (sin NativeWind / Unistyles)</td></tr>
+          <tr><td>Entrega</td><td class="tech-name">EAS · development build (push/FCM no van en Expo Go)</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">Capacidades del dispositivo</h3>
+      <table>
+        <thead><tr><th>Capacidad</th><th>Paquete</th><th>Para qué</th></tr></thead>
+        <tbody>
+          <tr><td>Cámara</td><td class="tech-name">expo-camera (CameraView)</td><td>Foto obligatoria y lectura de QR en el mostrador</td></tr>
+          <tr><td>Galería</td><td class="tech-name">expo-image-picker</td><td>Adjuntar una foto sacada antes</td></tr>
+          <tr><td>Ubicación y mapa</td><td class="tech-name">expo-location + react-native-maps</td><td>Punto del reclamo, corrección manual, mapa de la ciudad</td></tr>
+          <tr><td>Notificaciones</td><td class="tech-name">expo-notifications</td><td>Aviso ante cada cambio de estado</td></tr>
+          <tr><td>Persistencia y red</td><td class="tech-name">expo-sqlite · kv-store · expo-network</td><td>Tablas borradores_reporte y cola_reportes; preferencias no sensibles; sync al volver internet</td></tr>
+          <tr><td>Seguridad</td><td class="tech-name">expo-secure-store + expo-local-authentication</td><td>Token de sesión; reingreso con rostro o PIN (vecino y operador)</td></tr>
+          <tr><td>Háptica</td><td class="tech-name">expo-haptics</td><td>Feedback táctil en acciones clave</td></tr>
+          <tr><td>Multimedia</td><td class="tech-name">expo-audio</td><td>Grabar y reproducir la descripción hablada</td></tr>
+          <tr><td>QR</td><td class="tech-name">expo-camera + react-native-qrcode-svg</td><td>Mostrar el QR en el detalle y leerlo en la bandeja</td></tr>
+          <tr><td>Íconos</td><td class="tech-name">@expo/vector-icons</td><td>Ionicons y MaterialCommunityIcons</td></tr>
+          <tr><td>Gestos</td><td class="tech-name">react-native-gesture-handler · reanimated</td><td>Mapa, sheets e interacción con el pin</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn" style="margin-top:22px;">
+        <strong>Notas de stack que conviene no mezclar con docs viejas:</strong>
+        <ul>
+          <li><code>expo-av</code> ya no — el audio de la nota de voz es <code>expo-audio</code></li>
+          <li>Push, SQLite nativo y mapa Android se prueban en <em>development build</em>, no en Expo Go</li>
+          <li>Los íconos del proyecto son <code>@expo/vector-icons</code> (Ionicons / MaterialCommunityIcons)</li>
+          <li>Hace falta <code>google-services.json</code> + <code>EXPO_PUBLIC_GOOGLE_MAPS_API_KEY</code> para FCM y Maps en Android</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== MODELO DE DATOS ===================== -->
+    <section id="modelo">
+      <div class="section-head"><h2>Modelo de datos</h2><span class="section-tag">src/tipos/</span></div>
+      <p class="section-intro">La API real ya existe: <code>api-reporte-ciudadano</code> (Compose). Los tipos en <code>src/tipos/</code> siguen siendo el contrato compartido; la app adapta respuestas Axios en <code>src/servicios/api.ts</code>. Los mocks quedan para Jest y datos de apoyo en UI.</p>
+
+      <h3 class="sub">Reporte</h3>
+      <table>
+        <thead><tr><th>Propiedad</th><th>Tipo</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td class="tech-name">string</td><td>"rep-00412"</td></tr>
+          <tr><td>codigo</td><td class="tech-name">string</td><td>"GCHU-2026-00412"</td></tr>
+          <tr><td>tipoId</td><td class="tech-name">string</td><td>"tip-bache"</td></tr>
+          <tr><td>descripcion</td><td class="tech-name">string | null</td><td>"Pozo grande, pasa el agua"</td></tr>
+          <tr><td>audioUrl</td><td class="tech-name">string | null</td><td>nota de voz, si la grabó</td></tr>
+          <tr><td>fotos</td><td class="tech-name">Foto[]</td><td>al menos una</td></tr>
+          <tr><td>coordenadas</td><td class="tech-name">Coordenadas</td><td>{ latitud, longitud }</td></tr>
+          <tr><td>direccion</td><td class="tech-name">string</td><td>"Rocamora 1240"</td></tr>
+          <tr><td>zonaId</td><td class="tech-name">string</td><td>"zon-norte"</td></tr>
+          <tr><td>estado</td><td class="tech-name">EstadoReporte</td><td>"asignado"</td></tr>
+          <tr><td>autorId</td><td class="tech-name">string</td><td>"usr-084"</td></tr>
+          <tr><td>cuadrillaId</td><td class="tech-name">string | null</td><td>"cua-02"</td></tr>
+          <tr><td>duplicadoDe</td><td class="tech-name">string | null</td><td>null</td></tr>
+          <tr><td>fotoArreglo</td><td class="tech-name">Foto | null</td><td>la foto al resolver</td></tr>
+          <tr><td>adhesiones</td><td class="tech-name">number</td><td>3</td></tr>
+          <tr><td>creadoEn</td><td class="tech-name">string (ISO)</td><td>"2026-09-14T10:22:00-03:00"</td></tr>
+          <tr><td>sincronizado</td><td class="tech-name">boolean</td><td>false mientras está en la cola</td></tr>
+        </tbody>
+      </table>
+
+      <div class="screen-two-col" style="margin-top:22px;">
+        <div>
+          <h3 class="sub">TipoDeReporte</h3>
+          <table>
+            <thead><tr><th>Propiedad</th><th>Tipo</th></tr></thead>
+            <tbody>
+              <tr><td>id, nombre, icono, color</td><td class="tech-name">string</td></tr>
+              <tr><td>areaResponsable</td><td class="tech-name">string</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 class="sub">CambioDeEstado</h3>
+          <table>
+            <thead><tr><th>Propiedad</th><th>Tipo</th></tr></thead>
+            <tbody>
+              <tr><td>id, reporteId</td><td class="tech-name">string</td></tr>
+              <tr><td>estado</td><td class="tech-name">EstadoReporte</td></tr>
+              <tr><td>comentario, operadorId</td><td class="tech-name">string | null</td></tr>
+              <tr><td>fechaHora</td><td class="tech-name">string (ISO)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="screen-two-col" style="margin-top:22px;">
+        <div>
+          <h3 class="sub">Usuario</h3>
+          <table>
+            <thead><tr><th>Propiedad</th><th>Tipo</th></tr></thead>
+            <tbody>
+              <tr><td>id, nombre, email</td><td class="tech-name">string</td></tr>
+              <tr><td>telefono</td><td class="tech-name">string | null</td></tr>
+              <tr><td>rol</td><td class="tech-name">"vecino" | "operador"</td></tr>
+              <tr><td>zonaId</td><td class="tech-name">string | null</td></tr>
+              <tr><td>avisosActivos</td><td class="tech-name">boolean</td></tr>
+              <tr><td>creadoEn</td><td class="tech-name">string (ISO)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 class="sub">Zona y Cuadrilla</h3>
+          <table>
+            <thead><tr><th>Propiedad</th><th>Tipo</th></tr></thead>
+            <tbody>
+              <tr><td>Zona: id, nombre, referente</td><td class="tech-name">string</td></tr>
+              <tr><td>Zona: limite</td><td class="tech-name">Coordenadas[]</td></tr>
+              <tr><td>Cuadrilla: id, nombre, zonaId, especialidad</td><td class="tech-name">string</td></tr>
+              <tr><td>Cuadrilla: activa</td><td class="tech-name">boolean</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3 class="sub">Los cinco estados, sin excepción</h3>
+      <div class="status-legend">
+        <span class="chip recibido"><span class="d"></span>recibido</span>
+        <span class="chip revision"><span class="d"></span>en_revision</span>
+        <span class="chip asignado"><span class="d"></span>asignado</span>
+        <span class="chip resuelto"><span class="d"></span>resuelto</span>
+        <span class="chip rechazado"><span class="d"></span>rechazado</span>
+      </div>
+    </section>
+
+    <!-- ===================== CONTRATO DE API ===================== -->
+    <section id="api">
+      <div class="section-head"><h2>Contrato de API y convenciones</h2><span class="section-tag">api-reporte-ciudadano</span></div>
+      <p class="section-intro">Forma real de las respuestas. La app apunta con <code>EXPO_PUBLIC_API_URL</code> / <code>_EMULADOR</code> / <code>_TELEFONO</code>. En tests (<code>NODE_ENV=test</code>) los servicios siguen usando mocks.</p>
+      <div class="tree">// éxito
+{ "datos": [ ... ], "meta": { "total": 128, "pagina": 1, "porPagina": 20 } }
+
+// error
+{ "error": { "codigo": "FOTO_REQUERIDA", "mensaje": "El reporte necesita al menos una foto." } }</div>
+      <div class="comp-grid" style="margin-top:20px;">
+        <div class="comp"><span class="name">ids</span><span class="desc">Siempre cadenas de texto, nunca números.</span></div>
+        <div class="comp"><span class="name">fechas</span><span class="desc">Texto ISO 8601 con zona ("2026-09-14T10:22:00-03:00"). Nunca un objeto Date ni un número.</span></div>
+        <div class="comp"><span class="name">claves</span><span class="desc">Siempre en camelCase.</span></div>
+        <div class="comp"><span class="name">valores ausentes</span><span class="desc">Un campo sin valor viene como null — nunca ausente, nunca cadena vacía.</span></div>
+        <div class="comp"><span class="name">sesión</span><span class="desc">Authorization: Bearer &lt;token&gt; vía Axios. Token en expo-secure-store, nunca en kv-store.</span></div>
+        <div class="comp"><span class="name">push</span><span class="desc">POST /dispositivos con el Expo Push Token; DELETE al cerrar. Avisos al autor si avisosActivos.</span></div>
+        <div class="comp"><span class="name">fotos API</span><span class="desc">La API manda fotos con momento problema|arreglo; la app las separa en fotos[] y fotoArreglo.</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== MOCKS ===================== -->
+    <section id="mocks">
+      <div class="section-head"><h2>Estrategia de mocks y servicios</h2><span class="section-tag">src/mocks/ · src/servicios/</span></div>
+      <p class="section-intro">La API real ya está cableada. Los mocks siguen vivos para Jest y para catálogos de apoyo en UI.</p>
+      <div class="screen">
+        <ul>
+          <li>Los tipos viven en <code>src/tipos/</code> y son el contrato compartido con la API</li>
+          <li>Los datos de demo/test van en <code>src/mocks/</code>, tipados contra esos mismos tipos</li>
+          <li>Las pantallas no hablan con Axios directo: pasan por <code>src/servicios/</code> (<code>api.ts</code>, <code>auth.ts</code>, <code>reportes.ts</code>, <code>bandeja.ts</code>, <code>zonas.ts</code>, <code>cuadrillas.ts</code>, <code>notificaciones.ts</code>, <code>ubicacion.ts</code>, <code>mapa.ts</code>, <code>base-datos.ts</code>…)</li>
+          <li><code>enPrueba()</code> hace que en Jest se usen mocks; en la app se llama a la API</li>
+          <li>Los mocks de test cubren los casos feos: sin audio, rechazado con motivo largo, lista vacía, varios cambios de estado, error de red / sin conexión</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="doc-footer">App de Reporte Ciudadano — Gualeguaychú · Especificación alineada al código actual (Expo SDK 54 + api-reporte-ciudadano) · a partir del pedido de Claudia Benítez · actualizado nov 2026</div>
+  </main>
+</div>
+
+<script>
+  // Mobile nav toggle
+  const toggle = document.getElementById('navToggle');
+  const navScroll = document.getElementById('navScroll');
+  if(toggle){
+    toggle.addEventListener('click', () => navScroll.classList.toggle('open'));
+  }
+  // On mobile, close the index after tapping a section so it doesn't stay covering the content
+  if(navScroll){
+    navScroll.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      if(window.innerWidth <= 920) navScroll.classList.remove('open');
+    }));
+  }
+
+  // Scrollspy for active section link
+  const links = document.querySelectorAll('.nav-group a');
+  const targets = Array.from(links).map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const id = '#' + entry.target.id;
+      const link = document.querySelector('.nav-group a[href="'+id+'"]');
+      if(!link) return;
+      if(entry.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+  targets.forEach(t => observer.observe(t));
+</script>
+
+
+</body></html>
