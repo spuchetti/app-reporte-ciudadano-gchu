@@ -36,10 +36,10 @@ describe("servicios/bandeja", () => {
     expect(esPendiente("rechazado")).toBe(false);
   });
 
-  test("no permite reasignar si ya hay cuadrilla o está asignado", () => {
+  test("solo permite asignar en en_revision sin cuadrilla", () => {
     expect(
       puedeAsignar({ estado: "recibido", cuadrillaId: null }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       puedeAsignar({ estado: "en_revision", cuadrillaId: null }),
     ).toBe(true);

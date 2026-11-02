@@ -21,17 +21,11 @@ export function esPendiente(estado: EstadoReporte) {
   return estado !== "resuelto" && estado !== "rechazado";
 }
 
-/** Solo la primera asignación: si ya hay cuadrilla, no se reasigna. */
+/** Solo la primera asignación: `en_revision` y sin cuadrilla. */
 export function puedeAsignar(
   reporte: Pick<Reporte, "estado" | "cuadrillaId">,
 ) {
-  if (!esPendiente(reporte.estado)) {
-    return false;
-  }
-  if (reporte.cuadrillaId) {
-    return false;
-  }
-  return reporte.estado !== "asignado";
+  return reporte.estado === "en_revision" && !reporte.cuadrillaId;
 }
 
 export const ESTADOS_GESTION: EstadoReporte[] = [
