@@ -32,6 +32,7 @@ import {
 } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
 import { obtenerTiposReporte } from "@/servicios/reportes";
+import { esDireccionAceptable } from "@/servicios/ubicacion";
 import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
@@ -54,6 +55,7 @@ export function AsistenteReporte() {
   const [sumando, setSumando] = useState(false);
   const [revisandoFoto, setRevisandoFoto] = useState(inicial.fotos.length > 0);
   const [cercanoElegido, setCercanoElegido] = useState<Reporte | null>(null);
+  const [mapaOcupado, setMapaOcupado] = useState(false);
 
   const vecinoIdentificado =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
@@ -68,7 +70,9 @@ export function AsistenteReporte() {
       })
       .catch(() => {
         if (activo) {
-          setError("No se pudieron cargar los tipos de reporte.");
+          setError(
+            "No hay tipos de reporte guardados. Conectate una vez para sincronizarlos.",
+          );
         }
       });
     return () => {
@@ -77,6 +81,7 @@ export function AsistenteReporte() {
   }, []);
 
   useEffect(() => {
+    setMapaOcupado(false);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [paso]);
 
@@ -116,7 +121,14 @@ export function AsistenteReporte() {
       return fotos.length >= 1;
     }
     if (paso === 3) {
-      return latitud != null && longitud != null;
+      if (latitud == null || longitud == null) {
+        return false;
+      }
+      // Sumarse a un cercano no exige re-geocodear la calle del pin nuevo.
+      if (cercanoElegido) {
+        return true;
+      }
+      return esDireccionAceptable(direccion);
     }
     return true;
   }
@@ -129,7 +141,10 @@ export function AsistenteReporte() {
       return "El reporte necesita al menos una foto.";
     }
     if (paso === 3) {
-      return "Marcá la ubicación en el mapa.";
+      if (latitud == null || longitud == null) {
+        return "Marcá la ubicación en el mapa.";
+      }
+      return "Necesitamos la calle. Arrastrá el pin o tocá el mapa.";
     }
     return null;
   }
@@ -146,9 +161,12 @@ export function AsistenteReporte() {
     }
     if (paso === 3) {
       limpiarAdhesionPendiente();
-    }
-    if (paso === 3 && direccion.trim().length < 5) {
-      setDireccion("Gualeguaychú");
+      if (!esDireccionAceptable(direccion)) {
+        setError(
+          "Necesitamos la calle del lugar. Arrastrá el pin o tocá el mapa hasta que aparezca.",
+        );
+        return;
+      }
     }
     if (paso < PASOS_REPORTE) {
       setPaso((actual) => actual + 1);
@@ -212,12 +230,6 @@ export function AsistenteReporte() {
       return;
     }
 
-    try {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      // Sin motor háptico no frenamos el envío.
-    }
-
     if (!vecinoIdentificado) {
       router.push("/register");
       return;
@@ -226,6 +238,11 @@ export function AsistenteReporte() {
     setEnviando(true);
     try {
       await enviarReporte(listo);
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch {
+        // Sin motor háptico no frenamos.
+      }
     } catch (err) {
       setError(
         esErrorServicio(err)
@@ -245,6 +262,7 @@ export function AsistenteReporte() {
       <StatusBar style="dark" />
       <ScrollView
         ref={scrollRef}
+        scrollEnabled={!mapaOcupado}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scroll,
@@ -282,6 +300,7 @@ export function AsistenteReporte() {
               direccion={direccion}
               onUbicacion={onUbicacion}
               onElegirCercano={onElegirCercano}
+              onMapaOcupado={setMapaOcupado}
               sumando={sumando}
             />
           ) : null}

@@ -13,6 +13,7 @@ import {
   pedirReportes,
   subirArchivo,
 } from "@/servicios/api";
+import { guardarValorKV, leerValorKV } from "@/servicios/almacen-kv";
 import {
   eliminarReportePendienteSQLite,
   guardarReportePendienteSQLite,
@@ -20,7 +21,14 @@ import {
 } from "@/servicios/base-datos";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio, esErrorServicio } from "@/servicios/error";
-import { ZONA_FUERA, zonaParaCoordenadas } from "@/servicios/ubicacion";
+import { hayInternet } from "@/servicios/red";
+import {
+  DIRECCION_SIN_CONEXION,
+  direccionDesdeCoordenadas,
+  esDireccionCalle,
+  ZONA_FUERA,
+  zonaParaCoordenadas,
+} from "@/servicios/ubicacion";
 import {
   Adhesion,
   CambioDeEstado,
@@ -32,6 +40,96 @@ import {
 
 export { COORDENADAS_CENTRO } from "@/servicios/ubicacion";
 export const ZONA_POR_DEFECTO = "zon-centro";
+
+const CLAVE_CACHE_TIPOS = "cache:tipos-de-reporte";
+const CLAVE_CACHE_MIS_REPORTES = "cache:mis-reportes:";
+const CLAVE_CACHE_ADHESIONES = "cache:adhesiones:";
+
+type ListenerCola = () => void;
+const listenersCola = new Set<ListenerCola>();
+
+type ListenerSyncUi = (activo: boolean) => void;
+const listenersSyncUi = new Set<ListenerSyncUi>();
+
+/** La UI (p. ej. Mis reportes) se suscribe para refrescar sin pull manual. */
+export function alActualizarColaReportes(listener: ListenerCola) {
+  listenersCola.add(listener);
+  return () => {
+    listenersCola.delete(listener);
+  };
+}
+
+export function avisarColaReportesActualizada() {
+  for (const listener of listenersCola) {
+    listener();
+  }
+}
+
+/** Indicador de recarga al sincronizar por recuperación de red. */
+export function alEstadoSincronizacionRed(listener: ListenerSyncUi) {
+  listenersSyncUi.add(listener);
+  return () => {
+    listenersSyncUi.delete(listener);
+  };
+}
+
+export function avisarEstadoSincronizacionRed(activo: boolean) {
+  for (const listener of listenersSyncUi) {
+    listener(activo);
+  }
+}
+
+async function guardarListaCache(clave: string, lista: Reporte[]) {
+  try {
+    await guardarValorKV(clave, JSON.stringify(lista));
+  } catch {
+    // Caché best-effort.
+  }
+}
+
+async function leerListaCache(clave: string): Promise<Reporte[]> {
+  const crudo = await leerValorKV(clave);
+  if (!crudo) {
+    return [];
+  }
+  try {
+    const lista = JSON.parse(crudo) as Reporte[];
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+function mezclarPropiosYCola(remotos: Reporte[], pendientes: Reporte[]) {
+  const idsCola = new Set(pendientes.map((item) => item.id));
+  const sinDuplicar = remotos.filter((item) => !idsCola.has(item.id));
+  return [...pendientes, ...sinDuplicar].sort(
+    (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
+  );
+}
+
+function nuevoIdClienteReporte() {
+  const alfabeto = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let sufijo = "";
+  for (let i = 0; i < 12; i += 1) {
+    sufijo += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+  }
+  return `rep-${sufijo}`;
+}
+
+async function encolarReporteOffline(
+  reporte: Omit<Reporte, "id" | "codigo" | "creadoEn">,
+): Promise<Reporte> {
+  const offline: Reporte = {
+    ...reporte,
+    id: nuevoIdClienteReporte(),
+    codigo: codigoProvisorio(),
+    creadoEn: new Date().toISOString(),
+    sincronizado: false,
+  };
+  await guardarReportePendienteSQLite(offline);
+  return offline;
+}
 
 const ETIQUETA_ESTADO: Record<EstadoReporte, string> = {
   recibido: "Recibido",
@@ -55,7 +153,7 @@ export function etiquetaEstado(estado: EstadoReporte) {
   return ETIQUETA_ESTADO[estado];
 }
 
-export const ETIQUETA_PENDIENTE_SYNC = "Pendiente de sincronización";
+export const ETIQUETA_PENDIENTE_SYNC = "Sin enviar";
 
 export function etiquetaParaVecino(
   reporte: Pick<Reporte, "estado" | "sincronizado">,
@@ -127,6 +225,14 @@ export const obtenerReportePorId = async (
   id: string,
 ): Promise<Reporte | null> => {
   if (!enPrueba()) {
+    const pendientes = await listarReportesPendientesSQLite();
+    const local = pendientes.find(
+      (item) => item.id === id || item.codigo === id,
+    );
+    if (local) {
+      return { ...local, sincronizado: false };
+    }
+
     const ruta = /^GCHU-/i.test(id)
       ? `/reportes/codigo/${encodeURIComponent(id)}`
       : `/reportes/${encodeURIComponent(id)}`;
@@ -226,10 +332,11 @@ export function validarBorradorReporte(borrador: DatosBorradorReporte) {
     });
   }
 
-  if (borrador.direccion.trim().length < 5) {
+  // Validación liviana acá: la UI exige calle (no ciudad sola ni coordenadas).
+  if (borrador.direccion.trim().length < 3) {
     throw new ErrorServicio({
       codigo: "DIRECCION_INVALIDA",
-      mensaje: "No pudimos obtener la dirección. Mové el pin o usá tu ubicación.",
+      mensaje: "No pudimos obtener la calle. Mové el pin o tocá el mapa.",
     });
   }
 }
@@ -287,6 +394,10 @@ export const crearReporte = async (
   reporte: Omit<Reporte, "id" | "codigo" | "creadoEn">,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
+    if (!(await hayInternet())) {
+      return encolarReporteOffline(reporte);
+    }
+
     try {
       const fotos = [];
       for (const foto of reporte.fotos) {
@@ -296,29 +407,28 @@ export const crearReporte = async (
         fotos.push({ url });
       }
 
-      return await pedirReporte("/reportes", {
+      let audioUrl: string | null = reporte.audioUrl;
+      if (audioUrl && !/^https?:\/\//.test(audioUrl)) {
+        audioUrl = await subirArchivo(audioUrl);
+      }
+
+      const creado = await pedirReporte("/reportes", {
         method: "POST",
         body: JSON.stringify({
           tipoId: reporte.tipoId,
           descripcion: reporte.descripcion,
-          audioUrl: reporte.audioUrl,
+          audioUrl: audioUrl || null,
           fotos,
           coordenadas: reporte.coordenadas,
           direccion: reporte.direccion,
           creadoEn: new Date().toISOString(),
         }),
       });
+      // Envío online confirmado por la API: no es cola offline.
+      return { ...creado, sincronizado: true };
     } catch (error) {
       if (esErrorServicio(error) && error.codigo === "RED") {
-        const reporteOffline: Reporte = {
-          ...reporte,
-          id: `rep-local-${Date.now()}`,
-          codigo: codigoProvisorio(),
-          creadoEn: new Date().toISOString(),
-          sincronizado: false,
-        };
-        await guardarReportePendienteSQLite(reporteOffline);
-        return reporteOffline;
+        return encolarReporteOffline(reporte);
       }
       throw error;
     }
@@ -341,13 +451,75 @@ export const crearReporte = async (
   return nuevoReporte;
 };
 
+/** Tras identificar online, los reportes encolados con autor local pasan al id real. */
+export async function remapeAutorPendientes(
+  autorLocalId: string,
+  autorRealId: string,
+): Promise<void> {
+  if (!autorLocalId || autorLocalId === autorRealId) {
+    return;
+  }
+  const pendientes = await listarReportesPendientesSQLite();
+  for (const pendiente of pendientes) {
+    if (pendiente.autorId !== autorLocalId) {
+      continue;
+    }
+    await guardarReportePendienteSQLite({
+      ...pendiente,
+      autorId: autorRealId,
+    });
+  }
+}
+
+/** Cualquier `usr-local-…` de este dispositivo queda asociado al vecino recién identificado. */
+export async function remapeAutoresLocalesPendientes(
+  autorRealId: string,
+): Promise<void> {
+  const pendientes = await listarReportesPendientesSQLite();
+  for (const pendiente of pendientes) {
+    if (!pendiente.autorId.startsWith("usr-local-")) {
+      continue;
+    }
+    await guardarReportePendienteSQLite({
+      ...pendiente,
+      autorId: autorRealId,
+    });
+  }
+}
+
 export async function sincronizarPendientes(): Promise<Reporte[]> {
   if (!enPrueba()) {
     const pendientesSQL = await listarReportesPendientesSQLite();
     const sincronizados: Reporte[] = [];
 
     for (const pendiente of pendientesSQL) {
+      // Esperan registro/ingreso real (sesión offline local).
+      if (pendiente.autorId.startsWith("usr-local-")) {
+        continue;
+      }
+
       try {
+        let direccion = pendiente.direccion.trim();
+        if (
+          !esDireccionCalle(direccion) ||
+          direccion === DIRECCION_SIN_CONEXION
+        ) {
+          try {
+            const resuelta = await direccionDesdeCoordenadas(
+              pendiente.coordenadas,
+            );
+            if (esDireccionCalle(resuelta)) {
+              direccion = resuelta;
+              await guardarReportePendienteSQLite({
+                ...pendiente,
+                direccion,
+              });
+            }
+          } catch {
+            // Seguimos con lo guardado; se reintenta en el próximo sync.
+          }
+        }
+
         const fotos = [];
         for (const foto of pendiente.fotos) {
           const url = /^https?:\/\//.test(foto.url)
@@ -356,26 +528,40 @@ export async function sincronizarPendientes(): Promise<Reporte[]> {
           fotos.push({ url });
         }
 
+        let audioUrl: string | null = pendiente.audioUrl;
+        if (audioUrl && !/^https?:\/\//.test(audioUrl)) {
+          audioUrl = await subirArchivo(audioUrl);
+        }
+
+        const cuerpo: Record<string, unknown> = {
+          tipoId: pendiente.tipoId,
+          descripcion: pendiente.descripcion,
+          audioUrl: audioUrl || null,
+          fotos,
+          coordenadas: pendiente.coordenadas,
+          direccion,
+          creadoEn: pendiente.creadoEn,
+        };
+        // Idempotencia: el id `rep-…` generado offline evita duplicar al reintentar.
+        if (/^rep-[a-z0-9_-]{3,36}$/i.test(pendiente.id)) {
+          cuerpo.id = pendiente.id;
+        }
+
         const subido = await pedirReporte("/reportes", {
           method: "POST",
-          body: JSON.stringify({
-            tipoId: pendiente.tipoId,
-            descripcion: pendiente.descripcion,
-            audioUrl: pendiente.audioUrl,
-            fotos,
-            coordenadas: pendiente.coordenadas,
-            direccion: pendiente.direccion,
-            creadoEn: pendiente.creadoEn,
-          }),
+          body: JSON.stringify(cuerpo),
         });
 
         await eliminarReportePendienteSQLite(pendiente.id);
-        sincronizados.push(subido);
+        sincronizados.push({ ...subido, sincronizado: true });
       } catch {
         // Si sigue sin red o falla uno, permanece en la tabla cola_reportes para el próximo intento
       }
     }
 
+    if (sincronizados.length > 0) {
+      avisarColaReportesActualizada();
+    }
     return sincronizados;
   }
 
@@ -391,12 +577,64 @@ export async function sincronizarPendientes(): Promise<Reporte[]> {
   return pendientes;
 }
 
-// Obtener tipos de reporte
+function aplicarTiposEnMemoria(tipos: TipoDeReporte[]) {
+  tiposReporteMock.splice(0, tiposReporteMock.length, ...tipos);
+  return [...tipos];
+}
+
+async function tiposDesdeCache(): Promise<TipoDeReporte[] | null> {
+  const crudo = await leerValorKV(CLAVE_CACHE_TIPOS);
+  if (!crudo) {
+    return null;
+  }
+  try {
+    const tipos = JSON.parse(crudo) as TipoDeReporte[];
+    if (!Array.isArray(tipos) || tipos.length === 0) {
+      return null;
+    }
+    return aplicarTiposEnMemoria(tipos);
+  } catch {
+    return null;
+  }
+}
+
+/** Precarga / refresca tipos cuando hay red (arranque o sync). */
+export async function precargarTiposReporte(): Promise<void> {
+  if (enPrueba() || !(await hayInternet())) {
+    return;
+  }
+  try {
+    await obtenerTiposReporte();
+  } catch {
+    // Si falla, queda la caché previa.
+  }
+}
+
+// Obtener tipos de reporte (API → caché KV → mocks embebidos)
 export const obtenerTiposReporte = async (): Promise<TipoDeReporte[]> => {
   if (!enPrueba()) {
-    const tipos = await pedirLista<TipoDeReporte>("/tipos-de-reporte");
-    tiposReporteMock.splice(0, tiposReporteMock.length, ...tipos);
-    return tipos;
+    try {
+      const tipos = await pedirLista<TipoDeReporte>("/tipos-de-reporte");
+      if (tipos.length > 0) {
+        await guardarValorKV(CLAVE_CACHE_TIPOS, JSON.stringify(tipos));
+        return aplicarTiposEnMemoria(tipos);
+      }
+    } catch {
+      // Offline o API caída: caché / mocks.
+    }
+
+    const cache = await tiposDesdeCache();
+    if (cache) {
+      return cache;
+    }
+    if (tiposReporteMock.length > 0) {
+      return [...tiposReporteMock];
+    }
+    throw new ErrorServicio({
+      codigo: "TIPOS_NO_DISPONIBLES",
+      mensaje:
+        "No hay tipos de reporte en el teléfono. Conectate una vez para sincronizarlos.",
+    });
   }
 
   await delay(300);
@@ -741,7 +979,14 @@ export async function obtenerReportesAdheridos(
   usuarioId: string,
 ): Promise<Reporte[]> {
   if (!enPrueba()) {
-    return pedirReportes("/yo/adhesiones?porPagina=100");
+    const clave = `${CLAVE_CACHE_ADHESIONES}${usuarioId}`;
+    try {
+      const remotos = await pedirReportes("/yo/adhesiones?porPagina=100");
+      await guardarListaCache(clave, remotos);
+      return remotos;
+    } catch {
+      return leerListaCache(clave);
+    }
   }
 
   await delay(400);
@@ -757,16 +1002,24 @@ export async function obtenerReportesAdheridos(
 
 export async function obtenerMisReportes(usuarioId: string): Promise<Reporte[]> {
   if (!enPrueba()) {
-    const [remotos, pendientesLocal] = await Promise.all([
-      pedirReportes("/yo/reportes?porPagina=100"),
-      listarReportesPendientesSQLite(),
-    ]);
+    const clave = `${CLAVE_CACHE_MIS_REPORTES}${usuarioId}`;
+    const pendientesLocal = await listarReportesPendientesSQLite();
     const propiosPendientes = pendientesLocal.filter(
       (rep) => rep.autorId === usuarioId,
     );
-    return [...propiosPendientes, ...remotos].sort(
-      (a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime(),
-    );
+
+    try {
+      const remotos = await pedirReportes("/yo/reportes?porPagina=100");
+      const sincronizados = remotos.map((item) => ({
+        ...item,
+        sincronizado: true,
+      }));
+      await guardarListaCache(clave, sincronizados);
+      return mezclarPropiosYCola(sincronizados, propiosPendientes);
+    } catch {
+      const cache = await leerListaCache(clave);
+      return mezclarPropiosYCola(cache, propiosPendientes);
+    }
   }
 
   await new Promise((resolve) => setTimeout(resolve, 400));
