@@ -1,6 +1,10 @@
 import { credencialesMock, emailErrorDeRed } from "@/mocks/credenciales";
 import { usuariosMock } from "@/mocks";
-import { ZONA_POR_DEFECTO } from "@/servicios/reportes";
+import {
+  remapeAutorPendientes,
+  remapeAutoresLocalesPendientes,
+  ZONA_POR_DEFECTO,
+} from "@/servicios/reportes";
 import {
   borrarValorKV,
   guardarValorKV,
@@ -23,10 +27,88 @@ import {
   marcarSesionDesbloqueada,
   sesionEstaBloqueada,
 } from "@/servicios/ingreso";
+import { hayInternet } from "@/servicios/red";
 import { DatosRegistro, MetodoIngreso, Rol, SesionAutenticada, Usuario } from "@/tipos";
 
 const CLAVE_SESION = "sesion";
 const CLAVE_HUBO_VECINO = "huboVecino";
+const CLAVE_IDENTIDAD_PENDIENTE = "identidad-pendiente";
+const PREFIJO_TOKEN_LOCAL = "local-offline:";
+const PREFIJO_USR_LOCAL = "usr-local-";
+
+type IdentidadPendiente = {
+  localUserId: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  contrasena: string;
+  creadoEn: string;
+};
+
+type ListenerSesion = (sesion: SesionAutenticada) => void;
+const listenersSesion = new Set<ListenerSesion>();
+
+export function alActualizarSesion(listener: ListenerSesion) {
+  listenersSesion.add(listener);
+  return () => {
+    listenersSesion.delete(listener);
+  };
+}
+
+function avisarSesion(sesion: SesionAutenticada) {
+  for (const listener of listenersSesion) {
+    listener(sesion);
+  }
+}
+
+export function esTokenOfflineLocal(token: string) {
+  return token.startsWith(PREFIJO_TOKEN_LOCAL);
+}
+
+export function esSesionOfflinePendiente(sesion: SesionAutenticada) {
+  return esTokenOfflineLocal(sesion.token);
+}
+
+function nuevoIdUsuarioLocal() {
+  const alfabeto = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let sufijo = "";
+  for (let i = 0; i < 10; i += 1) {
+    sufijo += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+  }
+  return `${PREFIJO_USR_LOCAL}${sufijo}`;
+}
+
+async function guardarIdentidadPendiente(datos: IdentidadPendiente) {
+  await guardarSecreto(CLAVE_IDENTIDAD_PENDIENTE, JSON.stringify(datos));
+}
+
+async function leerIdentidadPendiente(): Promise<IdentidadPendiente | null> {
+  const crudo = await leerSecreto(CLAVE_IDENTIDAD_PENDIENTE);
+  if (!crudo) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(crudo) as IdentidadPendiente;
+    if (
+      typeof parsed?.localUserId !== "string" ||
+      typeof parsed?.email !== "string" ||
+      typeof parsed?.contrasena !== "string"
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function borrarIdentidadPendiente() {
+  await borrarSecreto(CLAVE_IDENTIDAD_PENDIENTE);
+}
+
+export async function hayIdentidadPendiente(): Promise<boolean> {
+  return (await leerIdentidadPendiente()) != null;
+}
 export const TTL_TOKEN_MS = 8 * 60 * 60 * 1000;
 export const MENSAJE_SESION_VENCIDA =
   "Tu sesión venció. Volvé a identificarte o ingresá como operador.";
@@ -77,7 +159,7 @@ function armarSesion(usuario: Usuario): SesionAutenticada {
 }
 
 async function persistirSesion(sesion: SesionAutenticada) {
-  fijarTokenApi(sesion.token);
+  fijarTokenApi(esTokenOfflineLocal(sesion.token) ? null : sesion.token);
   await guardarSecreto(CLAVE_SESION, JSON.stringify(sesion));
   await marcarSesionDesbloqueada();
 }
@@ -120,6 +202,18 @@ function sesionDesdeApi(datos: { token: string; usuario: Usuario }): SesionAuten
 
 /** Mock de GET /me: valida el token guardado y su vencimiento. */
 export async function validarToken(token: string): Promise<Usuario> {
+  if (esTokenOfflineLocal(token)) {
+    const parsed = await leerSesionPersistida();
+    if (!parsed || parsed.token !== token) {
+      throw errorToken("TOKEN_INVALIDO");
+    }
+    if (Date.parse(parsed.expiraEn) <= Date.now()) {
+      throw errorToken("TOKEN_EXPIRADO");
+    }
+    fijarTokenApi(null);
+    return parsed.usuario;
+  }
+
   if (!enPrueba()) {
     fijarTokenApi(token);
     try {
@@ -256,19 +350,99 @@ function validarDatosVecino(datos: DatosRegistro) {
 
 const LARGO_MINIMO_CONTRASENA = 8;
 
+function exigirContrasena(datos: DatosRegistro) {
+  const contrasena = (datos.contrasena ?? "").trim();
+  if (contrasena.length < LARGO_MINIMO_CONTRASENA) {
+    throw new ErrorServicio({
+      codigo: "CONTRASENA_CORTA",
+      mensaje: "La contraseña tiene que tener al menos 8 caracteres.",
+    });
+  }
+  return contrasena;
+}
+
+/**
+ * Sin red: sesión local + credenciales guardadas para registrar/ingresar
+ * automáticamente cuando vuelva internet.
+ */
+export async function crearSesionLocalPendiente(
+  datos: DatosRegistro,
+): Promise<SesionAutenticada> {
+  const { nombre, email, telefono } = validarDatosVecino(datos);
+  const contrasena = exigirContrasena(datos);
+  const localUserId = nuevoIdUsuarioLocal();
+
+  await guardarIdentidadPendiente({
+    localUserId,
+    nombre,
+    email,
+    telefono,
+    contrasena,
+    creadoEn: new Date().toISOString(),
+  });
+
+  const usuario: Usuario = {
+    id: localUserId,
+    nombre,
+    email,
+    telefono,
+    rol: "vecino",
+    zonaId: ZONA_POR_DEFECTO,
+    avisosActivos: true,
+    creadoEn: new Date().toISOString(),
+  };
+
+  const sesion: SesionAutenticada = {
+    token: `${PREFIJO_TOKEN_LOCAL}${localUserId}`,
+    usuario,
+    expiraEn: new Date(Date.now() + TTL_API_MS).toISOString(),
+    esInvitado: false,
+  };
+
+  await marcarHuboVecino();
+  await persistirSesion(sesion);
+  avisarSesion(sesion);
+  return sesion;
+}
+
+/** Si hay identidad guardada offline y hay red, registra/ingresa y remapea la cola. */
+export async function completarIdentidadPendiente(): Promise<SesionAutenticada | null> {
+  const pendiente = await leerIdentidadPendiente();
+  if (!pendiente) {
+    return null;
+  }
+  if (!(await hayInternet())) {
+    return null;
+  }
+
+  try {
+    const sesion = await identificarVecino({
+      nombre: pendiente.nombre,
+      email: pendiente.email,
+      telefono: pendiente.telefono,
+      contrasena: pendiente.contrasena,
+    });
+    return sesion;
+  } catch {
+    // Credenciales o red: se reintenta en el próximo evento online.
+    return null;
+  }
+}
+
 /** Alta o reingreso del vecino. Contra la API hace falta contraseña: registro, o ingreso si el email ya existe. */
 export async function identificarVecino(
   datos: DatosRegistro,
 ): Promise<SesionAutenticada> {
   if (!enPrueba()) {
-    const { nombre, email, telefono } = validarDatosVecino(datos);
-    const contrasena = (datos.contrasena ?? "").trim();
-    if (contrasena.length < LARGO_MINIMO_CONTRASENA) {
+    if (!(await hayInternet())) {
       throw new ErrorServicio({
-        codigo: "CONTRASENA_CORTA",
-        mensaje: "La contraseña tiene que tener al menos 8 caracteres.",
+        codigo: "SIN_CONEXION",
+        mensaje: "Necesitás conexión a internet para ingresar.",
       });
     }
+
+    const { nombre, email, telefono } = validarDatosVecino(datos);
+    const contrasena = exigirContrasena(datos);
 
     const cuerpo = JSON.stringify({ nombre, email, telefono, contrasena });
     let datosSesion: { token: string; usuario: Usuario };
@@ -297,8 +471,16 @@ export async function identificarVecino(
     }
 
     const sesion = sesionDesdeApi(datosSesion);
+    const pendiente = await leerIdentidadPendiente();
+    if (pendiente) {
+      await remapeAutorPendientes(pendiente.localUserId, sesion.usuario.id);
+      await borrarIdentidadPendiente();
+    } else {
+      await remapeAutoresLocalesPendientes(sesion.usuario.id);
+    }
     await marcarHuboVecino();
     await persistirSesion(sesion);
+    avisarSesion(sesion);
     return sesion;
   }
 
@@ -375,6 +557,7 @@ export async function cerrarSesion(): Promise<void> {
 
   fijarTokenApi(null);
   await borrarSecreto(CLAVE_SESION);
+  await borrarIdentidadPendiente();
   await marcarSesionDesbloqueada();
   if (rol) {
     await borrarMetodoIngreso(rol);
@@ -385,6 +568,7 @@ export async function olvidarDispositivo(): Promise<void> {
   await delay(200);
   fijarTokenApi(null);
   await borrarSecreto(CLAVE_SESION);
+  await borrarIdentidadPendiente();
   await borrarHuboVecino();
   await marcarSesionDesbloqueada();
   await borrarPreferenciasIngreso();
