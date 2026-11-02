@@ -885,6 +885,13 @@ export const asignarCuadrilla = async (
     });
   }
 
+  if (reporte.cuadrillaId || reporte.estado === "asignado") {
+    throw new ErrorServicio({
+      codigo: "YA_ASIGNADO",
+      mensaje: "Este reporte ya tiene cuadrilla. No se puede reasignar.",
+    });
+  }
+
   const cuadrilla = cuadrillasMock.find((item) => item.id === cuadrillaId);
   if (!cuadrilla || !cuadrilla.activa) {
     throw new ErrorServicio({

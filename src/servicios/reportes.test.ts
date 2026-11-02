@@ -194,6 +194,8 @@ describe("servicios/reportes", () => {
     const estadoPrev = original.estado;
     const cuadrillaPrev = original.cuadrillaId;
     const cambiosPrev = cambiosEstadoMock.length;
+    original.cuadrillaId = null;
+    original.estado = "en_revision";
 
     const actualizado = await esperar(
       asignarCuadrilla("rep-001", "cua-02", "usr-100"),
@@ -201,6 +203,12 @@ describe("servicios/reportes", () => {
 
     expect(actualizado.estado).toBe("asignado");
     expect(actualizado.cuadrillaId).toBe("cua-02");
+
+    const reasignacion = expect(
+      asignarCuadrilla("rep-001", "cua-01", "usr-100"),
+    ).rejects.toMatchObject({ codigo: "YA_ASIGNADO" });
+    await jest.runAllTimersAsync();
+    await reasignacion;
 
     original.estado = estadoPrev;
     original.cuadrillaId = cuadrillaPrev;
@@ -241,6 +249,8 @@ describe("servicios/reportes", () => {
     }
     const estadoPrev = original.estado;
     const cuadrillaPrev = original.cuadrillaId;
+    original.cuadrillaId = null;
+    original.estado = "en_revision";
 
     const rechazo = expect(
       asignarCuadrilla("rep-001", "cua-03", "usr-100"),
@@ -248,8 +258,10 @@ describe("servicios/reportes", () => {
     await jest.runAllTimersAsync();
     await rechazo;
 
-    expect(original.estado).toBe(estadoPrev);
-    expect(original.cuadrillaId).toBe(cuadrillaPrev);
+    expect(original.estado).toBe("en_revision");
+    expect(original.cuadrillaId).toBe(null);
+    original.estado = estadoPrev;
+    original.cuadrillaId = cuadrillaPrev;
   });
 
   test("rechaza una cuadrilla inactiva", async () => {
@@ -259,6 +271,8 @@ describe("servicios/reportes", () => {
     }
     const estadoPrev = original.estado;
     const cuadrillaPrev = original.cuadrillaId;
+    original.cuadrillaId = null;
+    original.estado = "en_revision";
 
     const rechazo = expect(
       asignarCuadrilla("rep-003", "cua-05", "usr-101"),
@@ -266,8 +280,10 @@ describe("servicios/reportes", () => {
     await jest.runAllTimersAsync();
     await rechazo;
 
-    expect(original.estado).toBe(estadoPrev);
-    expect(original.cuadrillaId).toBe(cuadrillaPrev);
+    expect(original.estado).toBe("en_revision");
+    expect(original.cuadrillaId).toBe(null);
+    original.estado = estadoPrev;
+    original.cuadrillaId = cuadrillaPrev;
   });
 
   test("cambia el estado y deja el motivo en el historial", async () => {
