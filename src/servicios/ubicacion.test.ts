@@ -4,7 +4,9 @@ import {
   esDireccionCalle,
   esDireccionCoordenadas,
   esDireccionSoloCiudad,
+  estaEnLaCiudad,
   formatearDireccionGeo,
+  MENSAJE_FUERA_DE_LA_CIUDAD,
 } from "@/servicios/ubicacion";
 
 describe("ubicacion — dirección legible", () => {
@@ -28,6 +30,18 @@ describe("ubicacion — dirección legible", () => {
     expect(esDireccionAceptable("Rocamora 1240")).toBe(true);
     expect(esDireccionAceptable("Gualeguaychú")).toBe(false);
     expect(esDireccionAceptable("")).toBe(false);
+  });
+
+  it("detecta si el pin cae dentro de algún polígono de la ciudad", () => {
+    expect(
+      estaEnLaCiudad({ latitud: -33.0123, longitud: -58.5123 }),
+    ).toBe(true);
+    expect(estaEnLaCiudad({ latitud: -32.9, longitud: -58.4 })).toBe(false);
+    // Cerca del borde (buffer de zona) pero fuera del polígono: no es ciudad.
+    expect(
+      estaEnLaCiudad({ latitud: -33.012, longitud: -58.532 }),
+    ).toBe(false);
+    expect(MENSAJE_FUERA_DE_LA_CIUDAD).toMatch(/fuera de Gualeguaychú/);
   });
 
   it("prioriza calle y altura sobre formattedAddress de solo ciudad", () => {

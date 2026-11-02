@@ -32,7 +32,11 @@ import {
 } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
 import { obtenerTiposReporte } from "@/servicios/reportes";
-import { esDireccionAceptable } from "@/servicios/ubicacion";
+import {
+  esDireccionAceptable,
+  estaEnLaCiudad,
+  MENSAJE_FUERA_DE_LA_CIUDAD,
+} from "@/servicios/ubicacion";
 import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
@@ -128,7 +132,13 @@ export function AsistenteReporte() {
       if (cercanoElegido) {
         return true;
       }
-      return esDireccionAceptable(direccion);
+      if (
+        !estaEnLaCiudad({ latitud, longitud }) ||
+        !esDireccionAceptable(direccion)
+      ) {
+        return false;
+      }
+      return true;
     }
     return true;
   }
@@ -143,6 +153,9 @@ export function AsistenteReporte() {
     if (paso === 3) {
       if (latitud == null || longitud == null) {
         return "Marcá la ubicación en el mapa.";
+      }
+      if (!estaEnLaCiudad({ latitud, longitud })) {
+        return MENSAJE_FUERA_DE_LA_CIUDAD;
       }
       return "Necesitamos la calle. Arrastrá el pin o tocá el mapa.";
     }
@@ -161,6 +174,10 @@ export function AsistenteReporte() {
     }
     if (paso === 3) {
       limpiarAdhesionPendiente();
+      if (!estaEnLaCiudad({ latitud: latitud!, longitud: longitud! })) {
+        setError(MENSAJE_FUERA_DE_LA_CIUDAD);
+        return;
+      }
       if (!esDireccionAceptable(direccion)) {
         setError(
           "Necesitamos la calle del lugar. Arrastrá el pin o tocá el mapa hasta que aparezca.",
@@ -223,6 +240,19 @@ export function AsistenteReporte() {
 
   async function onEnviar() {
     setError(null);
+    const actual = leerBorrador();
+    if (
+      actual.latitud == null ||
+      actual.longitud == null ||
+      !estaEnLaCiudad({
+        latitud: actual.latitud,
+        longitud: actual.longitud,
+      })
+    ) {
+      setError(MENSAJE_FUERA_DE_LA_CIUDAD);
+      return;
+    }
+
     marcarPendienteEnvio();
     const listo = borradorListoParaEnviar(leerBorrador());
     if (!listo) {

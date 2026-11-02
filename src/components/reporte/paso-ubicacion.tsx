@@ -16,6 +16,8 @@ import {
   DIRECCION_SIN_CONEXION,
   direccionDesdeCoordenadas,
   esDireccionAceptable,
+  estaEnLaCiudad,
+  MENSAJE_FUERA_DE_LA_CIUDAD,
   obtenerUbicacionActual,
 } from "@/servicios/ubicacion";
 import { Coordenadas, Reporte } from "@/tipos";
@@ -141,6 +143,14 @@ export function PasoUbicacion({
 
   function aplicarCoords(siguiente: Coordenadas) {
     onUbicacionRef.current(siguiente, direccion);
+    if (!estaEnLaCiudad(siguiente)) {
+      if (geocodeTimer.current) {
+        clearTimeout(geocodeTimer.current);
+      }
+      setResolviendoCalle(false);
+      setError(MENSAJE_FUERA_DE_LA_CIUDAD);
+      return;
+    }
     if (geocodeTimer.current) {
       clearTimeout(geocodeTimer.current);
     }
@@ -151,9 +161,11 @@ export function PasoUbicacion({
           const texto = await direccionDesdeCoordenadas(siguiente);
           onUbicacionRef.current(siguiente, texto);
           setError(
-            esDireccionAceptable(texto)
-              ? null
-              : "No encontramos la calle. Arrastrá el pin un poco más.",
+            !estaEnLaCiudad(siguiente)
+              ? MENSAJE_FUERA_DE_LA_CIUDAD
+              : esDireccionAceptable(texto)
+                ? null
+                : "No encontramos la calle. Arrastrá el pin un poco más.",
           );
         } catch {
           const respaldo = esDireccionAceptable(direccion)
@@ -161,9 +173,11 @@ export function PasoUbicacion({
             : DIRECCION_SIN_CONEXION;
           onUbicacionRef.current(siguiente, respaldo);
           setError(
-            respaldo === DIRECCION_SIN_CONEXION
-              ? null
-              : "No encontramos la calle. Arrastrá el pin o tocá el mapa.",
+            !estaEnLaCiudad(siguiente)
+              ? MENSAJE_FUERA_DE_LA_CIUDAD
+              : respaldo === DIRECCION_SIN_CONEXION
+                ? null
+                : "No encontramos la calle. Arrastrá el pin o tocá el mapa.",
           );
         } finally {
           setResolviendoCalle(false);
@@ -187,9 +201,15 @@ export function PasoUbicacion({
     setError(null);
     try {
       const actual = await obtenerUbicacionActual();
+      onUbicacionRef.current(actual, direccion);
+      setMapaClave((clave) => clave + 1);
+      if (!estaEnLaCiudad(actual)) {
+        setError(MENSAJE_FUERA_DE_LA_CIUDAD);
+        setResolviendoCalle(false);
+        return;
+      }
       const texto = await direccionDesdeCoordenadas(actual);
       onUbicacionRef.current(actual, texto);
-      setMapaClave((clave) => clave + 1);
       if (!esDireccionAceptable(texto)) {
         setError("No encontramos la calle. Arrastrá el pin o tocá el mapa.");
       } else {

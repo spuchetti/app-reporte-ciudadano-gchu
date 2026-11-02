@@ -26,6 +26,8 @@ import {
   DIRECCION_SIN_CONEXION,
   direccionDesdeCoordenadas,
   esDireccionCalle,
+  estaEnLaCiudad,
+  MENSAJE_FUERA_DE_LA_CIUDAD,
   ZONA_FUERA,
   zonaParaCoordenadas,
 } from "@/servicios/ubicacion";
@@ -329,6 +331,18 @@ export function validarBorradorReporte(borrador: DatosBorradorReporte) {
     throw new ErrorServicio({
       codigo: "UBICACION_INVALIDA",
       mensaje: "Marcá la ubicación en el mapa.",
+    });
+  }
+
+  if (
+    !estaEnLaCiudad({
+      latitud: borrador.latitud,
+      longitud: borrador.longitud,
+    })
+  ) {
+    throw new ErrorServicio({
+      codigo: "FUERA_DE_LA_CIUDAD",
+      mensaje: MENSAJE_FUERA_DE_LA_CIUDAD,
     });
   }
 

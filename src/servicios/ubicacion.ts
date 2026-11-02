@@ -12,6 +12,10 @@ export const RADIO_ZONA_CERCANA_M = 500;
 /** Texto válido cuando no hay red para geocodear la calle. */
 export const DIRECCION_SIN_CONEXION = "Ubicación marcada (sin conexión)";
 
+/** Mismo mensaje que la API (`FUERA_DE_LA_CIUDAD`). */
+export const MENSAJE_FUERA_DE_LA_CIUDAD =
+  "Ese punto queda fuera de Gualeguaychú. Corregilo en el mapa.";
+
 const PATRON_COORDS = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
 
 /** ¿El texto es un par lat,lon? No sirve como dirección en la UI. */
@@ -265,6 +269,11 @@ function metrosAlPoligono(punto: Coordenadas, limite: Coordenadas[]) {
   }
 
   return minimo;
+}
+
+/** Como la API: sólo dentro de algún polígono de zona (sin buffer de cercanía). */
+export function estaEnLaCiudad(coordenadas: Coordenadas): boolean {
+  return zonasMock.some((zona) => puntoEnPoligono(coordenadas, zona.limite));
 }
 
 export function zonaParaCoordenadas(coordenadas: Coordenadas): string {
