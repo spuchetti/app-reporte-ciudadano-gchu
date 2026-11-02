@@ -1,6 +1,6 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import {
   borrarValorKV,
@@ -89,9 +89,38 @@ export async function dispositivoTieneRostro(): Promise<boolean> {
   );
 }
 
+/** Evita pelear con el resume del SO / keep-awake justo al prender la pantalla. */
+async function esperarPantallaActiva() {
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  if (AppState.currentState !== "active") {
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        const sub = AppState.addEventListener("change", (estado) => {
+          if (estado === "active") {
+            sub.remove();
+            resolve();
+          }
+        });
+      }),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, 4_000);
+      }),
+    ]);
+  }
+
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 250);
+  });
+}
+
 export async function confirmarIdentidadDispositivo(
   modo: "rostro" | "pin",
 ): Promise<void> {
+  await esperarPantallaActiva();
+
   const resultado = await LocalAuthentication.authenticateAsync({
     promptMessage:
       modo === "pin"
