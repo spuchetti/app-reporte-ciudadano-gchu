@@ -19,11 +19,13 @@ import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { SheetDuplicado } from "@/components/operador/sheet-duplicado";
 import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { BotonTema } from "@/components/ui/boton-tema";
+import { Fonts } from "@/constants/theme";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import {
   haceTiempo,
   nombreCuadrilla,
@@ -100,6 +102,7 @@ function abrirEnMapas(latitud: number, longitud: number, direccion: string) {
 
 export default function DetalleOperadorScreen() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sesion } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
@@ -160,9 +163,7 @@ export default function DetalleOperadorScreen() {
     comentario: string,
     fotoArregloUrl: string | null,
   ) {
-    if (!reporte || !usuario) {
-      return;
-    }
+    if (!reporte || !usuario) return;
     setGuardandoEstado(true);
     setErrorEstado(null);
     try {
@@ -185,9 +186,7 @@ export default function DetalleOperadorScreen() {
   }
 
   async function onMarcarDuplicado(originalId: string) {
-    if (!reporte || !usuario) {
-      return;
-    }
+    if (!reporte || !usuario) return;
     setGuardandoDuplicado(true);
     setErrorDuplicado(null);
     try {
@@ -204,9 +203,7 @@ export default function DetalleOperadorScreen() {
   }
 
   async function onCorregirZona(zonaId: string) {
-    if (!reporte || !usuario) {
-      return;
-    }
+    if (!reporte || !usuario) return;
     setCorrigiendoZona(true);
     setErrorZona(null);
     try {
@@ -224,9 +221,7 @@ export default function DetalleOperadorScreen() {
   }
 
   async function onAsignar(cuadrillaId: string) {
-    if (!reporte || !usuario) {
-      return;
-    }
+    if (!reporte || !usuario) return;
     setAsignando(true);
     setErrorAsignar(null);
     try {
@@ -247,31 +242,41 @@ export default function DetalleOperadorScreen() {
     }
   }
 
-  const foto = reporte?.fotos.find((item) => item.esPrincipal)?.url
-    ?? reporte?.fotos[0]?.url;
+  const foto =
+    reporte?.fotos.find((item) => item.esPrincipal)?.url ??
+    reporte?.fotos[0]?.url;
   const originales = reporte ? reportesParaDuplicar(catalogo, reporte.id) : [];
   const gestionable = reporte ? puedeGestionar(reporte) : false;
   const categoria = reporte ? obtenerCategoriaVisual(reporte.tipoId) : null;
 
   return (
-    <View style={styles.pantalla}>
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
       <StatusBar style="light" />
       <View
         style={[
           styles.cabecera,
-          { paddingTop: Platform.OS === "web" ? 48 : insets.top + 12 },
+          {
+            backgroundColor: tema.operadorDeep,
+            paddingTop: Platform.OS === "web" ? 48 : insets.top + 12,
+            borderBottomColor: tema.outline,
+            borderBottomWidth: tema.esOscuro ? 1 : 0,
+          },
         ]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver a la bandeja"
-          onPress={() => router.back()}
-          hitSlop={8}
-          style={styles.volverFila}
-        >
-          <Ionicons name="arrow-back" size={20} color={Paleta.paperRaised} />
-          <Text style={styles.volver}>Bandeja</Text>
-        </Pressable>
+        <View style={styles.filaSuperiorCabecera}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver a la bandeja"
+            onPress={() => router.back()}
+            hitSlop={8}
+            style={styles.volverFila}
+          >
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            <Text style={styles.volver}>Bandeja</Text>
+          </Pressable>
+          <BotonTema sobreFondoOscuro />
+        </View>
+
         <View style={styles.cabeceraTitulo}>
           <Text style={styles.codigo} numberOfLines={1}>
             {reporte?.codigo ?? "Reporte"}
@@ -293,15 +298,26 @@ export default function DetalleOperadorScreen() {
         ]}
       >
         {error || !reporte ? (
-          <Text style={styles.vacio}>{error ?? "Cargando…"}</Text>
+          <Text style={[styles.vacio, { color: tema.onSurfaceVariant }]}>
+            {error ?? "Cargando…"}
+          </Text>
         ) : (
           <>
-            <View style={styles.fotoBloque}>
+            <View
+              style={[
+                styles.fotoBloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: tema.esOscuro ? 1 : 0,
+                },
+              ]}
+            >
               {foto ? (
                 <Image source={{ uri: foto }} style={styles.foto} />
               ) : (
-                <View style={[styles.foto, styles.fotoVacia]}>
-                  <Ionicons name="image-outline" size={36} color={Paleta.inkSoft} />
+                <View style={[styles.foto, styles.fotoVacia, { backgroundColor: tema.surfaceVariant }]}>
+                  <Ionicons name="image-outline" size={36} color={tema.onSurfaceVariant} />
                 </View>
               )}
               <View style={styles.fotoBadge}>
@@ -311,25 +327,58 @@ export default function DetalleOperadorScreen() {
               </View>
             </View>
 
-            <View style={styles.ficha}>
+            <View
+              style={[
+                styles.ficha,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
+            >
               <View style={styles.filaTipo}>
                 <IconoCategoria
                   tipoId={reporte.tipoId}
                   size={22}
                   color={categoria?.color}
                 />
-                <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
+                <Text style={[styles.tipo, { color: tema.onSurface }]}>
+                  {nombreTipo(reporte.tipoId)}
+                </Text>
               </View>
-              <Text style={styles.direccion}>{reporte.direccion}</Text>
+              <Text style={[styles.direccion, { color: tema.onSurfaceVariant }]}>
+                {reporte.direccion}
+              </Text>
 
               <View style={styles.chips}>
-                <View style={styles.chip}>
-                  <Ionicons name="pricetag-outline" size={14} color={PaletaOperador.principal} />
-                  <Text style={styles.chipTexto}>{nombreZona(reporte.zonaId)}</Text>
+                <View
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: tema.surfaceVariant,
+                      borderColor: tema.outline,
+                    },
+                  ]}
+                >
+                  <Ionicons name="pricetag-outline" size={14} color={tema.secondary} />
+                  <Text style={[styles.chipTexto, { color: tema.onSurface }]}>
+                    {nombreZona(reporte.zonaId)}
+                  </Text>
                 </View>
-                <View style={styles.chip}>
-                  <Ionicons name="time-outline" size={14} color={Paleta.inkSoft} />
-                  <Text style={styles.chipTexto}>{haceTiempo(reporte.creadoEn)}</Text>
+                <View
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: tema.surfaceVariant,
+                      borderColor: tema.outline,
+                    },
+                  ]}
+                >
+                  <Ionicons name="time-outline" size={14} color={tema.onSurfaceVariant} />
+                  <Text style={[styles.chipTexto, { color: tema.onSurface }]}>
+                    {haceTiempo(reporte.creadoEn)}
+                  </Text>
                 </View>
               </View>
 
@@ -337,12 +386,13 @@ export default function DetalleOperadorScreen() {
                 <Ionicons
                   name={reporte.cuadrillaId ? "people-outline" : "alert-circle-outline"}
                   size={16}
-                  color={reporte.cuadrillaId ? PaletaOperador.principal : Paleta.orange}
+                  color={reporte.cuadrillaId ? tema.secondary : tema.orange}
                 />
                 <Text
                   style={[
                     styles.asignacionTexto,
-                    !reporte.cuadrillaId && styles.asignacionPendiente,
+                    { color: tema.onSurface },
+                    !reporte.cuadrillaId && { color: tema.orange },
                   ]}
                 >
                   {reporte.cuadrillaId
@@ -359,33 +409,66 @@ export default function DetalleOperadorScreen() {
                     router.push(`/(operador)/reporte/${reporte.duplicadoDe}`)
                   }
                 >
-                  <Text style={styles.enlaceOriginal}>
+                  <Text style={[styles.enlaceOriginal, { color: tema.secondary }]}>
                     {textoDuplicado(reporte.duplicadoDe)}
                   </Text>
                 </Pressable>
               ) : null}
             </View>
 
-            <View style={styles.bloque}>
-              <Text style={styles.tituloSeccion}>Descripción del vecino</Text>
-              <Text style={styles.descripcion}>
+            <View
+              style={[
+                styles.bloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Text style={[styles.tituloSeccion, { color: tema.onSurfaceVariant }]}>
+                Descripción del vecino
+              </Text>
+              <Text style={[styles.descripcion, { color: tema.onSurface }]}>
                 {reporte.descripcion?.trim() || "El vecino no dejó una descripción."}
               </Text>
             </View>
 
             {reporte.fotoArreglo ? (
-              <View style={styles.bloque}>
-                <Text style={styles.tituloSeccion}>Foto del arreglo</Text>
+              <View
+                style={[
+                  styles.bloque,
+                  {
+                    backgroundColor: tema.surface,
+                    borderColor: tema.outline,
+                    borderWidth: 1,
+                  },
+                ]}
+              >
+                <Text style={[styles.tituloSeccion, { color: tema.onSurfaceVariant }]}>
+                  Foto del arreglo
+                </Text>
                 <Image
                   source={{ uri: reporte.fotoArreglo.url }}
-                  style={styles.fotoArreglo}
+                  style={[styles.fotoArreglo, { backgroundColor: tema.surfaceVariant }]}
                 />
               </View>
             ) : null}
 
-            <View style={styles.bloque}>
-              <Text style={styles.tituloSeccion}>Ubicación</Text>
-              <View style={styles.mapa}>
+            <View
+              style={[
+                styles.bloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Text style={[styles.tituloSeccion, { color: tema.onSurfaceVariant }]}>
+                Ubicación
+              </Text>
+              <View style={[styles.mapa, { backgroundColor: tema.surfaceVariant }]}>
                 <MapView
                   style={StyleSheet.absoluteFill}
                   initialRegion={{
@@ -417,15 +500,34 @@ export default function DetalleOperadorScreen() {
                       reporte.direccion,
                     )
                   }
-                  style={styles.abrirMapas}
+                  style={[
+                    styles.abrirMapas,
+                    {
+                      backgroundColor: tema.surface,
+                      borderColor: tema.outline,
+                    },
+                  ]}
                 >
-                  <Text style={styles.abrirMapasTexto}>Abrir en mapas</Text>
+                  <Text style={[styles.abrirMapasTexto, { color: tema.secondary }]}>
+                    Abrir en mapas
+                  </Text>
                 </Pressable>
               </View>
             </View>
 
-            <View style={styles.bloque}>
-              <Text style={styles.tituloSeccion}>Historial</Text>
+            <View
+              style={[
+                styles.bloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Text style={[styles.tituloSeccion, { color: tema.onSurfaceVariant }]}>
+                Historial
+              </Text>
               {cambios.length > 0 ? (
                 <View style={styles.listaHistorial}>
                   {cambios.map((cambio, index) => {
@@ -441,11 +543,16 @@ export default function DetalleOperadorScreen() {
                       <View key={cambio.id} style={styles.itemTimeline}>
                         <View style={styles.columnaIndicador}>
                           {zona ? (
-                            <View style={styles.marcaZona}>
+                            <View
+                              style={[
+                                styles.marcaZona,
+                                { backgroundColor: tema.surfaceVariant },
+                              ]}
+                            >
                               <Ionicons
                                 name="phone-portrait-outline"
                                 size={12}
-                                color={PaletaOperador.principal}
+                                color={tema.secondary}
                               />
                             </View>
                           ) : (
@@ -460,7 +567,12 @@ export default function DetalleOperadorScreen() {
                             />
                           )}
                           {index < cambios.length - 1 ? (
-                            <View style={styles.lineaHistorial} />
+                            <View
+                              style={[
+                                styles.lineaHistorial,
+                                { backgroundColor: tema.outline },
+                              ]}
+                            />
                           ) : null}
                         </View>
                         <View style={styles.columnaContenido}>
@@ -468,17 +580,20 @@ export default function DetalleOperadorScreen() {
                             <Text
                               style={[
                                 styles.cambioEstado,
+                                { color: tema.onSurface },
                                 esActual && styles.cambioEstadoActual,
                               ]}
                             >
                               {tituloHistorial(cambio)}
                             </Text>
-                            <Text style={styles.cambioFecha}>
+                            <Text style={[styles.cambioFecha, { color: tema.onSurfaceVariant }]}>
                               {haceTiempo(cambio.fechaHora)}
                             </Text>
                           </View>
                           {detalle ? (
-                            <Text style={styles.cambioTexto}>{detalle}</Text>
+                            <Text style={[styles.cambioTexto, { color: tema.onSurfaceVariant }]}>
+                              {detalle}
+                            </Text>
                           ) : null}
                         </View>
                       </View>
@@ -486,7 +601,9 @@ export default function DetalleOperadorScreen() {
                   })}
                 </View>
               ) : (
-                <Text style={styles.meta}>Todavía no hay movimientos registrados.</Text>
+                <Text style={[styles.meta, { color: tema.onSurfaceVariant }]}>
+                  Todavía no hay movimientos registrados.
+                </Text>
               )}
             </View>
           </>
@@ -497,16 +614,26 @@ export default function DetalleOperadorScreen() {
         <View
           style={[
             styles.barraAcciones,
-            { paddingBottom: Math.max(insets.bottom, 12) },
+            {
+              backgroundColor: tema.surface,
+              borderTopColor: tema.outline,
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
           ]}
         >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Más acciones"
             onPress={() => setMostrarMas(true)}
-            style={styles.botonMas}
+            style={[
+              styles.botonMas,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+              },
+            ]}
           >
-            <Ionicons name="ellipsis-horizontal" size={20} color={PaletaOperador.principal} />
+            <Ionicons name="ellipsis-horizontal" size={20} color={tema.secondary} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -515,9 +642,17 @@ export default function DetalleOperadorScreen() {
               setErrorEstado(null);
               setMostrarEstado(true);
             }}
-            style={styles.botonSecundario}
+            style={[
+              styles.botonSecundario,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.secondary,
+              },
+            ]}
           >
-            <Text style={styles.botonSecundarioTexto}>Cambiar estado</Text>
+            <Text style={[styles.botonSecundarioTexto, { color: tema.secondary }]}>
+              Cambiar estado
+            </Text>
           </Pressable>
           {puedeAsignar(reporte) ? (
             <Pressable
@@ -527,7 +662,10 @@ export default function DetalleOperadorScreen() {
                 setErrorAsignar(null);
                 setMostrarAsignar(true);
               }}
-              style={styles.botonAsignar}
+              style={[
+                styles.botonAsignar,
+                { backgroundColor: tema.secondary },
+              ]}
             >
               <Text style={styles.botonAsignarTexto}>Asignar</Text>
             </Pressable>
@@ -537,8 +675,20 @@ export default function DetalleOperadorScreen() {
 
       {mostrarMas ? (
         <Pressable style={styles.masFondo} onPress={() => setMostrarMas(false)}>
-          <Pressable style={styles.masPanel} onPress={() => {}}>
-            <Text style={styles.masTitulo}>Más acciones</Text>
+          <Pressable
+            style={[
+              styles.masPanel,
+              {
+                backgroundColor: tema.surface,
+                borderTopColor: tema.outline,
+                borderTopWidth: 1,
+              },
+            ]}
+            onPress={() => {}}
+          >
+            <Text style={[styles.masTitulo, { color: tema.onSurface }]}>
+              Más acciones
+            </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Marcar duplicado"
@@ -547,9 +697,17 @@ export default function DetalleOperadorScreen() {
                 setErrorDuplicado(null);
                 setMostrarDuplicado(true);
               }}
-              style={styles.masOpcion}
+              style={[
+                styles.masOpcion,
+                {
+                  backgroundColor: tema.surfaceVariant,
+                  borderColor: tema.outline,
+                },
+              ]}
             >
-              <Text style={styles.masOpcionTexto}>Marcar duplicado</Text>
+              <Text style={[styles.masOpcionTexto, { color: tema.onSurface }]}>
+                Marcar duplicado
+              </Text>
             </Pressable>
             {sePuedeCorregirZona() ? (
               <Pressable
@@ -560,9 +718,17 @@ export default function DetalleOperadorScreen() {
                   setErrorZona(null);
                   setMostrarZona(true);
                 }}
-                style={styles.masOpcion}
+                style={[
+                  styles.masOpcion,
+                  {
+                    backgroundColor: tema.surfaceVariant,
+                    borderColor: tema.outline,
+                  },
+                ]}
               >
-                <Text style={styles.masOpcionTexto}>Corregir zona</Text>
+                <Text style={[styles.masOpcionTexto, { color: tema.onSurface }]}>
+                  Corregir zona
+                </Text>
               </Pressable>
             ) : null}
             <Pressable
@@ -571,7 +737,9 @@ export default function DetalleOperadorScreen() {
               onPress={() => setMostrarMas(false)}
               style={styles.masCancelar}
             >
-              <Text style={styles.masCancelarTexto}>Cancelar</Text>
+              <Text style={[styles.masCancelarTexto, { color: tema.onSurfaceVariant }]}>
+                Cancelar
+              </Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -590,9 +758,7 @@ export default function DetalleOperadorScreen() {
         onAsignarCuadrilla={
           reporte && puedeAsignar(reporte)
             ? () => {
-                if (guardandoEstado) {
-                  return;
-                }
+                if (guardandoEstado) return;
                 setMostrarEstado(false);
                 setErrorAsignar(null);
                 setMostrarAsignar(true);
@@ -650,20 +816,23 @@ export default function DetalleOperadorScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paper,
   },
   cabecera: {
-    backgroundColor: PaletaOperador.principal,
     paddingHorizontal: 20,
     paddingBottom: 16,
     gap: 10,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  filaSuperiorCabecera: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   volver: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   volverFila: {
     minHeight: 44,
@@ -678,7 +847,7 @@ const styles = StyleSheet.create({
   codigo: {
     fontFamily: Fonts.semiBold,
     fontSize: 24,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   contenido: {
     padding: 16,
@@ -689,17 +858,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 32,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   fotoBloque: {
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: Paleta.paperRaised,
   },
   foto: {
     width: "100%",
     height: 220,
-    backgroundColor: "#D7DEE5",
   },
   fotoVacia: {
     alignItems: "center",
@@ -717,13 +883,10 @@ const styles = StyleSheet.create({
   fotoBadgeTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   ficha: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Paleta.line,
     padding: 16,
     gap: 10,
   },
@@ -735,12 +898,10 @@ const styles = StyleSheet.create({
   tipo: {
     fontFamily: Fonts.semiBold,
     fontSize: 22,
-    color: Paleta.ink,
   },
   direccion: {
     fontFamily: Fonts.medium,
     fontSize: 15,
-    color: Paleta.ink,
   },
   chips: {
     flexDirection: "row",
@@ -752,16 +913,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderRadius: 999,
-    backgroundColor: Paleta.paper,
     borderWidth: 1,
-    borderColor: Paleta.line,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   chipTexto: {
     fontFamily: Fonts.medium,
     fontSize: 12,
-    color: Paleta.ink,
   },
   asignacion: {
     flexDirection: "row",
@@ -771,21 +929,13 @@ const styles = StyleSheet.create({
   asignacionTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.ink,
-  },
-  asignacionPendiente: {
-    color: Paleta.orange,
   },
   enlaceOriginal: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: PaletaOperador.principal,
   },
   bloque: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Paleta.line,
     padding: 16,
     gap: 10,
   },
@@ -794,30 +944,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: Paleta.inkSoft,
   },
   descripcion: {
     fontFamily: Fonts.regular,
     fontSize: 15,
     lineHeight: 22,
-    color: Paleta.ink,
   },
   meta: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   fotoArreglo: {
     width: "100%",
     height: 180,
     borderRadius: 14,
-    backgroundColor: Paleta.paper,
   },
   mapa: {
     height: 180,
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: Paleta.paper,
   },
   abrirMapas: {
     position: "absolute",
@@ -826,16 +971,13 @@ const styles = StyleSheet.create({
     bottom: 12,
     minHeight: 40,
     borderRadius: 999,
-    backgroundColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: Paleta.line,
   },
   abrirMapasTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: PaletaOperador.principal,
   },
   listaHistorial: {
     gap: 0,
@@ -869,7 +1011,6 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E8EEF4",
     zIndex: 2,
   },
   lineaHistorial: {
@@ -878,7 +1019,6 @@ const styles = StyleSheet.create({
     bottom: -16,
     left: 8,
     width: 2,
-    backgroundColor: Paleta.line,
     zIndex: 1,
   },
   columnaContenido: {
@@ -894,7 +1034,6 @@ const styles = StyleSheet.create({
   cambioEstado: {
     flex: 1,
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
     fontSize: 14,
   },
   cambioEstadoActual: {
@@ -902,13 +1041,11 @@ const styles = StyleSheet.create({
   },
   cambioTexto: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
   },
   cambioFecha: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 12,
   },
   barraAcciones: {
@@ -921,46 +1058,38 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: Paleta.paperRaised,
     borderTopWidth: 1,
-    borderTopColor: Paleta.line,
   },
   botonMas: {
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Paleta.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.paperRaised,
   },
   botonSecundario: {
     flex: 1,
     minHeight: 48,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.paperRaised,
   },
   botonSecundarioTexto: {
     fontFamily: Fonts.semiBold,
-    color: PaletaOperador.principal,
     fontSize: 14,
   },
   botonAsignar: {
     flex: 1,
     minHeight: 48,
     borderRadius: 999,
-    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
   botonAsignarTexto: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     fontSize: 14,
   },
   masFondo: {
@@ -969,7 +1098,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   masPanel: {
-    backgroundColor: Paleta.paperRaised,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
@@ -980,22 +1108,18 @@ const styles = StyleSheet.create({
   masTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 16,
-    color: Paleta.ink,
     marginBottom: 4,
   },
   masOpcion: {
     minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: Paleta.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.paper,
   },
   masOpcionTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   masCancelar: {
     alignItems: "center",
@@ -1004,6 +1128,5 @@ const styles = StyleSheet.create({
   masCancelarTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
 });

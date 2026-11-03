@@ -1,7 +1,7 @@
 import { type ReactNode, type Ref } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type MapViewProps = {
   children?: ReactNode;
@@ -17,13 +17,23 @@ export function MapView({
   mensaje = "El mapa con las calles de Gualeguaychú se ve en el celular.",
   ref,
 }: MapViewProps) {
+  const tema = useTheme();
+
   return (
     <View
       ref={ref}
-      style={[styles.base, style]}
+      style={[
+        styles.base,
+        {
+          backgroundColor: tema.surfaceVariant,
+          borderColor: tema.outline,
+          borderWidth: 1,
+        },
+        style,
+      ]}
       accessibilityLabel="Mapa no disponible en web"
     >
-      <Text style={styles.texto}>{mensaje}</Text>
+      <Text style={[styles.texto, { color: tema.onSurfaceVariant }]}>{mensaje}</Text>
     </View>
   );
 }
@@ -43,13 +53,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E1F5EE",
     padding: 16,
   },
   texto: {
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
-    color: Paleta.inkSoft,
   },
 });

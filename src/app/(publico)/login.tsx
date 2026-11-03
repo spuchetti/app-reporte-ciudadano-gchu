@@ -13,11 +13,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { esErrorServicio } from "@/servicios/error";
 
 export default function LoginOperadorScreen() {
@@ -25,6 +27,7 @@ export default function LoginOperadorScreen() {
   const { width } = useWindowDimensions();
   const logoSize = Math.min(76, Math.max(64, width * 0.18));
   const dosColumnas = width >= 768;
+  const tema = useTheme();
   const { iniciarSesion } = useSesion();
   const desbloqueo = useDesbloqueoAlEntrar("operador", true);
 
@@ -55,7 +58,10 @@ export default function LoginOperadorScreen() {
   }
 
   const marca = (
-    <View style={[styles.marca, dosColumnas ? styles.marcaLado : null]}>
+    <View style={[styles.marca, { backgroundColor: tema.operadorDeep }, dosColumnas ? styles.marcaLado : null]}>
+      <View style={styles.botonTemaEsquina}>
+        <BotonTema sobreFondoOscuro />
+      </View>
       <IconoPrincipal
         width={logoSize}
         height={logoSize}
@@ -71,7 +77,7 @@ export default function LoginOperadorScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.pantalla}
+      style={[styles.pantalla, { backgroundColor: tema.surface }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <StatusBar style="light" />
@@ -87,7 +93,7 @@ export default function LoginOperadorScreen() {
           style={[
             dosColumnas
               ? styles.marcaColumna
-              : { paddingTop: insets.top, backgroundColor: PaletaOperador.oscura },
+              : { paddingTop: insets.top, backgroundColor: tema.operadorDeep },
           ]}
         >
           {marca}
@@ -96,12 +102,15 @@ export default function LoginOperadorScreen() {
         <View
           style={[
             styles.formulario,
-            { paddingTop: dosColumnas ? 48 : 28 },
+            {
+              backgroundColor: tema.surface,
+              paddingTop: dosColumnas ? 48 : 28,
+            },
           ]}
         >
           <View style={styles.formInner}>
-            <Text style={styles.tituloForm}>Operador</Text>
-            <Text style={styles.subtituloForm}>
+            <Text style={[styles.tituloForm, { color: tema.onSurface }]}>Operador</Text>
+            <Text style={[styles.subtituloForm, { color: tema.onSurfaceVariant }]}>
               Ingresá con tu cuenta municipal
             </Text>
 
@@ -133,7 +142,9 @@ export default function LoginOperadorScreen() {
             />
 
             {error || desbloqueo.error ? (
-              <Text style={styles.error}>{error ?? desbloqueo.error}</Text>
+              <Text style={[styles.error, { color: tema.error }]}>
+                {error ?? desbloqueo.error}
+              </Text>
             ) : null}
 
             <Boton
@@ -153,9 +164,9 @@ export default function LoginOperadorScreen() {
               onPress={() => router.replace("/")}
             />
 
-            <View style={styles.ayuda}>
-              <Text style={styles.ayudaTitulo}>Cuenta de prueba</Text>
-              <Text style={styles.ayudaTexto}>
+            <View style={[styles.ayuda, { backgroundColor: tema.surfaceVariant }]}>
+              <Text style={[styles.ayudaTitulo, { color: tema.onSurface }]}>Cuenta de prueba</Text>
+              <Text style={[styles.ayudaTexto, { color: tema.onSurfaceVariant }]}>
                 Norte: operador.norte@demo.ar / demo1234{"\n"}
                 Sur: operador.sur@demo.ar / demo1234
               </Text>
@@ -168,33 +179,32 @@ export default function LoginOperadorScreen() {
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
-    flex: 1,
-    backgroundColor: Paleta.paperRaised,
-  },
-  scroll: {
-    flexGrow: 1,
-  },
+  pantalla: { flex: 1 },
+  scroll: { flexGrow: 1 },
   scrollFila: {
     flexDirection: "row",
     minHeight: "100%",
   },
   marca: {
-    backgroundColor: PaletaOperador.oscura,
+    position: "relative",
     paddingHorizontal: 32,
-    paddingTop: 28,
+    paddingTop: 36,
     paddingBottom: 36,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
+  botonTemaEsquina: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 5,
+  },
   marcaLado: {
     flex: 1,
     minHeight: "100%",
   },
-  marcaColumna: {
-    flex: 1,
-  },
+  marcaColumna: { flex: 1 },
   logo: {
     marginBottom: 12,
     flexShrink: 0,
@@ -203,7 +213,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 30,
     lineHeight: 34,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 8,
   },
@@ -219,7 +229,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
-    backgroundColor: Paleta.paperRaised,
   },
   formInner: {
     width: "100%",
@@ -229,41 +238,33 @@ const styles = StyleSheet.create({
   tituloForm: {
     fontFamily: Fonts.bold,
     fontSize: 26,
-    color: Paleta.ink,
     marginBottom: 4,
   },
   subtituloForm: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     marginBottom: 22,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
-  separador: {
-    height: 12,
-  },
+  separador: { height: 12 },
   ayuda: {
     marginTop: 28,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#F3F6F8",
     borderRadius: 16,
   },
   ayudaTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 13,
-    color: Paleta.ink,
     marginBottom: 4,
   },
   ayudaTexto: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
     lineHeight: 18,
   },
 });

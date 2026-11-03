@@ -6,7 +6,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { TicketReporte } from "@/components/reporte/ticket";
 import { Boton } from "@/components/ui/boton";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 function textoParam(valor: string | string[] | undefined) {
   if (Array.isArray(valor)) {
@@ -17,6 +18,8 @@ function textoParam(valor: string | string[] | undefined) {
 
 export default function ReporteEnviadoScreen() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
+
   const params = useLocalSearchParams<{
     codigo?: string | string[];
     tipoNombre?: string | string[];
@@ -48,22 +51,41 @@ export default function ReporteEnviadoScreen() {
       style={[
         styles.pantalla,
         {
+          backgroundColor: tema.background,
           paddingTop: insets.top + 28,
           paddingBottom: Math.max(insets.bottom, 24),
         },
       ]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
       <View style={styles.tituloFila}>
-        <View style={styles.iconoTitulo}>
-          <Ionicons name="document-text-outline" size={24} color={Paleta.tealDeep} />
-          <View style={styles.tilde}>
-            <Ionicons name="checkmark" size={11} color={Paleta.paperRaised} />
+        <View
+          style={[
+            styles.iconoTitulo,
+            { backgroundColor: tema.primaryContainer },
+          ]}
+        >
+          <Ionicons
+            name="document-text-outline"
+            size={24}
+            color={tema.onPrimaryContainer}
+          />
+          <View
+            style={[
+              styles.tilde,
+              {
+                backgroundColor: tema.primary,
+                borderColor: tema.surface,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Ionicons name="checkmark" size={11} color={tema.onPrimary} />
           </View>
         </View>
-        <Text style={styles.titulo}>{titulo}</Text>
+        <Text style={[styles.titulo, { color: tema.onSurface }]}>{titulo}</Text>
       </View>
-      <Text style={styles.subtitulo}>
+      <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
         {sumado
           ? adhesiones
             ? `Cuantos más vecinos se suman, más arriba va. Ya hay ${adhesiones} adhesiones.`
@@ -104,7 +126,6 @@ export default function ReporteEnviadoScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
     paddingHorizontal: 24,
   },
   tituloFila: {
@@ -117,7 +138,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Paleta.tealSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -128,7 +148,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: Paleta.teal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -136,12 +155,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.bold,
     fontSize: 28,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 24,
   },

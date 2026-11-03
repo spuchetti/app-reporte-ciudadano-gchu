@@ -12,15 +12,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { CampoTexto } from "@/components/ui/campo-texto";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { borradorListoParaEnviar, leerBorrador } from "@/servicios/borrador";
 import { esErrorServicio } from "@/servicios/error";
 
 export default function DatosVecinoScreen() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const { enviarPrimerReporte, adherirPrimerReporte, identificar } = useSesion();
   const adhesionId = leerBorrador().adherirAId;
   const borrador = borradorListoParaEnviar();
@@ -85,10 +88,10 @@ export default function DatosVecinoScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.pantalla}
+      style={[styles.pantalla, { backgroundColor: tema.surface }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
@@ -100,8 +103,12 @@ export default function DatosVecinoScreen() {
         ]}
       >
         <View style={styles.formInner}>
-          <Text style={styles.titulo}>Tus datos</Text>
-          <Text style={styles.subtitulo}>
+          <View style={styles.cabeceraFila}>
+            <Text style={[styles.titulo, { color: tema.onSurface }]}>Tus datos</Text>
+            <BotonTema />
+          </View>
+
+          <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
             {esReingreso
               ? "Usá el mismo email y contraseña. Si es la primera vez, te creamos la cuenta."
               : esAdhesion
@@ -158,7 +165,7 @@ export default function DatosVecinoScreen() {
           />
 
           {error || desbloqueo.error ? (
-            <Text style={styles.error}>{error ?? desbloqueo.error}</Text>
+            <Text style={[styles.error, { color: tema.error }]}>{error ?? desbloqueo.error}</Text>
           ) : null}
 
           <Boton
@@ -187,10 +194,7 @@ export default function DatosVecinoScreen() {
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
-    flex: 1,
-    backgroundColor: Paleta.paperRaised,
-  },
+  pantalla: { flex: 1 },
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
@@ -202,21 +206,24 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     padding: 4,
   },
+  cabeceraFila: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 30,
-    color: Paleta.ink,
-    marginBottom: 8,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     marginBottom: 32,
+    lineHeight: 20,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },

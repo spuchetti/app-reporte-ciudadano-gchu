@@ -15,14 +15,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Boton } from '@/components/ui/boton';
+import { BotonTema } from '@/components/ui/boton-tema';
 import { IconoCategoria } from '@/components/ui/icono-categoria';
 import {
   CATEGORIA_POR_DEFECTO,
   obtenerCategoriaVisual,
 } from '@/constants/categorias';
-import { fondoSuave, Fonts, Paleta } from '@/constants/theme';
+import { fondoSuave, Fonts } from '@/constants/theme';
 import { useSesion } from '@/contexto/sesion';
 import { useOrigenReporte } from '@/contexto/origen-reporte';
+import { useTheme } from '@/hooks/use-theme';
 import { nombreTipo } from '@/servicios/bandeja';
 import {
   alActualizarColaReportes,
@@ -38,7 +40,7 @@ import { EstadoReporte, Reporte } from '@/tipos';
 
 type Pestana = 'propios' | 'sumados';
 
-const TEXTO_ESTADO: Record<EstadoReporte, string> = {
+const TEXTO_ESTADO_CLARO: Record<EstadoReporte, string> = {
   recibido: '#785500',
   en_revision: '#245C85',
   asignado: '#9D4308',
@@ -67,21 +69,16 @@ function fechaCorta(iso: string) {
   const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
   const inicioFecha = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
   const dias = Math.round((inicioHoy.getTime() - inicioFecha.getTime()) / 86_400_000);
-  if (dias === 0) {
-    return `Hoy, ${hora}`;
-  }
-  if (dias === 1) {
-    return `Ayer, ${hora}`;
-  }
+  if (dias === 0) return `Hoy, ${hora}`;
+  if (dias === 1) return `Ayer, ${hora}`;
   const dia = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
   return `${dia}, ${hora}`;
 }
 
 function textoPendientes(cantidad: number) {
-  if (cantidad === 1) {
-    return '1 reporte espera conexión para enviarse';
-  }
-  return `${cantidad} reportes esperan conexión para enviarse`;
+  return cantidad === 1
+    ? '1 reporte espera conexión para enviarse'
+    : `${cantidad} reportes esperan conexión para enviarse`;
 }
 
 interface TarjetaReporteProps {
@@ -92,13 +89,16 @@ interface TarjetaReporteProps {
 const COLOR_SIN_ENVIAR = '#9A6700';
 
 function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
+  const tema = useTheme();
   const pendiente = !reporte.sincronizado;
   const colorEstado = pendiente
     ? COLOR_SIN_ENVIAR
-    : (COLORES_ESTADO[reporte.estado] ?? Paleta.inkSoft);
+    : (COLORES_ESTADO[reporte.estado] ?? tema.onSurfaceVariant);
   const colorTextoEstado = pendiente
     ? COLOR_SIN_ENVIAR
-    : (TEXTO_ESTADO[reporte.estado] ?? Paleta.inkSoft);
+    : tema.esOscuro
+    ? colorEstado
+    : (TEXTO_ESTADO_CLARO[reporte.estado] ?? tema.onSurfaceVariant);
   const categoria = obtenerCategoriaVisual(reporte.tipoId) ?? CATEGORIA_POR_DEFECTO;
   const tipo = nombreTipo(reporte.tipoId);
   const estado = pendiente ? 'Sin enviar' : etiquetaEstado(reporte.estado);
@@ -106,7 +106,14 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.tarjeta, pressed && styles.tarjetaPresionada]}
+      style={({ pressed }) => [
+        styles.tarjeta,
+        {
+          backgroundColor: tema.surface,
+          borderColor: tema.outline,
+        },
+        pressed && styles.tarjetaPresionada,
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Reclamo ${reporte.codigo}, ${tipo}, estado ${etiquetaParaVecino(reporte)}`}
@@ -121,10 +128,10 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
         <View style={styles.cuerpoTexto}>
           <View style={styles.filaTitulo}>
             <View style={styles.titulos}>
-              <Text style={styles.tipoTitulo} numberOfLines={1}>
+              <Text style={[styles.tipoTitulo, { color: tema.onSurface }]} numberOfLines={1}>
                 {tipo}
               </Text>
-              <Text style={styles.direccion} numberOfLines={1}>
+              <Text style={[styles.direccion, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
                 {reporte.direccion}
               </Text>
             </View>
@@ -135,7 +142,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
               </Text>
             </View>
           </View>
-          <View style={styles.pista}>
+          <View style={[styles.pista, { backgroundColor: tema.surfaceVariant }]}>
             <View
               style={[
                 styles.avance,
@@ -144,8 +151,10 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
             />
           </View>
           <View style={styles.metaFila}>
-            <Ionicons name="time-outline" size={14} color={Paleta.inkSoft} />
-            <Text style={styles.antiguedad}>{fechaCorta(reporte.creadoEn)}</Text>
+            <Ionicons name="time-outline" size={14} color={tema.onSurfaceVariant} />
+            <Text style={[styles.antiguedad, { color: tema.onSurfaceVariant }]}>
+              {fechaCorta(reporte.creadoEn)}
+            </Text>
             {pendiente ? (
               <>
                 <Ionicons name="cloud-offline-outline" size={14} color={COLOR_SIN_ENVIAR} />
@@ -153,7 +162,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
               </>
             ) : null}
             <View style={styles.metaEspacio} />
-            <Ionicons name="chevron-forward" size={18} color={Paleta.inkSoft} />
+            <Ionicons name="chevron-forward" size={18} color={tema.onSurfaceVariant} />
           </View>
         </View>
       </View>
@@ -164,6 +173,7 @@ function TarjetaReporte({ reporte, onPress }: TarjetaReporteProps) {
 export default function MisReportesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const tema = useTheme();
   const { sesion } = useSesion();
   const { establecerOrigen } = useOrigenReporte();
 
@@ -202,9 +212,7 @@ export default function MisReportesScreen() {
       setAdheridos(sumados);
       setError(null);
     } catch {
-      setError(
-        'No pudimos cargar tus reclamos. Verificá la conexión y volvé a intentar.',
-      );
+      setError('No pudimos cargar tus reclamos. Verificá la conexión y volvé a intentar.');
     } finally {
       setCargando(false);
       setRecargando(false);
@@ -212,9 +220,7 @@ export default function MisReportesScreen() {
   }, [autorId]);
 
   const refrescarTrasSync = useCallback(async () => {
-    if (!autorId) {
-      return;
-    }
+    if (!autorId) return;
     try {
       const [data, sumados] = await Promise.all([
         obtenerMisReportes(autorId),
@@ -224,7 +230,7 @@ export default function MisReportesScreen() {
       setAdheridos(sumados);
       setError(null);
     } catch {
-      // El aviso de cola / lista previa se mantiene.
+      // Se mantiene la lista previa
     }
   }, [autorId]);
 
@@ -244,9 +250,7 @@ export default function MisReportesScreen() {
   useEffect(() => {
     return alEstadoSincronizacionRed((activo) => {
       setRecargando(activo);
-      if (!activo) {
-        void refrescarTrasSync();
-      }
+      if (!activo) void refrescarTrasSync();
     });
   }, [refrescarTrasSync]);
 
@@ -260,53 +264,90 @@ export default function MisReportesScreen() {
   };
 
   return (
-    <View style={styles.pantalla}>
-      <StatusBar style="dark" />
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
+      <StatusBar style={tema.esOscuro ? 'light' : 'dark'} />
 
       <View
         style={[
           styles.cabecera,
-          { paddingTop: Platform.OS === 'web' ? 28 : insets.top + 12 },
+          {
+            backgroundColor: tema.background,
+            paddingTop: Platform.OS === 'web' ? 28 : insets.top + 12,
+          },
         ]}
       >
-        <Text style={styles.cabeceraTitulo}>Mis reportes</Text>
+        <Text style={[styles.cabeceraTitulo, { color: tema.onBackground }]}>
+          Mis reportes
+        </Text>
+        <BotonTema />
       </View>
 
-      <View style={styles.segmento}>
+      <View style={[styles.segmento, { backgroundColor: tema.surfaceVariant }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: pestana === 'propios' }}
           onPress={() => setPestana('propios')}
-          style={[styles.segmentoItem, pestana === 'propios' && styles.segmentoActivo]}
+          style={[
+            styles.segmentoItem,
+            pestana === 'propios' && [styles.segmentoActivo, { backgroundColor: tema.surface }],
+          ]}
         >
-          <Text style={[styles.segmentoTexto, pestana === 'propios' && styles.segmentoTextoActivo]}>
+          <Text
+            style={[
+              styles.segmentoTexto,
+              { color: pestana === 'propios' ? tema.onSurface : tema.onSurfaceVariant },
+              pestana === 'propios' && styles.segmentoTextoActivo,
+            ]}
+          >
             Tus reportes
           </Text>
-          <View style={[styles.cuenta, pestana === 'propios' && styles.cuentaActiva]}>
+          <View
+            style={[
+              styles.cuenta,
+              { backgroundColor: tema.esOscuro ? 'rgba(255,255,255,0.08)' : '#DDE3E8' },
+              pestana === 'propios' && { backgroundColor: tema.primaryContainer },
+            ]}
+          >
             <Text
               style={[
                 styles.cuentaTexto,
-                pestana === 'propios' && styles.cuentaTextoActiva,
+                { color: pestana === 'propios' ? tema.onPrimaryContainer : tema.onSurfaceVariant },
               ]}
             >
               {reportes.length}
             </Text>
           </View>
         </Pressable>
+
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: pestana === 'sumados' }}
           onPress={() => setPestana('sumados')}
-          style={[styles.segmentoItem, pestana === 'sumados' && styles.segmentoActivo]}
+          style={[
+            styles.segmentoItem,
+            pestana === 'sumados' && [styles.segmentoActivo, { backgroundColor: tema.surface }],
+          ]}
         >
-          <Text style={[styles.segmentoTexto, pestana === 'sumados' && styles.segmentoTextoActivo]}>
+          <Text
+            style={[
+              styles.segmentoTexto,
+              { color: pestana === 'sumados' ? tema.onSurface : tema.onSurfaceVariant },
+              pestana === 'sumados' && styles.segmentoTextoActivo,
+            ]}
+          >
             Te sumaste
           </Text>
-          <View style={[styles.cuenta, pestana === 'sumados' && styles.cuentaActiva]}>
+          <View
+            style={[
+              styles.cuenta,
+              { backgroundColor: tema.esOscuro ? 'rgba(255,255,255,0.08)' : '#DDE3E8' },
+              pestana === 'sumados' && { backgroundColor: tema.primaryContainer },
+            ]}
+          >
             <Text
               style={[
                 styles.cuentaTexto,
-                pestana === 'sumados' && styles.cuentaTextoActiva,
+                { color: pestana === 'sumados' ? tema.onPrimaryContainer : tema.onSurfaceVariant },
               ]}
             >
               {adheridos.length}
@@ -316,9 +357,18 @@ export default function MisReportesScreen() {
       </View>
 
       {pendientes > 0 && pestana === 'propios' && !cargando && !mostrarErrorBloqueante ? (
-        <View style={styles.aviso}>
+        <View
+          style={[
+            styles.aviso,
+            {
+              backgroundColor: tema.esOscuro ? 'rgba(245, 158, 11, 0.15)' : '#FFF6DC',
+              borderColor: tema.outline,
+              borderWidth: 1,
+            },
+          ]}
+        >
           <Ionicons name="cloud-offline-outline" size={18} color="#9A6700" />
-          <Text style={styles.avisoTexto}>
+          <Text style={[styles.avisoTexto, { color: tema.esOscuro ? '#FCD34D' : '#7A5B00' }]}>
             {textoPendientes(pendientes)}. Se envían solos cuando vuelva la conexión.
           </Text>
         </View>
@@ -326,13 +376,15 @@ export default function MisReportesScreen() {
 
       {cargando ? (
         <View style={styles.centrado}>
-          <ActivityIndicator size="large" color={Paleta.teal} />
-          <Text style={styles.textoCarga}>Cargando tus reportes…</Text>
+          <ActivityIndicator size="large" color={tema.primary} />
+          <Text style={[styles.textoCarga, { color: tema.onSurfaceVariant }]}>
+            Cargando tus reportes…
+          </Text>
         </View>
       ) : mostrarErrorBloqueante ? (
         <View style={styles.centrado}>
-          <Text style={styles.tituloError}>Aviso</Text>
-          <Text style={styles.textoError}>{error}</Text>
+          <Text style={[styles.tituloError, { color: tema.error }]}>Aviso</Text>
+          <Text style={[styles.textoError, { color: tema.error }]}>{error}</Text>
           <View style={styles.botonErrorCaja}>
             <Boton titulo="Reintentar" onPress={() => cargarDatos()} />
           </View>
@@ -342,10 +394,7 @@ export default function MisReportesScreen() {
           data={lista}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TarjetaReporte
-              reporte={item}
-              onPress={() => irAlDetalle(item.id)}
-            />
+            <TarjetaReporte reporte={item} onPress={() => irAlDetalle(item.id)} />
           )}
           contentContainerStyle={[
             styles.listaContenido,
@@ -356,43 +405,52 @@ export default function MisReportesScreen() {
             <RefreshControl
               refreshing={recargando}
               onRefresh={() => cargarDatos(true)}
-              colors={[Paleta.teal]}
-              tintColor={Paleta.teal}
+              colors={[tema.primary]}
+              tintColor={tema.primary}
             />
           }
           ListEmptyComponent={
             pestana === 'sumados' && usuario ? (
               <View style={styles.vacioCaja}>
-                <View style={styles.vacioIcono}>
-                  <Ionicons name="people-outline" size={28} color={Paleta.tealDeep} />
+                <View style={[styles.vacioIcono, { backgroundColor: tema.primaryContainer }]}>
+                  <Ionicons name="people-outline" size={28} color={tema.onPrimaryContainer} />
                 </View>
-                <Text style={styles.vacioTitulo}>Todavía no te sumaste</Text>
-                <Text style={styles.vacioSubtitulo}>
+                <Text style={[styles.vacioTitulo, { color: tema.onBackground }]}>
+                  Todavía no te sumaste
+                </Text>
+                <Text style={[styles.vacioSubtitulo, { color: tema.onSurfaceVariant }]}>
                   Cuando te sumes a un reclamo de otro vecino, va a aparecer en esta lista.
                 </Text>
-                <View style={styles.pasos}>
+                <View
+                  style={[
+                    styles.pasos,
+                    { backgroundColor: tema.surface, borderColor: tema.outline },
+                  ]}
+                >
                   {[
                     'Abrí el mapa y tocá un reclamo',
                     'Revisá que sea el mismo problema',
                     'Tocá “Sumarme a este reclamo”',
                   ].map((texto, indice) => (
                     <View key={texto} style={styles.paso}>
-                      <View style={styles.pasoNumero}>
-                        <Text style={styles.pasoNumeroTexto}>{indice + 1}</Text>
+                      <View style={[styles.pasoNumero, { backgroundColor: tema.primaryContainer }]}>
+                        <Text style={[styles.pasoNumeroTexto, { color: tema.onPrimaryContainer }]}>
+                          {indice + 1}
+                        </Text>
                       </View>
-                      <Text style={styles.pasoTexto}>{texto}</Text>
+                      <Text style={[styles.pasoTexto, { color: tema.onSurface }]}>
+                        {texto}
+                      </Text>
                     </View>
                   ))}
                 </View>
               </View>
             ) : (
               <View style={styles.vacioCaja}>
-                <Text style={styles.vacioTitulo}>
-                  {!usuario
-                    ? 'Identificate para ver tus reportes'
-                    : 'No tenés reclamos cargados'}
+                <Text style={[styles.vacioTitulo, { color: tema.onBackground }]}>
+                  {!usuario ? 'Identificate para ver tus reportes' : 'No tenés reclamos cargados'}
                 </Text>
-                <Text style={styles.vacioSubtitulo}>
+                <Text style={[styles.vacioSubtitulo, { color: tema.onSurfaceVariant }]}>
                   {!usuario
                     ? 'Con tu email y teléfono podés seguir el avance de lo que reportás.'
                     : 'Los reclamos que cargues van a aparecer acá para que sigas el avance del trabajo.'}
@@ -400,9 +458,7 @@ export default function MisReportesScreen() {
                 <View style={styles.botonVacioCaja}>
                   <Boton
                     titulo={!usuario ? 'Identificarme' : 'Reportar problema'}
-                    onPress={() =>
-                      router.push(!usuario ? '/register' : '/reporte/nuevo')
-                    }
+                    onPress={() => router.push(!usuario ? '/register' : '/reporte/nuevo')}
                   />
                 </View>
               </View>
@@ -415,19 +471,17 @@ export default function MisReportesScreen() {
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
-    flex: 1,
-    backgroundColor: Paleta.paper,
-  },
+  pantalla: { flex: 1 },
   cabecera: {
-    backgroundColor: Paleta.paper,
     paddingHorizontal: 20,
-    paddingBottom: 6,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   cabeceraTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 28,
-    color: Paleta.ink,
   },
   segmento: {
     flexDirection: 'row',
@@ -436,7 +490,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     padding: 4,
     borderRadius: 16,
-    backgroundColor: '#E7EDF2',
   },
   segmentoItem: {
     flex: 1,
@@ -449,21 +502,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   segmentoActivo: {
-    backgroundColor: Paleta.paperRaised,
-    shadowColor: Paleta.ink,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
   segmentoTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   segmentoTextoActivo: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
   },
   cuenta: {
     minWidth: 22,
@@ -472,18 +522,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#DDE3E8',
-  },
-  cuentaActiva: {
-    backgroundColor: Paleta.tealSoft,
   },
   cuentaTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
-    color: Paleta.inkSoft,
-  },
-  cuentaTextoActiva: {
-    color: Paleta.tealDeep,
   },
   aviso: {
     flexDirection: 'row',
@@ -494,14 +536,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#FFF6DC',
   },
   avisoTexto: {
     flex: 1,
     fontFamily: Fonts.medium,
     fontSize: 13,
     lineHeight: 18,
-    color: '#7A5B00',
   },
   centrado: {
     flex: 1,
@@ -513,18 +553,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   tituloError: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.rojo,
     marginBottom: 4,
   },
   textoError: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.rojo,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -542,15 +579,13 @@ const styles = StyleSheet.create({
   },
   tarjeta: {
     position: 'relative',
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Paleta.line,
     overflow: 'hidden',
     elevation: 2,
-    shadowColor: Paleta.ink,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
   },
   barraEstado: {
@@ -560,9 +595,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 4,
   },
-  tarjetaPresionada: {
-    opacity: 0.88,
-  },
+  tarjetaPresionada: { opacity: 0.88 },
   tarjetaCuerpo: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -577,28 +610,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cuerpoTexto: {
-    flex: 1,
-    gap: 8,
-  },
+  cuerpoTexto: { flex: 1, gap: 8 },
   filaTitulo: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
   },
-  titulos: {
-    flex: 1,
-    gap: 2,
-  },
+  titulos: { flex: 1, gap: 2 },
   tipoTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 16,
-    color: Paleta.ink,
   },
   direccion: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   estado: {
     flexDirection: 'row',
@@ -618,7 +643,6 @@ const styles = StyleSheet.create({
   pista: {
     height: 4,
     borderRadius: 999,
-    backgroundColor: '#E7EDF2',
     overflow: 'hidden',
   },
   avance: {
@@ -633,16 +657,13 @@ const styles = StyleSheet.create({
   antiguedad: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   sinEnviar: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
     color: '#9A6700',
   },
-  metaEspacio: {
-    flex: 1,
-  },
+  metaEspacio: { flex: 1 },
   vacioCaja: {
     alignItems: 'center',
     paddingHorizontal: 8,
@@ -654,20 +675,17 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Paleta.tealSoft,
     marginBottom: 16,
   },
   vacioTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 20,
-    color: Paleta.ink,
     marginBottom: 8,
     textAlign: 'center',
   },
   vacioSubtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,
@@ -675,10 +693,8 @@ const styles = StyleSheet.create({
   pasos: {
     alignSelf: 'stretch',
     marginTop: 28,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Paleta.line,
     paddingVertical: 8,
     paddingHorizontal: 14,
     gap: 4,
@@ -695,18 +711,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Paleta.tealSoft,
   },
   pasoNumeroTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.tealDeep,
   },
   pasoTexto: {
     flex: 1,
     fontFamily: Fonts.medium,
     fontSize: 15,
-    color: Paleta.ink,
     lineHeight: 20,
   },
   botonVacioCaja: {
