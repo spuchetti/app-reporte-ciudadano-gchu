@@ -7,7 +7,8 @@ import {
   useAudioPlayerStatus,
 } from "expo-audio";
 
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 const BARRAS = [8, 14, 20, 12, 18, 26, 16, 22, 10, 18, 24, 14, 20, 12, 16, 22, 8, 18, 14, 24, 12, 20];
 
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function NotaDeVoz({ uri, onBorrar }: Props) {
+  const tema = useTheme();
   const player = useAudioPlayer({ uri }, { updateInterval: 80 });
   const estado = useAudioPlayerStatus(player);
 
@@ -50,31 +52,58 @@ export function NotaDeVoz({ uri, onBorrar }: Props) {
   const posicion = avance * BARRAS.length;
 
   return (
-    <View style={styles.nota}>
+    <View
+      style={[
+        styles.nota,
+        {
+          backgroundColor: tema.surface,
+          borderColor: tema.outline,
+        },
+      ]}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={estado.playing ? "Pausar nota de voz" : "Reproducir nota de voz"}
         onPress={() => {
           void reproducir();
         }}
-        style={styles.play}
+        style={[styles.play, { backgroundColor: tema.primary }]}
       >
         <Ionicons
           name={estado.playing ? "pause" : "play"}
           size={16}
-          color={Paleta.paperRaised}
+          color={tema.onPrimary}
         />
       </Pressable>
       <View style={styles.notaTexto}>
-        <Text style={styles.notaTitulo}>Nota de voz</Text>
-        <Text style={styles.notaTiempo}>{formatoSegundos(segundos)}</Text>
+        <Text style={[styles.notaTitulo, { color: tema.onSurface }]}>Nota de voz</Text>
+        <Text style={[styles.notaTiempo, { color: tema.onSurfaceVariant }]}>
+          {formatoSegundos(segundos)}
+        </Text>
       </View>
       <View style={styles.onda}>
         {BARRAS.map((alto, indice) => {
           const lleno = Math.max(0, Math.min(1, posicion - indice));
           return (
-            <View key={indice} style={[styles.barra, { height: alto }]}>
-              <View style={[styles.barraPintada, { width: `${lleno * 100}%` }]} />
+            <View
+              key={indice}
+              style={[
+                styles.barra,
+                {
+                  height: alto,
+                  backgroundColor: tema.surfaceVariant,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.barraPintada,
+                  {
+                    width: `${lleno * 100}%`,
+                    backgroundColor: tema.primary,
+                  },
+                ]}
+              />
             </View>
           );
         })}
@@ -87,7 +116,7 @@ export function NotaDeVoz({ uri, onBorrar }: Props) {
           hitSlop={8}
           style={styles.borrar}
         >
-          <Ionicons name="close" size={20} color={Paleta.inkSoft} />
+          <Ionicons name="close" size={20} color={tema.onSurfaceVariant} />
         </Pressable>
       ) : null}
     </View>
@@ -107,9 +136,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#E6ECF0",
     borderRadius: 16,
-    backgroundColor: Paleta.paperRaised,
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
@@ -117,7 +144,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Paleta.teal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -127,12 +153,10 @@ const styles = StyleSheet.create({
   notaTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 14,
-    color: Paleta.ink,
   },
   notaTiempo: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   onda: {
     flex: 1,
@@ -145,12 +169,10 @@ const styles = StyleSheet.create({
   barra: {
     width: 3,
     borderRadius: 2,
-    backgroundColor: "#D5EEF2",
     overflow: "hidden",
   },
   barraPintada: {
     height: "100%",
-    backgroundColor: Paleta.teal,
   },
   borrar: {
     width: 28,

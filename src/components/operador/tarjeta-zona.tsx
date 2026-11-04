@@ -1,14 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { fondoSuave, Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { fondoSuave, Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { Cuadrilla, Zona } from "@/tipos";
-
-const COLORES_ZONA: Record<string, string> = {
-  "zon-norte": Paleta.verde,
-  "zon-centro": Paleta.azul,
-  "zon-sur": "#532e9e",
-  "zon-este": PaletaOperador.principal,
-};
 
 function textoCuadrillas(cantidad: number) {
   return cantidad === 1 ? "1 cuadrilla" : `${cantidad} cuadrillas`;
@@ -21,19 +15,39 @@ type Props = {
 };
 
 export default function TarjetaZona({ zona, cuadrillas, zonaOperadorId }: Props) {
-  const color = COLORES_ZONA[zona.id] ?? Paleta.ink;
+  const tema = useTheme();
+
+  const COLORES_ZONA: Record<string, string> = {
+    "zon-norte": tema.verde,
+    "zon-centro": tema.azul,
+    "zon-sur": "#8B5CF6",
+    "zon-este": tema.secondary,
+  };
+
+  const color = COLORES_ZONA[zona.id] ?? tema.onSurface;
   const esTuZona = zonaOperadorId === zona.id;
 
   return (
-    <View style={[styles.tarjeta, esTuZona ? { borderColor: color } : null]}>
+    <View
+      style={[
+        styles.tarjeta,
+        {
+          backgroundColor: tema.surface,
+          borderColor: esTuZona ? color : tema.outline,
+          borderWidth: esTuZona ? 2 : 1,
+        },
+      ]}
+    >
       <View style={styles.header}>
         <View style={[styles.icono, { backgroundColor: `${color}33` }]}>
           <View style={[styles.marca, { backgroundColor: color }]} />
         </View>
         <View style={styles.datos}>
-          <Text style={styles.nombre}>{zona.nombre}</Text>
-          <Text style={styles.referente}>{zona.referente}</Text>
-          <Text style={styles.cantidad}>{textoCuadrillas(cuadrillas.length)}</Text>
+          <Text style={[styles.nombre, { color: tema.onSurface }]}>{zona.nombre}</Text>
+          <Text style={[styles.referente, { color: tema.onSurfaceVariant }]}>{zona.referente}</Text>
+          <Text style={[styles.cantidad, { color: tema.onSurface }]}>
+            {textoCuadrillas(cuadrillas.length)}
+          </Text>
         </View>
         {esTuZona ? (
           <Text style={[styles.tuZona, { color, backgroundColor: `${color}33` }]}>
@@ -43,24 +57,32 @@ export default function TarjetaZona({ zona, cuadrillas, zonaOperadorId }: Props)
       </View>
 
       {cuadrillas.length === 0 ? (
-        <Text style={styles.vacio}>Todavía no hay cuadrillas en esta zona.</Text>
+        <Text style={[styles.vacio, { color: tema.onSurfaceVariant }]}>
+          Todavía no hay cuadrillas en esta zona.
+        </Text>
       ) : (
         cuadrillas.map((cuadrilla) => (
-          <View key={cuadrilla.id} style={styles.fila}>
+          <View key={cuadrilla.id} style={[styles.fila, { borderColor: tema.outline }]}>
             <View style={styles.filaTexto}>
-              <Text style={styles.cuadrillaNombre}>{cuadrilla.nombre}</Text>
-              <Text style={styles.especialidad}>{cuadrilla.especialidad}</Text>
+              <Text style={[styles.cuadrillaNombre, { color: tema.onSurface }]}>
+                {cuadrilla.nombre}
+              </Text>
+              <Text style={[styles.especialidad, { color: tema.onSurfaceVariant }]}>
+                {cuadrilla.especialidad}
+              </Text>
             </View>
             <View
               style={[
                 styles.chip,
-                cuadrilla.activa ? styles.chipActiva : styles.chipInactiva,
+                {
+                  backgroundColor: fondoSuave(cuadrilla.activa ? tema.verde : tema.rojo),
+                },
               ]}
             >
               <Text
                 style={[
                   styles.chipTexto,
-                  { color: cuadrilla.activa ? Paleta.verde : Paleta.rojo },
+                  { color: cuadrilla.activa ? tema.verde : tema.rojo },
                 ]}
               >
                 {cuadrilla.activa ? "Activa" : "Inactiva"}
@@ -75,11 +97,8 @@ export default function TarjetaZona({ zona, cuadrillas, zonaOperadorId }: Props)
 
 const styles = StyleSheet.create({
   tarjeta: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     padding: 16,
-    borderWidth: 1,
-    borderColor: Paleta.line,
     gap: 12,
     marginBottom: 16,
   },
@@ -107,17 +126,14 @@ const styles = StyleSheet.create({
   nombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   referente: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   cantidad: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.ink,
   },
   tuZona: {
     fontFamily: Fonts.semiBold,
@@ -130,7 +146,6 @@ const styles = StyleSheet.create({
   vacio: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   fila: {
     flexDirection: "row",
@@ -138,7 +153,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderTopWidth: 1,
-    borderColor: Paleta.line,
     paddingTop: 10,
   },
   filaTexto: {
@@ -148,23 +162,15 @@ const styles = StyleSheet.create({
   cuadrillaNombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   especialidad: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   chip: {
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
-  },
-  chipActiva: {
-    backgroundColor: fondoSuave(Paleta.verde),
-  },
-  chipInactiva: {
-    backgroundColor: fondoSuave(Paleta.rojo),
   },
   chipTexto: {
     fontFamily: Fonts.semiBold,

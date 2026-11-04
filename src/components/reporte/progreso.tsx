@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { PASOS_REPORTE } from "@/servicios/borrador";
 
 const TITULOS = [
@@ -20,6 +21,8 @@ type Props = {
 };
 
 export function ProgresoReporte({ paso, onAtras, onCerrar, titulo }: Props) {
+  const tema = useTheme();
+
   return (
     <View style={styles.caja}>
       <View style={styles.barra}>
@@ -30,9 +33,9 @@ export function ProgresoReporte({ paso, onAtras, onCerrar, titulo }: Props) {
           onPress={onAtras}
           style={styles.boton}
         >
-          <Ionicons name="arrow-back" size={22} color={Paleta.ink} />
+          <Ionicons name="arrow-back" size={22} color={tema.onSurface} />
         </Pressable>
-        <Text style={styles.paso}>
+        <Text style={[styles.paso, { color: tema.onSurfaceVariant }]}>
           Paso {paso} de {PASOS_REPORTE}
         </Text>
         <Pressable
@@ -42,18 +45,24 @@ export function ProgresoReporte({ paso, onAtras, onCerrar, titulo }: Props) {
           onPress={onCerrar}
           style={styles.boton}
         >
-          <Ionicons name="close" size={22} color={Paleta.ink} />
+          <Ionicons name="close" size={22} color={tema.onSurface} />
         </Pressable>
       </View>
       <View style={styles.puntos}>
-        {TITULOS.map((titulo, indice) => (
+        {TITULOS.map((itemTitulo, indice) => (
           <View
-            key={titulo}
-            style={[styles.punto, indice < paso ? styles.puntoActivo : null]}
+            key={itemTitulo}
+            style={[
+              styles.punto,
+              { backgroundColor: tema.outline },
+              indice < paso && { backgroundColor: tema.primary },
+            ]}
           />
         ))}
       </View>
-      <Text style={styles.titulo}>{titulo ?? TITULOS[paso - 1]}</Text>
+      <Text style={[styles.titulo, { color: tema.onSurface }]}>
+        {titulo ?? TITULOS[paso - 1]}
+      </Text>
     </View>
   );
 }
@@ -77,12 +86,10 @@ const styles = StyleSheet.create({
   paso: {
     fontFamily: Fonts.medium,
     fontSize: 15,
-    color: Paleta.inkSoft,
   },
   titulo: {
     fontFamily: Fonts.bold,
     fontSize: 26,
-    color: Paleta.ink,
   },
   puntos: {
     flexDirection: "row",
@@ -92,9 +99,5 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Paleta.line,
-  },
-  puntoActivo: {
-    backgroundColor: Paleta.teal,
   },
 });

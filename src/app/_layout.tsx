@@ -7,7 +7,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { SQLiteProvider, type SQLiteDatabase } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
 import { type PropsWithChildren } from "react";
-import { Platform } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { EscuchaAvisos } from "@/components/avisos/escucha-avisos";
 import { EscuchaRed } from "@/components/avisos/escucha-red";
@@ -57,7 +57,7 @@ export default function RootLayout() {
 
   return (
     <TemaProvider>
-      < ProveedorNavegacionTema>
+      <ProveedorNavegacionTema>
         <ProveedorBaseDatos>
           <SesionProvider>
             <SplashScreenController />
@@ -98,10 +98,6 @@ function RootNavigator() {
     return null;
   }
 
-  if (pendienteDesbloqueo && rolToken) {
-    return <PantallaDesbloqueo rol={rolToken} />;
-  }
-
   const esVecino =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
   const esOperador =
@@ -109,7 +105,7 @@ function RootNavigator() {
   const enPublico = !esVecino && !esOperador;
 
   return (
-    <>
+    <View style={styles.contenedorRaiz}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={enPublico}>
           <Stack.Screen name="(publico)" />
@@ -123,8 +119,21 @@ function RootNavigator() {
         <Stack.Screen name="reporte" />
         <Stack.Screen name="reclamo/[id]" />
       </Stack>
+
       <EscuchaAvisos />
       <EscuchaRed />
-    </>
+
+      {pendienteDesbloqueo && rolToken ? (
+        <View style={StyleSheet.absoluteFill}>
+          <PantallaDesbloqueo rol={rolToken} />
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  contenedorRaiz: {
+    flex: 1,
+  },
+});

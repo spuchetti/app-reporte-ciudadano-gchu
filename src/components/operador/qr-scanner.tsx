@@ -12,7 +12,8 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function QRScanner({ visible, onClose, onScan }: Props) {
+  const tema = useTheme();
   const [permiso, pedirPermiso] = useCameraPermissions();
   const [esperandoPermiso, setEsperandoPermiso] = useState(false);
   const [errorPermiso, setErrorPermiso] = useState<string | null>(null);
@@ -47,13 +49,8 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
       return;
     }
 
-    if (permiso?.granted || pidioPermiso.current) {
-      return;
-    }
-
-    if (permiso && !permiso.canAskAgain) {
-      return;
-    }
+    if (permiso?.granted || pidioPermiso.current) return;
+    if (permiso && !permiso.canAskAgain) return;
 
     pidioPermiso.current = true;
     void solicitarPermiso();
@@ -61,22 +58,16 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
 
   const handleScan = useCallback(
     ({ data }: { data: string }) => {
-      if (escaneadoRef.current || !data) {
-        return;
-      }
-
+      if (escaneadoRef.current || !data) return;
       escaneadoRef.current = true;
       onScan(data);
     },
     [onScan],
   );
 
-  const cargandoPermiso =
-    esperandoPermiso || (!permiso && errorPermiso === null);
+  const cargandoPermiso = esperandoPermiso || (!permiso && errorPermiso === null);
 
-  if (!visible) {
-    return null;
-  }
+  if (!visible) return null;
 
   return (
     <Modal
@@ -91,11 +82,20 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
           contentContainerStyle={styles.contenedor}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.panel}>
+          <View
+            style={[
+              styles.panel,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+                borderWidth: tema.esOscuro ? 1 : 0,
+              },
+            ]}
+          >
             <View style={styles.cabecera}>
               <View style={styles.marcaCabecera}>
                 <IconoPrincipal width={32} height={32} accessibilityLabel="Reporte Ciudadano" />
-                <Text style={styles.titulo}>Escanear código QR</Text>
+                <Text style={[styles.titulo, { color: tema.onSurface }]}>Escanear código QR</Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -104,18 +104,22 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
                 hitSlop={8}
                 style={styles.botonCerrar}
               >
-                <Text style={styles.botonCerrarTexto}>Cerrar</Text>
+                <Text style={[styles.botonCerrarTexto, { color: tema.onSurfaceVariant }]}>
+                  Cerrar
+                </Text>
               </Pressable>
             </View>
 
             {cargandoPermiso ? (
               <View style={styles.estado}>
-                <ActivityIndicator color={PaletaOperador.principal} />
-                <Text style={styles.textoEstado}>Cargando permisos...</Text>
+                <ActivityIndicator color={tema.secondary} />
+                <Text style={[styles.textoEstado, { color: tema.onSurfaceVariant }]}>
+                  Cargando permisos...
+                </Text>
               </View>
             ) : permiso?.granted ? (
               <>
-                <Text style={styles.instruccion}>
+                <Text style={[styles.instruccion, { color: tema.onSurfaceVariant }]}>
                   Centrá el código QR dentro del marco para escanearlo.
                 </Text>
                 <View style={styles.camara}>
@@ -130,7 +134,7 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
               </>
             ) : (
               <View style={styles.estado}>
-                <Text style={styles.textoEstado}>
+                <Text style={[styles.textoEstado, { color: tema.onSurfaceVariant }]}>
                   {errorPermiso ??
                     "El permiso de cámara fue denegado. Permitilo para escanear un código QR."}
                 </Text>
@@ -138,7 +142,7 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => void solicitarPermiso()}
-                    style={styles.botonPrincipal}
+                    style={[styles.botonPrincipal, { backgroundColor: tema.secondary }]}
                   >
                     <Text style={styles.botonPrincipalTexto}>Permitir cámara</Text>
                   </Pressable>
@@ -152,7 +156,7 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
                         );
                       });
                     }}
-                    style={styles.botonPrincipal}
+                    style={[styles.botonPrincipal, { backgroundColor: tema.secondary }]}
                   >
                     <Text style={styles.botonPrincipalTexto}>Abrir ajustes</Text>
                   </Pressable>
@@ -160,9 +164,11 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
                 <Pressable
                   accessibilityRole="button"
                   onPress={onClose}
-                  style={styles.botonSecundario}
+                  style={[styles.botonSecundario, { borderColor: tema.outline }]}
                 >
-                  <Text style={styles.botonSecundarioTexto}>Cerrar</Text>
+                  <Text style={[styles.botonSecundarioTexto, { color: tema.onSurfaceVariant }]}>
+                    Cerrar
+                  </Text>
                 </Pressable>
               </View>
             )}
@@ -176,7 +182,7 @@ export function QRScanner({ visible, onClose, onScan }: Props) {
 const styles = StyleSheet.create({
   fondo: {
     flex: 1,
-    backgroundColor: "rgba(18,35,46,0.72)",
+    backgroundColor: "rgba(18,35,46,0.78)",
     justifyContent: "center",
   },
   contenedor: {
@@ -188,7 +194,6 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 480,
     alignSelf: "center",
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 20,
     padding: 20,
     gap: 16,
@@ -209,7 +214,6 @@ const styles = StyleSheet.create({
   titulo: {
     flex: 1,
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
     fontSize: 20,
   },
   botonCerrar: {
@@ -218,12 +222,10 @@ const styles = StyleSheet.create({
   },
   botonCerrarTexto: {
     fontFamily: Fonts.medium,
-    color: Paleta.inkSoft,
     fontSize: 14,
   },
   instruccion: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
     height: 300,
     overflow: "hidden",
     borderRadius: 14,
-    backgroundColor: Paleta.ink,
+    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
     width: 210,
     height: 210,
     borderWidth: 3,
-    borderColor: Paleta.paperRaised,
+    borderColor: "#FFFFFF",
     borderRadius: 18,
   },
   estado: {
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
   },
   textoEstado: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -261,11 +262,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
     borderRadius: 999,
-    backgroundColor: PaletaOperador.principal,
   },
   botonPrincipalTexto: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     fontSize: 15,
   },
   botonSecundario: {
@@ -275,11 +275,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.line,
   },
   botonSecundarioTexto: {
     fontFamily: Fonts.medium,
-    color: Paleta.inkSoft,
     fontSize: 14,
   },
 });

@@ -4,9 +4,10 @@ import { StatusBar } from "expo-status-bar";
 
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { Boton } from "@/components/ui/boton";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { Rol } from "@/tipos";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 
 export function PantallaDesbloqueo({ rol }: Props) {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const { entrarConSesionGuardada } = useSesion();
   const desbloqueo = useDesbloqueoAlEntrar(rol, true);
 
@@ -23,25 +25,26 @@ export function PantallaDesbloqueo({ rol }: Props) {
       style={[
         styles.pantalla,
         {
+          backgroundColor: tema.background,
           paddingTop: insets.top + 32,
           paddingBottom: Math.max(insets.bottom, 24),
         },
       ]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
       <IconoPrincipal
         width={64}
         height={64}
         accessibilityLabel="Reporte Ciudadano"
         style={styles.logo}
       />
-      <Text style={styles.titulo}>Confirmá que sos vos</Text>
-      <Text style={styles.subtitulo}>
+      <Text style={[styles.titulo, { color: tema.onSurface }]}>Confirmá que sos vos</Text>
+      <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
         Hay una sesión vigente en este teléfono. Usá tu rostro o el código para
         entrar.
       </Text>
       {desbloqueo.error ? (
-        <Text style={styles.error}>{desbloqueo.error}</Text>
+        <Text style={[styles.error, { color: tema.error }]}>{desbloqueo.error}</Text>
       ) : null}
       <Boton
         titulo="Reintentar"
@@ -67,7 +70,6 @@ export function PantallaDesbloqueo({ rol }: Props) {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paper,
     paddingHorizontal: 24,
     justifyContent: "center",
   },
@@ -79,19 +81,16 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
     fontSize: 28,
     fontWeight: "600",
-    color: Paleta.ink,
     marginBottom: 8,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 28,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 16,
   },

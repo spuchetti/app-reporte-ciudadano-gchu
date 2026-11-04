@@ -19,8 +19,9 @@ import { PasoTipo } from "@/components/reporte/paso-tipo";
 import { PasoUbicacion } from "@/components/reporte/paso-ubicacion";
 import { ProgresoReporte } from "@/components/reporte/progreso";
 import { Boton } from "@/components/ui/boton";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import {
   actualizarBorrador,
   borradorListoParaEnviar,
@@ -41,6 +42,7 @@ import { Coordenadas, Reporte, TipoDeReporte } from "@/tipos";
 
 export function AsistenteReporte() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const { origen } = useLocalSearchParams<{ origen?: string }>();
   const { sesion, enviarReporte, adherirseAReporte } = useSesion();
@@ -118,20 +120,11 @@ export function AsistenteReporte() {
   const tipoElegido = tipos.find((tipo) => tipo.id === tipoId);
 
   function puedeAvanzar() {
-    if (paso === 1) {
-      return Boolean(tipoId);
-    }
-    if (paso === 2) {
-      return fotos.length >= 1;
-    }
+    if (paso === 1) return Boolean(tipoId);
+    if (paso === 2) return fotos.length >= 1;
     if (paso === 3) {
-      if (latitud == null || longitud == null) {
-        return false;
-      }
-      // Sumarse a un cercano no exige re-geocodear la calle del pin nuevo.
-      if (cercanoElegido) {
-        return true;
-      }
+      if (latitud == null || longitud == null) return false;
+      if (cercanoElegido) return true;
       if (
         !estaEnLaCiudad({ latitud, longitud }) ||
         !esDireccionAceptable(direccion)
@@ -144,19 +137,11 @@ export function AsistenteReporte() {
   }
 
   function mensajePaso() {
-    if (paso === 1) {
-      return "Elegí el tipo de problema.";
-    }
-    if (paso === 2) {
-      return "El reporte necesita al menos una foto.";
-    }
+    if (paso === 1) return "Elegí el tipo de problema.";
+    if (paso === 2) return "El reporte necesita al menos una foto.";
     if (paso === 3) {
-      if (latitud == null || longitud == null) {
-        return "Marcá la ubicación en el mapa.";
-      }
-      if (!estaEnLaCiudad({ latitud, longitud })) {
-        return MENSAJE_FUERA_DE_LA_CIUDAD;
-      }
+      if (latitud == null || longitud == null) return "Marcá la ubicación en el mapa.";
+      if (!estaEnLaCiudad({ latitud, longitud })) return MENSAJE_FUERA_DE_LA_CIUDAD;
       return "Necesitamos la calle. Arrastrá el pin o tocá el mapa.";
     }
     return null;
@@ -271,7 +256,7 @@ export function AsistenteReporte() {
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {
-        // Sin motor háptico no frenamos.
+        // Fallback sin háptico
       }
     } catch (err) {
       setError(
@@ -286,10 +271,10 @@ export function AsistenteReporte() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.pantalla}
+      style={[styles.pantalla, { backgroundColor: tema.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
       <ScrollView
         ref={scrollRef}
         scrollEnabled={!mapaOcupado}
@@ -305,9 +290,7 @@ export function AsistenteReporte() {
         <View style={styles.formInner}>
           <ProgresoReporte
             paso={paso}
-            titulo={
-              paso === 2 && revisandoFoto ? "Revisá la foto" : undefined
-            }
+            titulo={paso === 2 && revisandoFoto ? "Revisá la foto" : undefined}
             onAtras={onAtras}
             onCerrar={salir}
           />
@@ -354,7 +337,9 @@ export function AsistenteReporte() {
             />
           ) : null}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text style={[styles.error, { color: tema.error }]}>{error}</Text>
+          ) : null}
 
           <View style={styles.acciones}>
             {paso < PASOS_REPORTE ? (
@@ -383,7 +368,6 @@ export function AsistenteReporte() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
   },
   scroll: {
     flexGrow: 1,
@@ -398,15 +382,11 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginTop: 16,
     marginBottom: 12,
   },
   acciones: {
     marginTop: 20,
-  },
-  separador: {
-    height: 8,
   },
 });

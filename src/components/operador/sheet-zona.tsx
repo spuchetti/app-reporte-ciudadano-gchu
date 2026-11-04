@@ -1,6 +1,7 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text } from "react-native";
 
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { zonasMock } from "@/mocks/zonas";
 
 type Props = {
@@ -12,16 +13,28 @@ type Props = {
 };
 
 export function SheetZona({ visible, guardando, error, onCerrar, onElegir }: Props) {
+  const tema = useTheme();
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCerrar}>
       <Pressable style={styles.fondo} onPress={onCerrar}>
-        <Pressable style={styles.panel} onPress={() => {}}>
-          <Text style={styles.titulo}>Corregir zona</Text>
-          <Text style={styles.subtitulo}>
+        <Pressable
+          style={[
+            styles.panel,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderTopWidth: tema.esOscuro ? 1 : 0,
+            },
+          ]}
+          onPress={() => {}}
+        >
+          <Text style={[styles.titulo, { color: tema.onSurface }]}>Corregir zona</Text>
+          <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
             El reporte pasa a la zona que elijas.
           </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
 
           {zonasMock.map((zona) => (
             <Pressable
@@ -30,14 +43,21 @@ export function SheetZona({ visible, guardando, error, onCerrar, onElegir }: Pro
               accessibilityLabel={`Corregir a ${zona.nombre}`}
               disabled={guardando}
               onPress={() => onElegir(zona.id)}
-              style={({ pressed }) => [styles.opcion, pressed && styles.opcionPressed]}
+              style={({ pressed }) => [
+                styles.opcion,
+                {
+                  backgroundColor: tema.surfaceVariant,
+                  borderColor: tema.outline,
+                },
+                pressed && styles.opcionPressed,
+              ]}
             >
-              <Text style={styles.opcionNombre}>{zona.nombre}</Text>
+              <Text style={[styles.opcionNombre, { color: tema.onSurface }]}>{zona.nombre}</Text>
             </Pressable>
           ))}
 
           {guardando ? (
-            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
+            <ActivityIndicator color={tema.secondary} style={styles.cargando} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -45,7 +65,9 @@ export function SheetZona({ visible, guardando, error, onCerrar, onElegir }: Pro
               onPress={onCerrar}
               style={styles.cancelar}
             >
-              <Text style={styles.cancelarTexto}>Cancelar</Text>
+              <Text style={[styles.cancelarTexto, { color: tema.onSurfaceVariant }]}>
+                Cancelar
+              </Text>
             </Pressable>
           )}
         </Pressable>
@@ -57,11 +79,10 @@ export function SheetZona({ visible, guardando, error, onCerrar, onElegir }: Pro
 const styles = StyleSheet.create({
   fondo: {
     flex: 1,
-    backgroundColor: "rgba(18,35,46,0.45)",
+    backgroundColor: "rgba(18,35,46,0.6)",
     justifyContent: "flex-end",
   },
   panel: {
-    backgroundColor: Paleta.paperRaised,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
@@ -72,26 +93,21 @@ const styles = StyleSheet.create({
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
     marginBottom: 8,
   },
   error: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.rojo,
   },
   opcion: {
     borderWidth: 1,
-    borderColor: Paleta.line,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: Paleta.paper,
   },
   opcionPressed: {
     opacity: 0.85,
@@ -99,7 +115,6 @@ const styles = StyleSheet.create({
   opcionNombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
   },
   cargando: {
     marginTop: 12,
@@ -111,6 +126,5 @@ const styles = StyleSheet.create({
   cancelarTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
 });
