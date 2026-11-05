@@ -213,7 +213,6 @@ export default function MapaPublicoScreen() {
               Mirá los reportes de tu ciudad
             </Text>
           </View>
-          <BotonTema />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Filtros"
@@ -232,6 +231,7 @@ export default function MapaPublicoScreen() {
               color={filtrosActivos > 0 ? tema.onPrimary : tema.onPrimaryContainer}
             />
           </Pressable>
+          <BotonTema />
         </View>
 
         <ScrollView

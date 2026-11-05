@@ -18,6 +18,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { IndicadorRecarga } from "@/components/ui/indicador-recarga";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
@@ -232,6 +233,7 @@ export function MapaCiudadano() {
               color={filtrosActivos > 0 ? tema.onPrimary : tema.onPrimaryContainer}
             />
           </Pressable>
+          <BotonTema />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
