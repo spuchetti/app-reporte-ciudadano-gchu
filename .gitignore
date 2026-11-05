@@ -65,7 +65,7 @@ web_modules/
 .cache
 
 # Environment variables
-#.env
+.env
 .env.*
 !.env.example
 
