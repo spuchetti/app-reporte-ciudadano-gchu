@@ -7,13 +7,13 @@ type Props = {
   size: number;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
-  /** Círculo/cuadrado claro detrás (útil sobre fondos oscuros en web). */
+  /** Fondo claro detrás del logo (paneles oscuros en web). */
   sobreOscuro?: boolean;
 };
 
 /**
- * Marca de la app. En web usa PNG (el SVG a veces no pinta bien);
- * en nativo sigue el SVG vectorial.
+ * Marca de la app. En web usa PNG (SVG a veces no pinta bien);
+ * en nativo sigue el SVG.
  */
 export function LogoMarca({
   size,

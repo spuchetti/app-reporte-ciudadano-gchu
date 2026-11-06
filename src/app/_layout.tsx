@@ -5,14 +5,16 @@ import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } f
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { SQLiteProvider, type SQLiteDatabase } from "expo-sqlite";
+import { StatusBar } from "expo-status-bar";
 import { type PropsWithChildren } from "react";
-import { Platform, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { EscuchaAvisos } from "@/components/avisos/escucha-avisos";
 import { EscuchaRed } from "@/components/avisos/escucha-red";
 import { PantallaDesbloqueo } from "@/components/ingreso/pantalla-desbloqueo";
 import { SheetPreferenciaIngreso } from "@/components/ingreso/sheet-preferencia";
 import { SesionProvider, useSesion } from "@/contexto/sesion";
+import { TemaProvider, useTema } from "@/contexto/tema";
 import { NOMBRE_BASE_DATOS, migrarBaseDeDatos } from "@/servicios/base-datos";
 import { hidratarBorradorDesdeSQLite } from "@/servicios/borrador";
 
@@ -39,7 +41,6 @@ function ProveedorBaseDatos({ children }: PropsWithChildren) {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fuentesCargadas, errorFuente] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -55,14 +56,27 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <ProveedorBaseDatos>
-        <SesionProvider>
-          <SplashScreenController />
-          <RootNavigator />
-          <SheetPreferenciaIngreso />
-        </SesionProvider>
-      </ProveedorBaseDatos>
+    <TemaProvider>
+      <ProveedorNavegacionTema>
+        <ProveedorBaseDatos>
+          <SesionProvider>
+            <SplashScreenController />
+            <RootNavigator />
+            <SheetPreferenciaIngreso />
+          </SesionProvider>
+        </ProveedorBaseDatos>
+      </ProveedorNavegacionTema>
+    </TemaProvider>
+  );
+}
+
+function ProveedorNavegacionTema({ children }: PropsWithChildren) {
+  const { esOscuro } = useTema();
+
+  return (
+    <ThemeProvider value={esOscuro ? DarkTheme : DefaultTheme}>
+      <StatusBar style={esOscuro ? "light" : "dark"} />
+      {children}
     </ThemeProvider>
   );
 }
@@ -84,10 +98,6 @@ function RootNavigator() {
     return null;
   }
 
-  if (pendienteDesbloqueo && rolToken) {
-    return <PantallaDesbloqueo rol={rolToken} />;
-  }
-
   const esVecino =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
   const esOperador =
@@ -95,7 +105,7 @@ function RootNavigator() {
   const enPublico = !esVecino && !esOperador;
 
   return (
-    <>
+    <View style={styles.contenedorRaiz}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={enPublico}>
           <Stack.Screen name="(publico)" />
@@ -109,8 +119,21 @@ function RootNavigator() {
         <Stack.Screen name="reporte" />
         <Stack.Screen name="reclamo/[id]" />
       </Stack>
+
       <EscuchaAvisos />
       <EscuchaRed />
-    </>
+
+      {pendienteDesbloqueo && rolToken ? (
+        <View style={StyleSheet.absoluteFill}>
+          <PantallaDesbloqueo rol={rolToken} />
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  contenedorRaiz: {
+    flex: 1,
+  },
+});

@@ -22,8 +22,9 @@ import { SheetEstado } from "@/components/operador/sheet-estado";
 import { SheetZona } from "@/components/operador/sheet-zona";
 import { Boton } from "@/components/ui/boton";
 import Cargando from "@/components/ui/cargando";
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import {
   haceTiempo,
   nombreAutor,
@@ -110,7 +111,7 @@ function esEventoZona(cambio: CambioDeEstado) {
   return /^zona corregida/i.test(cambio.comentario?.trim() ?? "");
 }
 
-const FONDO_ESTADO: Record<EstadoReporte, string> = {
+const FONDO_ESTADO_CLARO: Record<EstadoReporte, string> = {
   recibido: "#FFF6DC",
   en_revision: "#E5F0FA",
   asignado: "#FFF0E4",
@@ -118,7 +119,7 @@ const FONDO_ESTADO: Record<EstadoReporte, string> = {
   rechazado: "#FCE9E9",
 };
 
-const TEXTO_ESTADO: Record<EstadoReporte, string> = {
+const TEXTO_ESTADO_CLARO: Record<EstadoReporte, string> = {
   recibido: "#785500",
   en_revision: "#245C85",
   asignado: "#9D4308",
@@ -128,6 +129,7 @@ const TEXTO_ESTADO: Record<EstadoReporte, string> = {
 
 export default function DetalleReclamoScreen() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sesion, adherirseAReporte } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
@@ -382,14 +384,28 @@ export default function DetalleReclamoScreen() {
     ? reportesParaDuplicar(catalogo, reporte.id)
     : [];
 
+  const colorEstado = reporte?.sincronizado
+    ? COLORES_ESTADO[reporte.estado]
+    : tema.onSurfaceVariant;
+  const fondoEstado = reporte?.sincronizado
+    ? tema.esOscuro
+      ? `${colorEstado}26`
+      : FONDO_ESTADO_CLARO[reporte.estado]
+    : tema.surfaceVariant;
+  const textoColorEstado = reporte?.sincronizado
+    ? tema.esOscuro
+      ? colorEstado
+      : TEXTO_ESTADO_CLARO[reporte.estado]
+    : tema.onSurfaceVariant;
+
   return (
-    <View style={styles.pantalla}>
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
       <StatusBar style="light" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
+        <View style={[styles.hero, { backgroundColor: tema.surfaceVariant }]}>
           {fotoOriginal ? (
             <Image
               accessibilityLabel="Foto del problema"
@@ -398,7 +414,12 @@ export default function DetalleReclamoScreen() {
               resizeMode="cover"
             />
           ) : (
-            <View style={[StyleSheet.absoluteFill, styles.heroVacio]} />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: tema.surfaceVariant },
+              ]}
+            />
           )}
           <View
             style={[
@@ -414,9 +435,18 @@ export default function DetalleReclamoScreen() {
                 impactoLigero();
                 router.back();
               }}
-              style={styles.botonHero}
+              style={[
+                styles.botonHero,
+                {
+                  backgroundColor: tema.esOscuro
+                    ? "rgba(22, 32, 50, 0.88)"
+                    : "rgba(255,255,255,0.92)",
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
             >
-              <Ionicons color={Paleta.ink} name="arrow-back" size={22} />
+              <Ionicons color={tema.onSurface} name="arrow-back" size={22} />
             </Pressable>
             <View style={styles.heroAcciones}>
               {reporte ? (
@@ -430,9 +460,18 @@ export default function DetalleReclamoScreen() {
                       message: `${nombreTipo(reporte.tipoId)} · ${reporte.codigo}\n${reporte.direccion}`,
                     });
                   }}
-                  style={styles.botonHero}
+                  style={[
+                    styles.botonHero,
+                    {
+                      backgroundColor: tema.esOscuro
+                        ? "rgba(22, 32, 50, 0.88)"
+                        : "rgba(255,255,255,0.92)",
+                      borderColor: tema.outline,
+                      borderWidth: 1,
+                    },
+                  ]}
                 >
-                  <Ionicons color={Paleta.ink} name="share-social-outline" size={20} />
+                  <Ionicons color={tema.onSurface} name="share-social-outline" size={20} />
                 </Pressable>
               ) : null}
               {reporte?.codigo ? (
@@ -445,9 +484,18 @@ export default function DetalleReclamoScreen() {
                     impactoLigero();
                     setMostrarQr((visible) => !visible);
                   }}
-                  style={styles.botonHero}
+                  style={[
+                    styles.botonHero,
+                    {
+                      backgroundColor: tema.esOscuro
+                        ? "rgba(22, 32, 50, 0.88)"
+                        : "rgba(255,255,255,0.92)",
+                      borderColor: tema.outline,
+                      borderWidth: 1,
+                    },
+                  ]}
                 >
-                  <Ionicons color={Paleta.ink} name="qr-code-outline" size={20} />
+                  <Ionicons color={tema.onSurface} name="qr-code-outline" size={20} />
                 </Pressable>
               ) : null}
             </View>
@@ -459,7 +507,7 @@ export default function DetalleReclamoScreen() {
           <Cargando text="Cargando el detalle del reclamo..." />
         ) : error || !reporte ? (
           <View style={styles.estadoVacio}>
-            <Text style={styles.vacioTexto}>
+            <Text style={[styles.vacioTexto, { color: tema.onSurfaceVariant }]}>
               {error ?? "No encontramos ese reclamo."}
             </Text>
             <Boton
@@ -473,57 +521,47 @@ export default function DetalleReclamoScreen() {
           </View>
         ) : (
           <>
-            <View style={styles.panelPrincipal}>
+            <View
+              style={[
+                styles.panelPrincipal,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: tema.esOscuro ? 1 : 0,
+                },
+              ]}
+            >
               <View style={styles.filaEstado}>
-                <View
-                  style={[
-                    styles.estado,
-                    {
-                      backgroundColor: reporte.sincronizado
-                        ? FONDO_ESTADO[reporte.estado]
-                        : "#EEF1F4",
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.punto,
-                      {
-                        backgroundColor: reporte.sincronizado
-                          ? COLORES_ESTADO[reporte.estado]
-                          : Paleta.inkSoft,
-                      },
-                    ]}
-                  />
+                <View style={[styles.estado, { backgroundColor: fondoEstado }]}>
+                  <View style={[styles.punto, { backgroundColor: colorEstado }]} />
                   <Text
                     numberOfLines={2}
-                    style={[
-                      styles.estadoTexto,
-                      {
-                        color: reporte.sincronizado
-                          ? TEXTO_ESTADO[reporte.estado]
-                          : Paleta.inkSoft,
-                      },
-                    ]}
+                    style={[styles.estadoTexto, { color: textoColorEstado }]}
                   >
                     {etiquetaParaVecino(reporte)}
                   </Text>
                 </View>
-                <Text style={styles.codigo} numberOfLines={1}>
+                <Text style={[styles.codigo, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
                   {reporte.codigo}
                 </Text>
               </View>
-              <Text style={styles.tipo}>{nombreTipo(reporte.tipoId)}</Text>
+              <Text style={[styles.tipo, { color: tema.onSurface }]}>
+                {nombreTipo(reporte.tipoId)}
+              </Text>
               <View style={styles.filaDato}>
-                <Ionicons name="location-outline" size={16} color={Paleta.inkSoft} />
-                <Text style={styles.direccion}>{reporte.direccion}</Text>
+                <Ionicons name="location-outline" size={16} color={tema.onSurfaceVariant} />
+                <Text style={[styles.direccion, { color: tema.onSurfaceVariant }]}>
+                  {reporte.direccion}
+                </Text>
               </View>
               <View style={styles.filaDato}>
-                <Ionicons name="time-outline" size={16} color={Paleta.inkSoft} />
-                <Text style={styles.meta}>{`Reportado ${haceTiempo(reporte.creadoEn)}`}</Text>
+                <Ionicons name="time-outline" size={16} color={tema.onSurfaceVariant} />
+                <Text style={[styles.meta, { color: tema.onSurfaceVariant }]}>
+                  {`Reportado ${haceTiempo(reporte.creadoEn)}`}
+                </Text>
               </View>
               {reporte.cuadrillaId ? (
-                <Text style={styles.meta}>
+                <Text style={[styles.meta, { color: tema.onSurfaceVariant }]}>
                   {`Asignado a ${nombreCuadrilla(reporte.cuadrillaId)}`}
                 </Text>
               ) : null}
@@ -536,7 +574,7 @@ export default function DetalleReclamoScreen() {
                     router.push(`/reclamo/${reporte.duplicadoDe}`);
                   }}
                 >
-                  <Text style={styles.enlaceOriginal}>
+                  <Text style={[styles.enlaceOriginal, { color: tema.primary }]}>
                     {textoDuplicado(reporte.duplicadoDe)}
                   </Text>
                 </Pressable>
@@ -544,35 +582,72 @@ export default function DetalleReclamoScreen() {
             </View>
 
             {mostrarQr ? (
-              <View style={styles.qrPanel} accessibilityLabel={`Código QR del reclamo ${reporte.codigo}`}>
+              <View
+                style={[
+                  styles.qrPanel,
+                  {
+                    backgroundColor: "#FFFFFF",
+                    borderColor: tema.outline,
+                    borderWidth: 1,
+                  },
+                ]}
+                accessibilityLabel={`Código QR del reclamo ${reporte.codigo}`}
+              >
                 <QRCode
-                  backgroundColor={Paleta.paperRaised}
-                  color={Paleta.ink}
+                  backgroundColor="#FFFFFF"
+                  color="#0F172A"
                   size={160}
                   value={reporte.codigo}
                 />
-                <Text style={styles.codigo}>{reporte.codigo}</Text>
+                <Text style={[styles.codigoQr, { color: "#0F172A" }]}>
+                  {reporte.codigo}
+                </Text>
               </View>
             ) : null}
 
             {reporte.descripcion ? (
-              <View style={styles.bloque}>
-                <Text style={styles.tituloSeccion}>Descripción</Text>
-                <Text style={styles.descripcion}>{reporte.descripcion}</Text>
+              <View
+                style={[
+                  styles.bloque,
+                  {
+                    backgroundColor: tema.surface,
+                    borderColor: tema.outline,
+                  },
+                ]}
+              >
+                <Text style={[styles.tituloSeccion, { color: tema.onSurface }]}>
+                  Descripción
+                </Text>
+                <Text style={[styles.descripcion, { color: tema.onSurface }]}>
+                  {reporte.descripcion}
+                </Text>
               </View>
             ) : null}
 
-            <View style={styles.bloque}>
+            <View
+              style={[
+                styles.bloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                },
+              ]}
+            >
               <View style={styles.filaAdhesion}>
-                <View style={styles.iconoAdhesion}>
-                  <Ionicons name="people-outline" size={18} color={Paleta.tealDeep} />
+                <View
+                  style={[
+                    styles.iconoAdhesion,
+                    { backgroundColor: tema.primaryContainer },
+                  ]}
+                >
+                  <Ionicons name="people-outline" size={18} color={tema.onPrimaryContainer} />
                 </View>
                 <View style={styles.datoTexto}>
-                  <Text style={styles.adhesiones}>
+                  <Text style={[styles.adhesiones, { color: tema.onSurface }]}>
                     {textoAdhesiones(reporte.adhesiones)}
                   </Text>
                   {adhesionesDelReporte(reporte.id).length > 0 ? (
-                    <Text style={styles.vecinosSumados}>
+                    <Text style={[styles.vecinosSumados, { color: tema.onSurfaceVariant }]}>
                       {adhesionesDelReporte(reporte.id)
                         .map((item) => nombreAutor(item.usuarioId))
                         .join(", ")}
@@ -584,7 +659,9 @@ export default function DetalleReclamoScreen() {
 
             {puedeSumarse ? (
               <View style={styles.acciones}>
-                {errorSumar ? <Text style={styles.errorSumar}>{errorSumar}</Text> : null}
+                {errorSumar ? (
+                  <Text style={[styles.errorSumar, { color: tema.error }]}>{errorSumar}</Text>
+                ) : null}
                 <Boton
                   titulo="Sumarme a este reclamo"
                   cargando={sumando}
@@ -595,16 +672,28 @@ export default function DetalleReclamoScreen() {
                 />
               </View>
             ) : avisoDistancia ? (
-              <Text style={styles.avisoDistancia}>{avisoDistancia}</Text>
+              <Text style={[styles.avisoDistancia, { color: tema.onSurfaceVariant }]}>
+                {avisoDistancia}
+              </Text>
             ) : null}
 
             {reporte.estado === "resuelto" && reporte.fotoArreglo ? (
-              <View style={styles.bloque}>
-                <Text style={styles.tituloSeccion}>Foto de la solución</Text>
+              <View
+                style={[
+                  styles.bloque,
+                  {
+                    backgroundColor: tema.surface,
+                    borderColor: tema.outline,
+                  },
+                ]}
+              >
+                <Text style={[styles.tituloSeccion, { color: tema.onSurface }]}>
+                  Foto de la solución
+                </Text>
                 <Image
                   accessibilityLabel="Foto de la solución"
                   source={{ uri: reporte.fotoArreglo.url }}
-                  style={styles.foto}
+                  style={[styles.foto, { backgroundColor: tema.surfaceVariant }]}
                   resizeMode="cover"
                 />
               </View>
@@ -655,8 +744,18 @@ export default function DetalleReclamoScreen() {
               </View>
             ) : null}
 
-            <View style={styles.bloque}>
-              <Text style={styles.tituloSeccion}>Historial</Text>
+            <View
+              style={[
+                styles.bloque,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                },
+              ]}
+            >
+              <Text style={[styles.tituloSeccion, { color: tema.onSurface }]}>
+                Historial
+              </Text>
               {historial.length > 0 ? (
                 <View style={styles.listaHistorial}>
                   {historial.map((cambio, index) => {
@@ -672,11 +771,16 @@ export default function DetalleReclamoScreen() {
                       <View key={cambio.id} style={styles.itemTimeline}>
                         <View style={styles.columnaIndicador}>
                           {zona ? (
-                            <View style={styles.marcaZona}>
+                            <View
+                              style={[
+                                styles.marcaZona,
+                                { backgroundColor: tema.surfaceVariant },
+                              ]}
+                            >
                               <Ionicons
                                 name="phone-portrait-outline"
                                 size={12}
-                                color={PaletaOperador.principal}
+                                color={tema.secondary}
                               />
                             </View>
                           ) : (
@@ -691,7 +795,12 @@ export default function DetalleReclamoScreen() {
                             />
                           )}
                           {index < historial.length - 1 ? (
-                            <View style={styles.lineaHistorial} />
+                            <View
+                              style={[
+                                styles.lineaHistorial,
+                                { backgroundColor: tema.outline },
+                              ]}
+                            />
                           ) : null}
                         </View>
                         <View style={styles.columnaContenido}>
@@ -699,12 +808,13 @@ export default function DetalleReclamoScreen() {
                             <Text
                               style={[
                                 styles.cambioEstado,
+                                { color: tema.onSurface },
                                 esActual && styles.cambioEstadoActual,
                               ]}
                             >
                               {tituloHistorial(cambio)}
                             </Text>
-                            <Text style={styles.cambioFecha}>
+                            <Text style={[styles.cambioFecha, { color: tema.onSurfaceVariant }]}>
                               {fechaHistorial(cambio.fechaHora)}
                             </Text>
                           </View>
@@ -712,9 +822,12 @@ export default function DetalleReclamoScreen() {
                             <Text
                               style={[
                                 styles.cambioTexto,
+                                { color: tema.onSurfaceVariant },
                                 !zona &&
-                                  cambio.estado === "rechazado" &&
-                                  styles.comentarioRechazado,
+                                  cambio.estado === "rechazado" && [
+                                    styles.comentarioRechazado,
+                                    { color: tema.error },
+                                  ],
                               ]}
                             >
                               {detalle}
@@ -726,7 +839,7 @@ export default function DetalleReclamoScreen() {
                   })}
                 </View>
               ) : (
-                <Text style={styles.meta}>
+                <Text style={[styles.meta, { color: tema.onSurfaceVariant }]}>
                   Todavía no hay movimientos registrados.
                 </Text>
               )}
@@ -747,9 +860,7 @@ export default function DetalleReclamoScreen() {
         onAsignarCuadrilla={
           reporte && puedeAsignar(reporte)
             ? () => {
-                if (guardandoEstado) {
-                  return;
-                }
+                if (guardandoEstado) return;
                 setMostrarEstado(false);
                 setErrorAsignar(null);
                 setMostrarAsignar(true);
@@ -803,14 +914,9 @@ export default function DetalleReclamoScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paper,
   },
   hero: {
     height: 240,
-    backgroundColor: "#3F4A57",
-  },
-  heroVacio: {
-    backgroundColor: "#3F4A57",
   },
   heroBar: {
     flexDirection: "row",
@@ -829,7 +935,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
   },
   cuerpo: {
     marginTop: -28,
@@ -837,14 +942,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   panelPrincipal: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 20,
     padding: 16,
     gap: 10,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 4,
   },
   filaEstado: {
@@ -875,18 +979,15 @@ const styles = StyleSheet.create({
   codigo: {
     flexShrink: 0,
     fontFamily: Fonts.medium,
-    color: Paleta.inkSoft,
     fontSize: 13,
   },
   tipo: {
     fontFamily: Fonts.bold,
-    color: Paleta.ink,
     fontSize: 28,
   },
   direccion: {
     flex: 1,
     fontFamily: Fonts.medium,
-    color: Paleta.inkSoft,
     fontSize: 15,
   },
   filaDato: {
@@ -900,36 +1001,29 @@ const styles = StyleSheet.create({
   },
   adhesiones: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
     fontSize: 15,
   },
   vecinosSumados: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 13,
     lineHeight: 18,
   },
   meta: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 13,
   },
   enlaceOriginal: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.teal,
     fontSize: 14,
   },
   descripcion: {
     fontFamily: Fonts.regular,
-    color: Paleta.ink,
     fontSize: 14,
     lineHeight: 20,
   },
   bloque: {
-    backgroundColor: Paleta.paperRaised,
-    borderColor: Paleta.line,
-    borderWidth: 1,
     borderRadius: 18,
+    borderWidth: 1,
     padding: 16,
     gap: 8,
   },
@@ -944,37 +1038,35 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
   },
   qrPanel: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     padding: 16,
     alignItems: "center",
     gap: 12,
   },
+  codigoQr: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
+  },
   tituloSeccion: {
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
     fontSize: 16,
   },
   foto: {
     width: "100%",
     height: 220,
     borderRadius: 14,
-    backgroundColor: Paleta.paper,
   },
   acciones: {
     gap: 8,
   },
   errorSumar: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
   },
   avisoDistancia: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1010,7 +1102,6 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E8EEF4",
     zIndex: 2,
   },
   lineaHistorial: {
@@ -1019,10 +1110,8 @@ const styles = StyleSheet.create({
     bottom: -16,
     left: 8,
     width: 2,
-    backgroundColor: Paleta.line,
     zIndex: 1,
   },
-
   columnaContenido: {
     flex: 1,
     gap: 4,
@@ -1036,7 +1125,6 @@ const styles = StyleSheet.create({
   cambioEstado: {
     flex: 1,
     fontFamily: Fonts.semiBold,
-    color: Paleta.ink,
     fontSize: 14,
   },
   cambioEstadoActual: {
@@ -1044,18 +1132,14 @@ const styles = StyleSheet.create({
   },
   cambioFecha: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 12,
   },
   cambioTexto: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     lineHeight: 20,
   },
-  comentarioRechazado: {
-    color: Paleta.rojo,
-  },
+  comentarioRechazado: {},
   estadoVacio: {
     alignItems: "center",
     gap: 14,
@@ -1063,7 +1147,6 @@ const styles = StyleSheet.create({
   },
   vacioTexto: {
     fontFamily: Fonts.regular,
-    color: Paleta.inkSoft,
     fontSize: 14,
     textAlign: "center",
   },

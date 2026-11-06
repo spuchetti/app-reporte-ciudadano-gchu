@@ -18,11 +18,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { IndicadorRecarga } from "@/components/ui/indicador-recarga";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { tiposReporteMock } from "@/mocks/reportes";
 import {
   alActualizarColaReportes,
@@ -51,9 +53,11 @@ const REGION_GCHU = {
 
 export function MapaCiudadano() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const { sesion, cerrarSesion } = useSesion();
   const nombre =
     sesion?.esInvitado === false ? sesion.usuario.nombre : "Vecino";
+
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [tipoId, setTipoId] = useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstadoPublico | null>(null);
@@ -95,10 +99,7 @@ export function MapaCiudadano() {
       "Cerrar sesión",
       "¿Estás seguro de que querés cerrar sesión?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Cerrar sesión",
           style: "destructive",
@@ -127,9 +128,7 @@ export function MapaCiudadano() {
 
     obtenerUbicacionActual()
       .then((coords) => {
-        if (!activo) {
-          return;
-        }
+        if (!activo) return;
         centrarEn(coords);
       })
       .catch(() => {});
@@ -183,20 +182,36 @@ export function MapaCiudadano() {
   const filtrosActivos = [filtroEstado, soloCerca || null].filter(Boolean).length;
 
   return (
-    <View style={styles.pantalla}>
-      <StatusBar style="dark" />
-      <View style={[styles.cabecera, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.cabeceraFila}>
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
+      <View
+        style={[
+          styles.cabecera,
+          {
+            backgroundColor: tema.background,
+            paddingTop: insets.top + 8,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.cabeceraFila,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
+        >
           <IconoPrincipal
             width={40}
             height={40}
             accessibilityLabel="Reporte Ciudadano"
           />
           <View style={styles.titulos}>
-            <Text style={styles.titulo} numberOfLines={1}>
+            <Text style={[styles.titulo, { color: tema.onSurface }]} numberOfLines={1}>
               Gualeguaychú
             </Text>
-            <Text style={styles.subtitulo} numberOfLines={1}>
+            <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
               {`Hola, ${nombre}`}
             </Text>
           </View>
@@ -208,15 +223,17 @@ export function MapaCiudadano() {
             hitSlop={8}
             style={[
               styles.botonFiltro,
-              filtrosActivos > 0 ? styles.botonFiltroActivo : null,
+              { backgroundColor: tema.primaryContainer },
+              filtrosActivos > 0 && { backgroundColor: tema.primary },
             ]}
           >
             <Ionicons
               name="options-outline"
               size={20}
-              color={filtrosActivos > 0 ? Paleta.paperRaised : Paleta.tealDeep}
+              color={filtrosActivos > 0 ? tema.onPrimary : tema.onPrimaryContainer}
             />
           </Pressable>
+          <BotonTema />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
@@ -224,14 +241,23 @@ export function MapaCiudadano() {
             hitSlop={8}
             style={({ pressed }) => [
               styles.avatar,
+              { backgroundColor: tema.primaryContainer },
               pressed ? styles.avatarPresionado : null,
             ]}
           >
-            <Text style={styles.avatarLetra}>
+            <Text style={[styles.avatarLetra, { color: tema.onPrimaryContainer }]}>
               {nombre.trim().charAt(0).toUpperCase() || "V"}
             </Text>
-            <View style={styles.avatarInsigniaSalir}>
-              <Ionicons name="log-out-outline" size={11} color={Paleta.paperRaised} />
+            <View
+              style={[
+                styles.avatarInsigniaSalir,
+                {
+                  backgroundColor: tema.primary,
+                  borderColor: tema.surface,
+                },
+              ]}
+            >
+              <Ionicons name="log-out-outline" size={11} color={tema.onPrimary} />
             </View>
           </Pressable>
         </View>
@@ -259,7 +285,7 @@ export function MapaCiudadano() {
         </ScrollView>
       </View>
 
-      <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
+      <View style={[styles.mapa, { backgroundColor: tema.background }]} accessibilityLabel="Mapa de reportes">
         <MapView
           ref={mapaRef}
           style={StyleSheet.absoluteFill}
@@ -267,9 +293,7 @@ export function MapaCiudadano() {
           showsMyLocationButton={false}
           showsUserLocation
           onPress={() => {
-            if (ignorarToqueMapa.current) {
-              return;
-            }
+            if (ignorarToqueMapa.current) return;
             setSeleccionadoId(null);
           }}
         >
@@ -298,24 +322,53 @@ export function MapaCiudadano() {
         </MapView>
         <IndicadorRecarga visible={sincronizandoRed} />
 
-        <View style={styles.resumen} accessibilityRole="text">
-          <Text style={styles.resumenTexto}>{resumen}</Text>
+        <View
+          style={[
+            styles.resumen,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderWidth: tema.esOscuro ? 1 : 0,
+            },
+          ]}
+          accessibilityRole="text"
+        >
+          <Text style={[styles.resumenTexto, { color: tema.onSurface }]}>{resumen}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: soloCerca }}
             accessibilityLabel="Cerca mío"
             onPress={() => setSoloCerca((valor) => !valor)}
-            style={[styles.cercaChip, soloCerca ? styles.cercaChipActivo : null]}
+            style={[
+              styles.cercaChip,
+              { backgroundColor: tema.primaryContainer },
+              soloCerca && { backgroundColor: tema.primary },
+            ]}
           >
-            <Text style={[styles.cercaTexto, soloCerca ? styles.cercaTextoActivo : null]}>
+            <Text
+              style={[
+                styles.cercaTexto,
+                { color: tema.onPrimaryContainer },
+                soloCerca && { color: tema.onPrimary },
+              ]}
+            >
               Cerca mío
             </Text>
           </Pressable>
         </View>
 
         {filtrosAbiertos ? (
-          <View style={styles.panelFiltros}>
-            <Text style={styles.panelTitulo}>Estado</Text>
+          <View
+            style={[
+              styles.panelFiltros,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+                borderWidth: tema.esOscuro ? 1 : 0,
+              },
+            ]}
+          >
+            <Text style={[styles.panelTitulo, { color: tema.onSurfaceVariant }]}>Estado</Text>
             <View style={styles.chipsWrap}>
               <Chip
                 etiqueta="Todos"
@@ -344,7 +397,7 @@ export function MapaCiudadano() {
               onPress={() => setFiltrosAbiertos(false)}
               style={styles.listo}
             >
-              <Text style={styles.listoTexto}>Listo</Text>
+              <Text style={[styles.listoTexto, { color: tema.primary }]}>Listo</Text>
             </Pressable>
           </View>
         ) : null}
@@ -359,21 +412,29 @@ export function MapaCiudadano() {
           setUbicando(true);
           obtenerUbicacionActual()
             .then((coords) => centrarEn(coords))
-            .catch(() => {
-              // Sin permiso el mapa se queda donde está.
-            })
+            .catch(() => {})
             .finally(() => setUbicando(false));
         }}
         style={[styles.ubicar, seleccionado ? { bottom: altoTarjeta + 28 } : null]}
       >
-        <View style={styles.ubicarCirculo} collapsable={false}>
+        <View
+          style={[
+            styles.ubicarCirculo,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
+          collapsable={false}
+        >
           {ubicando ? (
-            <ActivityIndicator color={Paleta.tealDeep} />
+            <ActivityIndicator color={tema.primary} />
           ) : (
-            <Ionicons name="locate" size={22} color={Paleta.tealDeep} />
+            <Ionicons name="locate" size={22} color={tema.primary} />
           )}
         </View>
       </Pressable>
+
       {seleccionado ? (
         <TarjetaMapa
           reporte={seleccionado}
@@ -397,6 +458,7 @@ function TarjetaMapa({
   onCerrar: () => void;
   onVer: () => void;
 }) {
+  const tema = useTheme();
   const categoria = obtenerCategoriaVisual(reporte.tipoId);
   const tipo = tiposReporteMock.find((item) => item.id === reporte.tipoId);
   const nombre = categoria?.nombre ?? tipo?.nombre ?? "Reporte";
@@ -406,7 +468,14 @@ function TarjetaMapa({
 
   return (
     <View
-      style={styles.tarjeta}
+      style={[
+        styles.tarjeta,
+        {
+          backgroundColor: tema.surface,
+          borderColor: tema.outline,
+          borderWidth: tema.esOscuro ? 1 : 0,
+        },
+      ]}
       onLayout={(evento) => onAlto(evento.nativeEvent.layout.height)}
       accessibilityRole="summary"
       accessibilityLabel={`${nombre}, ${estado}, ${reporte.direccion}`}
@@ -415,12 +484,18 @@ function TarjetaMapa({
         {foto ? (
           <Image source={{ uri: foto }} style={styles.tarjetaFoto} />
         ) : (
-          <View style={[styles.tarjetaFoto, styles.tarjetaFotoVacia]}>
+          <View
+            style={[
+              styles.tarjetaFoto,
+              styles.tarjetaFotoVacia,
+              { backgroundColor: tema.primaryContainer },
+            ]}
+          >
             <IconoCategoria tipoId={reporte.tipoId} size={28} />
           </View>
         )}
         <View style={styles.tarjetaTexto}>
-          <Text style={styles.tarjetaNombre} numberOfLines={1}>
+          <Text style={[styles.tarjetaNombre, { color: tema.onSurface }]} numberOfLines={1}>
             {nombre}
           </Text>
           <View style={styles.tarjetaEstado}>
@@ -430,13 +505,13 @@ function TarjetaMapa({
                 { backgroundColor: COLORES_ESTADO[reporte.estado] },
               ]}
             />
-            <Text style={styles.tarjetaEstadoTexto}>{estado}</Text>
+            <Text style={[styles.tarjetaEstadoTexto, { color: tema.onSurface }]}>{estado}</Text>
           </View>
-          <Text style={styles.tarjetaDireccion} numberOfLines={1}>
+          <Text style={[styles.tarjetaDireccion, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
             {reporte.direccion}
           </Text>
           {reporte.descripcion ? (
-            <Text style={styles.tarjetaDescripcion} numberOfLines={1}>
+            <Text style={[styles.tarjetaDescripcion, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
               {reporte.descripcion}
             </Text>
           ) : null}
@@ -447,7 +522,7 @@ function TarjetaMapa({
           hitSlop={8}
           onPress={onCerrar}
         >
-          <Ionicons name="close" size={20} color={Paleta.inkSoft} />
+          <Ionicons name="close" size={20} color={tema.onSurfaceVariant} />
         </Pressable>
       </View>
       <Boton titulo="Ver reclamo" onPress={onVer} />
@@ -470,7 +545,18 @@ function Chip({
   tipoId?: string;
   iconoApp?: boolean;
 }) {
+  const tema = useTheme();
   const seleccionado = activo && !sobreClaro;
+
+  const fondo = activo
+    ? tema.primary
+    : sobreClaro
+    ? tema.surfaceVariant
+    : tema.surface;
+
+  const borde = activo ? tema.primary : tema.outline;
+  const colorTexto = activo ? tema.onPrimary : tema.onSurface;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -478,33 +564,31 @@ function Chip({
       onPress={onPress}
       style={[
         styles.chip,
-        sobreClaro ? styles.chipClaro : null,
-        activo ? (sobreClaro ? styles.chipClaroActivo : styles.chipActivo) : null,
+        {
+          backgroundColor: fondo,
+          borderColor: borde,
+        },
       ]}
     >
       {iconoApp ? (
         <Ionicons
           name="apps-outline"
           size={16}
-          color={activo ? Paleta.paperRaised : Paleta.ink}
+          color={colorTexto}
         />
       ) : null}
       {tipoId ? (
         <IconoCategoria
           tipoId={tipoId}
           size={16}
-          color={seleccionado ? Paleta.paperRaised : undefined}
+          color={seleccionado ? tema.onPrimary : undefined}
         />
       ) : null}
       <Text
         style={[
           styles.chipTexto,
-          sobreClaro ? styles.chipTextoClaro : null,
-          activo
-            ? sobreClaro
-              ? styles.chipTextoClaroActivo
-              : styles.chipTextoActivo
-            : null,
+          { color: colorTexto },
+          activo && styles.chipTextoActivo,
         ]}
       >
         {etiqueta}
@@ -514,49 +598,40 @@ function Chip({
 }
 
 function Leyenda({ color, texto }: { color: string; texto: string }) {
+  const tema = useTheme();
+
   return (
     <View style={styles.leyendaItem}>
       <View style={[styles.leyendaPunto, { backgroundColor: color }]} />
-      <Text style={styles.leyendaTexto}>{texto}</Text>
+      <Text style={[styles.leyendaTexto, { color: tema.onSurfaceVariant }]}>{texto}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
-    flex: 1,
-    backgroundColor: Paleta.paper,
-  },
+  pantalla: { flex: 1 },
   cabecera: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     gap: 12,
-    backgroundColor: Paleta.paper,
   },
   cabeceraFila: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Paleta.line,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  titulos: {
-    flex: 1,
-    gap: 2,
-  },
+  titulos: { flex: 1, gap: 2 },
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
     lineHeight: 18,
   },
   avatar: {
@@ -564,17 +639,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Paleta.tealSoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarPresionado: {
-    opacity: 0.85,
-  },
+  avatarPresionado: { opacity: 0.85 },
   avatarLetra: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.tealDeep,
   },
   avatarInsigniaSalir: {
     position: "absolute",
@@ -583,9 +654,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Paleta.tealDeep,
     borderWidth: 1.5,
-    borderColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -595,10 +664,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
-  },
-  botonFiltroActivo: {
-    backgroundColor: Paleta.tealDeep,
   },
   chips: {
     gap: 8,
@@ -617,39 +682,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 40,
     justifyContent: "center",
-    backgroundColor: Paleta.paperRaised,
     borderWidth: 1,
-    borderColor: Paleta.line,
-  },
-  chipActivo: {
-    backgroundColor: Paleta.tealDeep,
-    borderColor: Paleta.tealDeep,
-  },
-  chipClaro: {
-    backgroundColor: Paleta.paper,
-    borderColor: Paleta.line,
-  },
-  chipClaroActivo: {
-    backgroundColor: Paleta.teal,
-    borderColor: Paleta.teal,
   },
   chipTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.ink,
   },
   chipTextoActivo: {
-    color: Paleta.paperRaised,
-  },
-  chipTextoClaro: {
-    color: Paleta.ink,
-  },
-  chipTextoClaroActivo: {
-    color: Paleta.paperRaised,
+    fontFamily: Fonts.semiBold,
   },
   mapa: {
     flex: 1,
-    backgroundColor: Paleta.tealSoft,
     overflow: "hidden",
   },
   ubicar: {
@@ -665,10 +708,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(15, 23, 42, 0.08)",
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 6,
@@ -679,14 +720,13 @@ const styles = StyleSheet.create({
     top: 12,
     left: 16,
     right: 16,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
@@ -696,36 +736,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.ink,
   },
   cercaChip: {
     borderRadius: 999,
     paddingHorizontal: 12,
     minHeight: 36,
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
-  },
-  cercaChipActivo: {
-    backgroundColor: Paleta.teal,
   },
   cercaTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.tealDeep,
-  },
-  cercaTextoActivo: {
-    color: Paleta.paperRaised,
   },
   panelFiltros: {
     position: "absolute",
     top: 68,
     left: 16,
     right: 16,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 16,
     padding: 14,
     gap: 10,
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 16,
@@ -736,7 +766,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: Paleta.inkSoft,
   },
   leyenda: {
     flexDirection: "row",
@@ -756,7 +785,6 @@ const styles = StyleSheet.create({
   leyendaTexto: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   listo: {
     alignSelf: "flex-end",
@@ -767,7 +795,6 @@ const styles = StyleSheet.create({
   listoTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.teal,
   },
   tarjeta: {
     position: "absolute",
@@ -776,11 +803,10 @@ const styles = StyleSheet.create({
     bottom: 12,
     zIndex: 40,
     elevation: 16,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 20,
     padding: 12,
     gap: 12,
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 16,
@@ -794,20 +820,15 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 14,
-    backgroundColor: Paleta.tealSoft,
   },
   tarjetaFotoVacia: {
     alignItems: "center",
     justifyContent: "center",
   },
-  tarjetaTexto: {
-    flex: 1,
-    gap: 2,
-  },
+  tarjetaTexto: { flex: 1, gap: 2 },
   tarjetaNombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 16,
-    color: Paleta.ink,
   },
   tarjetaEstado: {
     flexDirection: "row",
@@ -822,16 +843,13 @@ const styles = StyleSheet.create({
   tarjetaEstadoTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.ink,
   },
   tarjetaDireccion: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   tarjetaDescripcion: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
 });

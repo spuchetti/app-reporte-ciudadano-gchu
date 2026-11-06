@@ -10,7 +10,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { NotaDeVoz } from "@/components/reporte/nota-de-voz";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 const MAX_DESCRIPCION = 300;
 const FRASES = [
@@ -62,6 +63,7 @@ export function PasoDescripcion({
   onDescripcion,
   onAudio,
 }: Props) {
+  const tema = useTheme();
   const grabadora = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const estado = useAudioRecorderState(grabadora);
   const [error, setError] = useState<string | null>(null);
@@ -95,20 +97,29 @@ export function PasoDescripcion({
   return (
     <View>
       <View style={styles.filaEtiqueta}>
-        <Text style={styles.etiqueta}>¿Qué está pasando?</Text>
-        <Text style={styles.opcional}>Opcional</Text>
+        <Text style={[styles.etiqueta, { color: tema.onSurface }]}>¿Qué está pasando?</Text>
+        <Text style={[styles.opcional, { color: tema.onSurfaceVariant }]}>Opcional</Text>
       </View>
-      <View style={styles.area}>
+      <View
+        style={[
+          styles.area,
+          {
+            backgroundColor: tema.surfaceVariant,
+            borderColor: tema.outline,
+            borderWidth: 1,
+          },
+        ]}
+      >
         <TextInput
           value={descripcion}
           onChangeText={(valor) => onDescripcion(valor.slice(0, MAX_DESCRIPCION))}
           placeholder="Contá desde cuándo pasa y si hay algún riesgo."
-          placeholderTextColor={Paleta.inkSoft}
+          placeholderTextColor={tema.onSurfaceVariant}
           multiline
           maxLength={MAX_DESCRIPCION}
-          style={styles.input}
+          style={[styles.input, { color: tema.onSurface }]}
         />
-        <Text style={styles.contador}>
+        <Text style={[styles.contador, { color: tema.onSurfaceVariant }]}>
           {descripcion.length}/{MAX_DESCRIPCION}
         </Text>
       </View>
@@ -119,25 +130,51 @@ export function PasoDescripcion({
             accessibilityRole="button"
             accessibilityLabel={`Agregar: ${frase}`}
             onPress={() => onDescripcion(conFrase(descripcion, frase))}
-            style={styles.frase}
+            style={[
+              styles.frase,
+              {
+                backgroundColor: tema.surfaceVariant,
+                borderColor: tema.outline,
+                borderWidth: 1,
+              },
+            ]}
           >
-            <Text style={styles.fraseMas}>+</Text>
-            <Text style={styles.fraseTexto}>{frase}</Text>
+            <Text style={[styles.fraseMas, { color: tema.primary }]}>+</Text>
+            <Text style={[styles.fraseTexto, { color: tema.onSurface }]}>{frase}</Text>
           </Pressable>
         ))}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
 
       {estado.isRecording ? (
-        <View style={styles.voz}>
-          <View style={styles.grabandoMarca}>
-            <View style={styles.punto} />
+        <View
+          style={[
+            styles.voz,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.grabandoMarca,
+              {
+                backgroundColor: tema.esOscuro
+                  ? "rgba(239, 83, 80, 0.2)"
+                  : "#FDECEC",
+              },
+            ]}
+          >
+            <View style={[styles.punto, { backgroundColor: tema.error }]} />
           </View>
           <View style={styles.vozTexto}>
-            <Text style={styles.vozTitulo}>
+            <Text style={[styles.vozTitulo, { color: tema.onSurface }]}>
               Grabando {formatoTiempo(estado.durationMillis)}
             </Text>
-            <Text style={styles.vozDetalle}>Tocá detener cuando termines.</Text>
+            <Text style={[styles.vozDetalle, { color: tema.onSurfaceVariant }]}>
+              Tocá detener cuando termines.
+            </Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -147,7 +184,7 @@ export function PasoDescripcion({
             }}
             hitSlop={8}
           >
-            <Text style={styles.accion}>Detener</Text>
+            <Text style={[styles.accion, { color: tema.primary }]}>Detener</Text>
           </Pressable>
         </View>
       ) : audioUrl ? (
@@ -159,18 +196,24 @@ export function PasoDescripcion({
           onPress={() => {
             void empezarGrabacion();
           }}
-          style={styles.voz}
+          style={[
+            styles.voz,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
         >
-          <View style={styles.microfono}>
-            <Ionicons name="mic" size={18} color={Paleta.paperRaised} />
+          <View style={[styles.microfono, { backgroundColor: tema.primary }]}>
+            <Ionicons name="mic" size={18} color={tema.onPrimary} />
           </View>
           <View style={styles.vozTexto}>
-            <Text style={styles.vozTitulo}>Grabar nota de voz</Text>
-            <Text style={styles.vozDetalle}>
+            <Text style={[styles.vozTitulo, { color: tema.onSurface }]}>Grabar nota de voz</Text>
+            <Text style={[styles.vozDetalle, { color: tema.onSurfaceVariant }]}>
               Si te resulta más fácil contarlo hablando
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={Paleta.inkSoft} />
+          <Ionicons name="chevron-forward" size={18} color={tema.onSurfaceVariant} />
         </Pressable>
       )}
     </View>
@@ -187,17 +230,14 @@ const styles = StyleSheet.create({
   etiqueta: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
   },
   opcional: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   area: {
     minHeight: 128,
     borderRadius: 16,
-    backgroundColor: "#F4F7F8",
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 28,
@@ -207,7 +247,6 @@ const styles = StyleSheet.create({
     minHeight: 72,
     fontFamily: Fonts.regular,
     fontSize: 15,
-    color: Paleta.ink,
     textAlignVertical: "top",
     padding: 0,
   },
@@ -217,7 +256,6 @@ const styles = StyleSheet.create({
     bottom: 10,
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   frases: {
     gap: 8,
@@ -228,7 +266,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#F4F7F8",
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -236,16 +273,13 @@ const styles = StyleSheet.create({
   fraseMas: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.tealDeep,
   },
   fraseTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.ink,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -254,9 +288,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#E6ECF0",
     borderRadius: 16,
-    backgroundColor: Paleta.paperRaised,
     paddingVertical: 12,
     paddingHorizontal: 12,
   },
@@ -264,7 +296,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Paleta.teal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -275,18 +306,15 @@ const styles = StyleSheet.create({
   vozTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   vozDetalle: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   grabandoMarca: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FDECEC",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -294,11 +322,9 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Paleta.rojo,
   },
   accion: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.tealDeep,
   },
 });

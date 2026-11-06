@@ -1,6 +1,7 @@
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { Reporte } from "@/tipos";
 
 type Props = {
@@ -22,20 +23,34 @@ export function SheetDuplicado({
   onCerrar,
   onElegir,
 }: Props) {
+  const tema = useTheme();
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCerrar}>
       <Pressable style={styles.fondo} onPress={onCerrar}>
-        <Pressable style={styles.panel} onPress={() => {}}>
-          <Text style={styles.titulo}>Marcar duplicado</Text>
-          <Text style={styles.subtitulo}>
+        <Pressable
+          style={[
+            styles.panel,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderTopWidth: tema.esOscuro ? 1 : 0,
+            },
+          ]}
+          onPress={() => {}}
+        >
+          <Text style={[styles.titulo, { color: tema.onSurface }]}>Marcar duplicado</Text>
+          <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
             Este reporte queda cerrado y apunta al original.
           </Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
 
           <ScrollView style={styles.lista} keyboardShouldPersistTaps="handled">
             {opciones.length === 0 ? (
-              <Text style={styles.vacio}>No hay otro reporte para marcarlo como duplicado.</Text>
+              <Text style={[styles.vacio, { color: tema.onSurfaceVariant }]}>
+                No hay otro reporte para marcarlo como duplicado.
+              </Text>
             ) : (
               opciones.map((reporte) => (
                 <Pressable
@@ -44,10 +59,19 @@ export function SheetDuplicado({
                   accessibilityLabel={`Duplicado de ${reporte.codigo}`}
                   disabled={guardando}
                   onPress={() => onElegir(reporte.id)}
-                  style={({ pressed }) => [styles.opcion, pressed && styles.opcionPressed]}
+                  style={({ pressed }) => [
+                    styles.opcion,
+                    {
+                      backgroundColor: tema.surfaceVariant,
+                      borderColor: tema.outline,
+                    },
+                    pressed && styles.opcionPressed,
+                  ]}
                 >
-                  <Text style={styles.opcionNombre}>{reporte.codigo}</Text>
-                  <Text style={styles.opcionMeta}>
+                  <Text style={[styles.opcionNombre, { color: tema.onSurface }]}>
+                    {reporte.codigo}
+                  </Text>
+                  <Text style={[styles.opcionMeta, { color: tema.onSurfaceVariant }]}>
                     {`${nombreDe(reporte)} · ${reporte.direccion}`}
                   </Text>
                 </Pressable>
@@ -56,7 +80,7 @@ export function SheetDuplicado({
           </ScrollView>
 
           {guardando ? (
-            <ActivityIndicator color={PaletaOperador.principal} style={styles.cargando} />
+            <ActivityIndicator color={tema.secondary} style={styles.cargando} />
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -64,7 +88,9 @@ export function SheetDuplicado({
               onPress={onCerrar}
               style={styles.cancelar}
             >
-              <Text style={styles.cancelarTexto}>Cancelar</Text>
+              <Text style={[styles.cancelarTexto, { color: tema.onSurfaceVariant }]}>
+                Cancelar
+              </Text>
             </Pressable>
           )}
         </Pressable>
@@ -76,11 +102,10 @@ export function SheetDuplicado({
 const styles = StyleSheet.create({
   fondo: {
     flex: 1,
-    backgroundColor: "rgba(18,35,46,0.45)",
+    backgroundColor: "rgba(18,35,46,0.6)",
     justifyContent: "flex-end",
   },
   panel: {
-    backgroundColor: Paleta.paperRaised,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
@@ -92,18 +117,15 @@ const styles = StyleSheet.create({
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
     marginBottom: 8,
   },
   error: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.rojo,
   },
   lista: {
     flexGrow: 0,
@@ -111,16 +133,13 @@ const styles = StyleSheet.create({
   vacio: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     paddingVertical: 12,
   },
   opcion: {
     borderWidth: 1,
-    borderColor: Paleta.line,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: Paleta.paper,
     marginBottom: 8,
   },
   opcionPressed: {
@@ -129,13 +148,11 @@ const styles = StyleSheet.create({
   opcionNombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
   },
   opcionMeta: {
     marginTop: 2,
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   cargando: {
     marginTop: 12,
@@ -147,6 +164,5 @@ const styles = StyleSheet.create({
   cancelarTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
 });

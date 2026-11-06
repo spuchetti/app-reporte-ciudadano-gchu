@@ -13,7 +13,8 @@ import * as ImagePicker from "expo-image-picker";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { Boton } from "@/components/ui/boton";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type Props = {
   pista: string;
@@ -22,8 +23,8 @@ type Props = {
   altura?: number;
 };
 
-/** Visor de cámara compartido: saca la foto adentro de la app, sin abrir la cámara del sistema. */
 export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
+  const tema = useTheme();
   const { height } = useWindowDimensions();
   const altoCamara = altura ?? Math.min(560, Math.round(height * 0.62));
   const camaraRef = useRef<CameraView>(null);
@@ -45,9 +46,7 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
   }, [permiso, pedirPermiso]);
 
   async function tomarFoto() {
-    if (!camaraLista || tomando) {
-      return;
-    }
+    if (!camaraLista || tomando) return;
     setTomando(true);
     setError(null);
     try {
@@ -78,9 +77,7 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
         quality: 0.7,
         allowsMultipleSelection: false,
       });
-      if (resultado.canceled || !resultado.assets[0]?.uri) {
-        return;
-      }
+      if (resultado.canceled || !resultado.assets[0]?.uri) return;
       onFoto(resultado.assets[0].uri);
     } catch {
       setError("No se pudo abrir la galería. Probá de nuevo.");
@@ -89,7 +86,7 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
 
   if (!permiso || esperandoPermiso) {
     return (
-      <Text style={styles.ayuda}>
+      <Text style={[styles.ayuda, { color: tema.onSurfaceVariant }]}>
         Para sacar la foto, el teléfono va a pedirte permiso de cámara.
       </Text>
     );
@@ -98,11 +95,11 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
   if (!permiso.granted) {
     return (
       <View style={styles.permiso}>
-        <Text style={styles.ayuda}>
+        <Text style={[styles.ayuda, { color: tema.onSurfaceVariant }]}>
           La foto es obligatoria. Si bloqueaste la cámara, activala en Ajustes o
           elegí una imagen de la galería.
         </Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
         <Boton
           titulo="Elegir de galería"
           icono="image-outline"
@@ -165,7 +162,7 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
           <Text style={styles.pistaTexto}>{pista}</Text>
         </View>
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
       <View style={styles.controles}>
         <Pressable
           accessibilityRole="button"
@@ -173,15 +170,21 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
           onPress={() => void elegirDeGaleria()}
           style={styles.control}
         >
-          <Ionicons name="image-outline" size={26} color={Paleta.ink} />
-          <Text style={styles.controlTexto}>Galería</Text>
+          <Ionicons name="image-outline" size={26} color={tema.onSurface} />
+          <Text style={[styles.controlTexto, { color: tema.onSurface }]}>Galería</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Tomar foto"
           disabled={tomando || (Platform.OS !== "web" && !camaraLista)}
           onPress={() => void tomarFoto()}
-          style={styles.obturador}
+          style={[
+            styles.obturador,
+            {
+              backgroundColor: tema.primary,
+              borderColor: tema.primaryContainer,
+            },
+          ]}
         />
         <Pressable
           accessibilityRole="button"
@@ -192,9 +195,9 @@ export function CapturaCamara({ pista, onFoto, onCerrar, altura }: Props) {
           <Ionicons
             name={flash === "on" ? "flash-outline" : "flash-off-outline"}
             size={26}
-            color={flash === "on" ? Paleta.tealDeep : Paleta.ink}
+            color={flash === "on" ? tema.primary : tema.onSurface}
           />
-          <Text style={styles.controlTexto}>Flash</Text>
+          <Text style={[styles.controlTexto, { color: tema.onSurface }]}>Flash</Text>
         </Pressable>
       </View>
       {onCerrar ? (
@@ -208,14 +211,13 @@ const styles = StyleSheet.create({
   ayuda: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 16,
   },
   ayudaClaro: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     lineHeight: 20,
     textAlign: "center",
   },
@@ -224,7 +226,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 28,
     height: 28,
-    borderColor: Paleta.paperRaised,
+    borderColor: "#FFFFFF",
   },
   esquinaSuperiorIzquierda: {
     top: 18,
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   pistaTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   controles: {
     flexDirection: "row",
@@ -309,15 +310,12 @@ const styles = StyleSheet.create({
   controlTexto: {
     fontFamily: Fonts.medium,
     fontSize: 12,
-    color: Paleta.ink,
   },
   obturador: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Paleta.teal,
     borderWidth: 4,
-    borderColor: Paleta.tealSoft,
   },
   separador: {
     height: 10,

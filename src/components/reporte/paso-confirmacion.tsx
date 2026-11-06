@@ -6,7 +6,8 @@ import { MapView, Marker } from "@/components/mapa";
 import { NotaDeVoz } from "@/components/reporte/nota-de-voz";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
-import { Fonts, Paleta, fondoSuave } from "@/constants/theme";
+import { Fonts, fondoSuave } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { nombreZona } from "@/servicios/bandeja";
 import { zonaParaCoordenadas } from "@/servicios/ubicacion";
 import { TipoDeReporte } from "@/tipos";
@@ -29,16 +30,21 @@ export function PasoConfirmacion({
   longitud,
   audioUrl,
 }: Props) {
+  const tema = useTheme();
   const zona = nombreZona(zonaParaCoordenadas({ latitud, longitud }));
   const categoria = tipo ? obtenerCategoriaVisual(tipo.id) : undefined;
 
   return (
     <View style={styles.caja}>
       {fotos[0] ? (
-        <Image source={{ uri: fotos[0] }} style={styles.foto} contentFit="cover" />
+        <Image
+          source={{ uri: fotos[0] }}
+          style={[styles.foto, { backgroundColor: tema.surfaceVariant }]}
+          contentFit="cover"
+        />
       ) : (
-        <View style={styles.fotoVacia}>
-          <Ionicons name="camera-outline" size={36} color="#9BB0BC" />
+        <View style={[styles.fotoVacia, { backgroundColor: tema.surfaceVariant }]}>
+          <Ionicons name="camera-outline" size={36} color={tema.onSurfaceVariant} />
         </View>
       )}
 
@@ -46,18 +52,33 @@ export function PasoConfirmacion({
         <View
           style={[
             styles.icono,
-            { backgroundColor: fondoSuave(categoria?.color ?? Paleta.teal) },
+            { backgroundColor: fondoSuave(categoria?.color ?? tema.primary) },
           ]}
         >
           {tipo ? <IconoCategoria tipoId={tipo.id} size={22} /> : null}
         </View>
         <View style={styles.tipoTexto}>
-          <Text style={styles.tipo}>{tipo?.nombre ?? "Tipo de problema"}</Text>
-          {tipo ? <Text style={styles.area}>{tipo.areaResponsable}</Text> : null}
+          <Text style={[styles.tipo, { color: tema.onSurface }]}>
+            {tipo?.nombre ?? "Tipo de problema"}
+          </Text>
+          {tipo ? (
+            <Text style={[styles.area, { color: tema.onSurfaceVariant }]}>
+              {tipo.areaResponsable}
+            </Text>
+          ) : null}
         </View>
       </View>
 
-      <View style={styles.mapa}>
+      <View
+        style={[
+          styles.mapa,
+          {
+            backgroundColor: tema.surfaceVariant,
+            borderColor: tema.outline,
+            borderWidth: tema.esOscuro ? 1 : 0,
+          },
+        ]}
+      >
         <MapView
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
@@ -71,18 +92,18 @@ export function PasoConfirmacion({
         >
           <Marker
             coordinate={{ latitude: latitud, longitude: longitud }}
-            pinColor={Paleta.teal}
+            pinColor={tema.primary}
           />
         </MapView>
       </View>
 
       <View style={styles.lugar}>
-        <Ionicons name="location-outline" size={18} color={Paleta.tealDeep} />
-        <Text style={styles.direccion} numberOfLines={1}>
+        <Ionicons name="location-outline" size={18} color={tema.primary} />
+        <Text style={[styles.direccion, { color: tema.onSurface }]} numberOfLines={1}>
           {direccion}
         </Text>
         <View style={styles.zona}>
-          <Text style={styles.zonaTexto}>{zona}</Text>
+          <Text style={[styles.zonaTexto, { color: tema.primary }]}>{zona}</Text>
         </View>
       </View>
 
@@ -99,13 +120,11 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 168,
     borderRadius: 20,
-    backgroundColor: "#E7F1F4",
   },
   fotoVacia: {
     width: "100%",
     height: 168,
     borderRadius: 20,
-    backgroundColor: "#E7F1F4",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -128,18 +147,15 @@ const styles = StyleSheet.create({
   tipo: {
     fontFamily: Fonts.bold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   area: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   mapa: {
     height: 132,
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: Paleta.tealSoft,
   },
   lugar: {
     flexDirection: "row",
@@ -150,7 +166,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   zona: {
     paddingHorizontal: 2,
@@ -158,6 +173,5 @@ const styles = StyleSheet.create({
   zonaTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.tealDeep,
   },
 });

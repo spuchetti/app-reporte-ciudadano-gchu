@@ -9,7 +9,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { LogoMarca } from "@/components/ui/logo-marca";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type MapViewProps = {
   children?: ReactNode;
@@ -25,19 +26,35 @@ export function MapView({
   mensaje = "El mapa con las calles de Gualeguaychú se ve en el celular.",
   ref,
 }: MapViewProps) {
+  const tema = useTheme();
+
   return (
     <View
       ref={ref}
-      style={[styles.base, style]}
+      style={[
+        styles.base,
+        { backgroundColor: tema.tealSoft },
+        style,
+      ]}
       accessibilityLabel="Mapa no disponible en web"
     >
       <LogoMarca size={64} />
-      <View style={styles.badge}>
-        <Ionicons name="phone-portrait-outline" size={18} color={Paleta.tealDeep} />
-        <Text style={styles.badgeTexto}>Disponible en la app</Text>
+      <View style={[styles.badge, { backgroundColor: tema.surface }]}>
+        <Ionicons
+          name="phone-portrait-outline"
+          size={18}
+          color={tema.tealDeep}
+        />
+        <Text style={[styles.badgeTexto, { color: tema.tealDeep }]}>
+          Disponible en la app
+        </Text>
       </View>
-      <Text style={styles.titulo}>Mapa interactivo en el celular</Text>
-      <Text style={styles.texto}>{mensaje}</Text>
+      <Text style={[styles.titulo, { color: tema.onSurface }]}>
+        Mapa interactivo en el celular
+      </Text>
+      <Text style={[styles.texto, { color: tema.onSurfaceVariant }]}>
+        {mensaje}
+      </Text>
     </View>
   );
 }
@@ -57,7 +74,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D8F0EA",
     paddingHorizontal: 28,
     paddingVertical: 32,
     gap: 10,
@@ -70,17 +86,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: Paleta.paperRaised,
   },
   badgeTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
-    color: Paleta.tealDeep,
   },
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
     textAlign: "center",
     marginTop: 4,
   },
@@ -89,7 +102,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 21,
-    color: Paleta.inkSoft,
     maxWidth: 360,
   },
 });

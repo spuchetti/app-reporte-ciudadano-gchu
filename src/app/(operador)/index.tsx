@@ -17,12 +17,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { SheetAsignar } from "@/components/operador/sheet-asignar";
 import { QRScanner } from "@/components/operador/qr-scanner";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
 import HeaderOperador from "@/components/ui/headerOperador";
 import { obtenerCategoriaVisual } from "@/constants/categorias";
-import { Fonts, Paleta, PaletaOperador, fondoSuave } from "@/constants/theme";
+import { Fonts, fondoSuave } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import {
   ESTADOS_BANDEJA,
   filtrarReportesBandeja,
@@ -55,6 +57,7 @@ const PESTANAS: { id: PestanaBandeja; etiqueta: string }[] = [
 export default function BandejaOperadorScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const tema = useTheme();
   const { sesion, cerrarSesion } = useSesion();
   const usuario = sesion?.esInvitado === false ? sesion.usuario : null;
   const zonaOperadorId = usuario?.zonaId ?? null;
@@ -71,10 +74,7 @@ export default function BandejaOperadorScreen() {
       "Cerrar sesión",
       "¿Estás seguro de que querés cerrar sesión?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Cerrar sesión",
           style: "destructive",
@@ -147,17 +147,11 @@ export default function BandejaOperadorScreen() {
   const reporteAsignar = reportes.find((item) => item.id === asignandoId) ?? null;
 
   async function onAsignar(cuadrillaId: string) {
-    if (!asignandoId || !usuario) {
-      return;
-    }
+    if (!asignandoId || !usuario) return;
     setAsignando(true);
     setErrorAsignar(null);
     try {
-      const actualizado = await asignarCuadrilla(
-        asignandoId,
-        cuadrillaId,
-        usuario.id,
-      );
+      const actualizado = await asignarCuadrilla(asignandoId, cuadrillaId, usuario.id);
       setReportes((lista) =>
         lista.map((item) => (item.id === actualizado.id ? actualizado : item)),
       );
@@ -172,16 +166,12 @@ export default function BandejaOperadorScreen() {
   }
 
   return (
-    <View style={styles.pantalla}>
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
       <StatusBar style="light" />
 
       <HeaderOperador style={styles.cabecera}>
         <View style={styles.marcaCabecera}>
-          <IconoPrincipal
-            width={38}
-            height={38}
-            accessibilityLabel="Reporte Ciudadano"
-          />
+          <IconoPrincipal width={38} height={38} accessibilityLabel="Reporte Ciudadano" />
           <View style={styles.cabeceraTexto}>
             <Text style={styles.titulo}>Bandeja</Text>
             <Text style={styles.subtitulo}>
@@ -190,7 +180,9 @@ export default function BandejaOperadorScreen() {
             </Text>
           </View>
         </View>
+
         <View style={styles.accionesCabecera}>
+          <BotonTema sobreFondoOscuro />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Zonas y cuadrillas"
@@ -210,26 +202,35 @@ export default function BandejaOperadorScreen() {
         </View>
       </HeaderOperador>
 
-      <View style={styles.controles}>
+      <View style={[styles.controles, { backgroundColor: tema.surface }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Escanear QR de Vecino"
           onPress={() => setScannerVisible(true)}
           style={({ pressed }) => [
             styles.botonEscanearQr,
+            { backgroundColor: tema.secondary },
             pressed && styles.botonEscanearQrPresionado,
           ]}
         >
-          <Ionicons name="qr-code-outline" size={18} color={Paleta.paperRaised} />
+          <Ionicons name="qr-code-outline" size={18} color="#FFFFFF" />
           <Text style={styles.textoEscanearQr}>Escanear QR de Vecino</Text>
         </Pressable>
+
         <TextInput
           value={busqueda}
           onChangeText={setBusqueda}
           placeholder="Buscar reporte..."
-          placeholderTextColor={Paleta.inkSoft}
+          placeholderTextColor={tema.onSurfaceVariant}
           accessibilityLabel="Buscar reporte"
-          style={styles.buscador}
+          style={[
+            styles.buscador,
+            {
+              backgroundColor: tema.surfaceVariant,
+              borderColor: tema.outline,
+              color: tema.onSurface,
+            },
+          ]}
         />
 
         <View style={styles.tabs} accessibilityRole="tablist">
@@ -242,9 +243,19 @@ export default function BandejaOperadorScreen() {
                 accessibilityState={{ selected: activa }}
                 accessibilityLabel={item.etiqueta}
                 onPress={() => setPestana(item.id)}
-                style={[styles.tab, activa ? styles.tabActiva : null]}
+                style={[
+                  styles.tab,
+                  { backgroundColor: tema.surfaceVariant },
+                  activa ? [styles.tabActiva, { backgroundColor: tema.secondary }] : null,
+                ]}
               >
-                <Text style={[styles.tabTexto, activa ? styles.tabTextoActivo : null]}>
+                <Text
+                  style={[
+                    styles.tabTexto,
+                    { color: activa ? "#FFFFFF" : tema.onSurfaceVariant },
+                    activa ? styles.tabTextoActivo : null,
+                  ]}
+                >
                   {item.etiqueta}
                 </Text>
               </Pressable>
@@ -258,14 +269,14 @@ export default function BandejaOperadorScreen() {
           onPress={() => setFiltrosAbiertos((abierto) => !abierto)}
           style={styles.filtrosToggle}
         >
-          <Ionicons name="options-outline" size={16} color={PaletaOperador.principal} />
-          <Text style={styles.filtrosToggleTexto}>
+          <Ionicons name="options-outline" size={16} color={tema.secondary} />
+          <Text style={[styles.filtrosToggleTexto, { color: tema.onSurfaceVariant }]}>
             {filtrosActivos > 0 ? `Filtros (${filtrosActivos})` : "Filtros por zona, tipo y estado"}
           </Text>
         </Pressable>
 
         {!filtrosAbiertos && filtrosActivos > 0 ? (
-          <Text style={styles.filtrosResumen}>
+          <Text style={[styles.filtrosResumen, { color: tema.onSurfaceVariant }]}>
             {resumenFiltros({ zonaId, tipoId, estado })}
           </Text>
         ) : null}
@@ -298,7 +309,7 @@ export default function BandejaOperadorScreen() {
       </View>
 
       <ScrollView
-        style={styles.listaScroll}
+        style={[styles.listaScroll, { backgroundColor: tema.background }]}
         contentContainerStyle={[
           styles.lista,
           { paddingBottom: insets.bottom + 24 },
@@ -306,16 +317,25 @@ export default function BandejaOperadorScreen() {
         showsVerticalScrollIndicator={false}
       >
         {visibles.length === 0 ? (
-          <Text style={styles.vacio}>
+          <Text style={[styles.vacio, { color: tema.onSurfaceVariant }]}>
             {cargando
               ? "Cargando reportes…"
               : error
-                ? error
-                : "No hay reportes con esos filtros."}
+              ? error
+              : "No hay reportes con esos filtros."}
           </Text>
         ) : (
           visibles.map((item) => (
-            <View key={item.id} style={styles.tarjeta}>
+            <View
+              key={item.id}
+              style={[
+                styles.tarjeta,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                },
+              ]}
+            >
               <View
                 style={[
                   styles.barraEstado,
@@ -328,7 +348,7 @@ export default function BandejaOperadorScreen() {
                     styles.icono,
                     {
                       backgroundColor: fondoSuave(
-                        obtenerCategoriaVisual(item.tipoId)?.color ?? Paleta.teal,
+                        obtenerCategoriaVisual(item.tipoId)?.color ?? tema.primary,
                       ),
                     },
                   ]}
@@ -337,20 +357,20 @@ export default function BandejaOperadorScreen() {
                 </View>
                 <View style={styles.tarjetaInfo}>
                   <View style={styles.tarjetaCabecera}>
-                    <Text style={styles.codigo}>{item.codigo}</Text>
+                    <Text style={[styles.codigo, { color: tema.onSurfaceVariant }]}>{item.codigo}</Text>
                     <InsigniaEstado
                       estado={item.estado}
                       etiqueta={etiquetaEstado(item.estado)}
                       maxWidth={148}
                     />
                   </View>
-                  <Text style={styles.linea} numberOfLines={1}>
+                  <Text style={[styles.linea, { color: tema.onSurface }]} numberOfLines={1}>
                     {`${nombreTipo(item.tipoId)} · ${item.direccion}`}
                   </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
+                  <Text style={[styles.meta, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
                     {`${nombreZona(item.zonaId)} · ${haceTiempo(item.creadoEn)}`}
                   </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
+                  <Text style={[styles.meta, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
                     {`${nombreAutor(item.autorId)} · ${textoFotos(item.fotos.length)}`}
                   </Text>
                 </View>
@@ -363,10 +383,11 @@ export default function BandejaOperadorScreen() {
                   onPress={() => router.push(`/(operador)/reporte/${item.id}`)}
                   style={({ pressed }) => [
                     styles.botonRevisar,
+                    { borderColor: tema.secondary },
                     pressed && styles.botonPressed,
                   ]}
                 >
-                  <Text style={styles.textoRevisar}>Revisar</Text>
+                  <Text style={[styles.textoRevisar, { color: tema.secondary }]}>Revisar</Text>
                 </Pressable>
                 {puedeAsignar(item) ? (
                   <Pressable
@@ -378,6 +399,7 @@ export default function BandejaOperadorScreen() {
                     }}
                     style={({ pressed }) => [
                       styles.botonAsignar,
+                      { backgroundColor: tema.secondary },
                       pressed && styles.botonPressed,
                     ]}
                   >
@@ -396,9 +418,7 @@ export default function BandejaOperadorScreen() {
         asignando={asignando}
         error={errorAsignar}
         onCerrar={() => {
-          if (!asignando) {
-            setAsignandoId(null);
-          }
+          if (!asignando) setAsignandoId(null);
         }}
         onElegir={onAsignar}
       />
@@ -425,15 +445,13 @@ function GrupoChips({
   valor: string | null;
   onCambiar: (id: string | null) => void;
 }) {
+  const tema = useTheme();
+
   return (
     <View style={styles.grupo}>
-      <Text style={styles.grupoTitulo}>{titulo}</Text>
+      <Text style={[styles.grupoTitulo, { color: tema.onSurfaceVariant }]}>{titulo}</Text>
       <View style={styles.chips}>
-        <Chip
-          etiqueta="Todos"
-          activo={valor === null}
-          onPress={() => onCambiar(null)}
-        />
+        <Chip etiqueta="Todos" activo={valor === null} onPress={() => onCambiar(null)} />
         {opciones.map((opcion) => (
           <Chip
             key={opcion.id}
@@ -456,14 +474,28 @@ function Chip({
   activo: boolean;
   onPress: () => void;
 }) {
+  const tema = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: activo }}
       onPress={onPress}
-      style={[styles.chip, activo ? styles.chipActivo : null]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: activo ? tema.secondary : tema.surfaceVariant,
+          borderColor: activo ? tema.secondary : tema.outline,
+        },
+      ]}
     >
-      <Text style={[styles.chipTexto, activo ? styles.chipTextoActivo : null]}>
+      <Text
+        style={[
+          styles.chipTexto,
+          { color: activo ? "#FFFFFF" : tema.onSurface },
+          activo ? styles.chipTextoActivo : null,
+        ]}
+      >
         {etiqueta}
       </Text>
     </Pressable>
@@ -471,9 +503,8 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: "#E8EEF3" },
+  pantalla: { flex: 1 },
   cabecera: {
-    backgroundColor: PaletaOperador.oscura,
     paddingHorizontal: 20,
     paddingBottom: 12,
     flexDirection: "row",
@@ -492,7 +523,7 @@ const styles = StyleSheet.create({
   titulo: {
     fontFamily: Fonts.bold,
     fontSize: 26,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   subtitulo: {
     marginTop: 2,
@@ -502,12 +533,12 @@ const styles = StyleSheet.create({
   },
   accionesCabecera: {
     alignItems: "flex-end",
-    gap: 10,
+    gap: 8,
   },
   salir: {
     fontFamily: Fonts.medium,
-    fontSize: 13,
-    color: Paleta.paperRaised,
+    fontSize: 12,
+    color: "#FFFFFF",
     textAlign: "right",
   },
   botonEscanearQr: {
@@ -515,23 +546,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: PaletaOperador.principal,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  botonEscanearQrPresionado: {
-    opacity: 0.85,
-  },
+  botonEscanearQrPresionado: { opacity: 0.85 },
   textoEscanearQr: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     textAlign: "center",
   },
   controles: {
-    backgroundColor: Paleta.paperRaised,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 16,
@@ -539,14 +566,11 @@ const styles = StyleSheet.create({
   },
   buscador: {
     borderWidth: 1,
-    borderColor: Paleta.line,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
     fontFamily: Fonts.regular,
-    color: Paleta.ink,
-    backgroundColor: "#F4F7FA",
   },
   tabs: {
     flexDirection: "row",
@@ -558,20 +582,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F4F7FA",
-    borderWidth: 0,
   },
-  tabActiva: {
-    backgroundColor: PaletaOperador.principal,
-    borderColor: PaletaOperador.principal,
-  },
+  tabActiva: {},
   tabTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: PaletaOperador.principal,
   },
   tabTextoActivo: {
-    color: Paleta.paperRaised,
+    fontFamily: Fonts.semiBold,
   },
   filtrosToggle: {
     alignSelf: "flex-start",
@@ -582,25 +600,18 @@ const styles = StyleSheet.create({
   filtrosToggleTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   filtrosResumen: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
-  filtrosPanel: {
-    gap: 12,
-  },
-  grupo: {
-    gap: 8,
-  },
+  filtrosPanel: { gap: 12 },
+  grupo: { gap: 8 },
   grupoTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: Paleta.inkSoft,
   },
   chips: {
     flexDirection: "row",
@@ -611,43 +622,29 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: Paleta.paper,
     borderWidth: 1,
-    borderColor: Paleta.line,
   },
-  chipActivo: {
-    backgroundColor: PaletaOperador.principal,
-    borderColor: PaletaOperador.principal,
-  },
+  chipActivo: {},
   chipTexto: {
     fontFamily: Fonts.medium,
     fontSize: 12,
-    color: Paleta.ink,
   },
   chipTextoActivo: {
-    color: Paleta.paperRaised,
+    fontFamily: Fonts.semiBold,
   },
-  listaScroll: {
-    flex: 1,
-    backgroundColor: "#E8EEF3",
-  },
-  lista: {
-    padding: 20,
-  },
+  listaScroll: { flex: 1 },
+  lista: { padding: 20 },
   vacio: {
     fontFamily: Fonts.regular,
     textAlign: "center",
     paddingVertical: 32,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
   tarjeta: {
     position: "relative",
     overflow: "hidden",
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Paleta.line,
     padding: 14,
     paddingLeft: 18,
     marginBottom: 12,
@@ -670,7 +667,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
   },
   tarjetaInfo: {
     flex: 1,
@@ -687,17 +683,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   linea: {
     fontFamily: Fonts.bold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   meta: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   acciones: {
     flexDirection: "row",
@@ -708,7 +701,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -716,21 +708,17 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     borderRadius: 999,
-    backgroundColor: PaletaOperador.principal,
     alignItems: "center",
     justifyContent: "center",
   },
-  botonPressed: {
-    opacity: 0.88,
-  },
+  botonPressed: { opacity: 0.88 },
   textoRevisar: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: PaletaOperador.principal,
   },
   textoAsignar: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
 });

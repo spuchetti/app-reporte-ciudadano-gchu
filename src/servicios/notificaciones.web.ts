@@ -1,6 +1,5 @@
 /**
- * Stub web: no importa expo-notifications (evita APIs nativas inexistentes).
- * En nativo se usa `notificaciones.ts`.
+ * Stub web: no importa expo-notifications (APIs nativas inexistentes).
  */
 
 export function reporteIdDeAviso(datos: unknown): string | null {

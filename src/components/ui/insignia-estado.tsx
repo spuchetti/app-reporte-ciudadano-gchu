@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { COLORES_ESTADO as COLORES_PUNTO } from "@/servicios/mapa";
 import { EstadoReporte } from "@/tipos";
 
-const COLORES_INSIGNIA = {
+const COLORES_INSIGNIA_CLARO = {
   recibido: {
     oscuro: { fondo: "#FFF1C2", texto: "#664800" },
     claro: { fondo: "#FFF4D6", texto: "#785500" },
@@ -27,10 +28,12 @@ const COLORES_INSIGNIA = {
   },
 } as const;
 
-const COLORES_PENDIENTE = {
-  fondo: "#EEF1F4",
-  texto: Paleta.inkSoft,
-  punto: Paleta.inkSoft,
+const COLORES_INSIGNIA_OSCURO: Record<EstadoReporte, { fondo: string; texto: string }> = {
+  recibido: { fondo: "rgba(250, 204, 21, 0.18)", texto: "#FDE047" },
+  en_revision: { fondo: "rgba(96, 165, 250, 0.18)", texto: "#93C5FD" },
+  asignado: { fondo: "rgba(251, 146, 60, 0.18)", texto: "#FDBA74" },
+  resuelto: { fondo: "rgba(74, 222, 128, 0.18)", texto: "#86EFAC" },
+  rechazado: { fondo: "rgba(248, 113, 113, 0.18)", texto: "#FCA5A5" },
 };
 
 type Props = {
@@ -50,10 +53,25 @@ export function InsigniaEstado({
   maxWidth,
   lineas = 2,
 }: Props) {
-  const base = COLORES_INSIGNIA[estado][sobreFondoOscuro ? "oscuro" : "claro"];
+  const tema = useTheme();
+
+  const base = tema.esOscuro
+    ? COLORES_INSIGNIA_OSCURO[estado]
+    : COLORES_INSIGNIA_CLARO[estado][sobreFondoOscuro ? "oscuro" : "claro"];
+
+  const puntoColor = COLORES_PUNTO[estado] ?? tema.primary;
+
   const colores = colorOverride
-    ? COLORES_PENDIENTE
-    : { ...base, punto: COLORES_PUNTO[estado] };
+    ? {
+        fondo: tema.surfaceVariant,
+        texto: tema.onSurfaceVariant,
+        punto: tema.onSurfaceVariant,
+      }
+    : {
+        fondo: base.fondo,
+        texto: base.texto,
+        punto: puntoColor,
+      };
 
   return (
     <View
@@ -61,6 +79,8 @@ export function InsigniaEstado({
         styles.insignia,
         {
           backgroundColor: colores.fondo,
+          borderColor: tema.esOscuro ? tema.outline : "transparent",
+          borderWidth: tema.esOscuro ? 1 : 0,
           maxWidth,
         },
       ]}

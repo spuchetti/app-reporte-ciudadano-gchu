@@ -13,10 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { MapView } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { LogoMarca } from "@/components/ui/logo-marca";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
 import {
@@ -33,8 +35,9 @@ import {
 } from "@/servicios/mapa";
 import { Reporte } from "@/tipos";
 
-/** Home público en web: columna estática (sin overlays absolutos sobre el mapa). */
+/** Home público solo web (columna; sin overlays absolutos). */
 export default function MapaPublicoWebScreen() {
+  const tema = useTheme();
   const { height } = useWindowDimensions();
   const {
     sesionVencida,
@@ -95,50 +98,71 @@ export default function MapaPublicoWebScreen() {
   const altoMapa = Math.min(420, Math.max(280, height * 0.42));
 
   return (
-    <View style={styles.pantalla}>
-      <StatusBar style="dark" />
+    <View style={[styles.pantalla, { backgroundColor: tema.paper }]}>
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contenedor}>
-          <View style={styles.cabecera}>
+          <View
+            style={[
+              styles.cabecera,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+              },
+            ]}
+          >
             <LogoMarca size={52} />
             <View style={styles.titulos}>
-              <Text style={styles.marca}>Reporte Ciudadano</Text>
-              <Text style={styles.titulo}>Gualeguaychú</Text>
-              <Text style={styles.subtitulo}>
+              <Text style={[styles.marca, { color: tema.tealDeep }]}>
+                Reporte Ciudadano
+              </Text>
+              <Text style={[styles.titulo, { color: tema.onSurface }]}>
+                Gualeguaychú
+              </Text>
+              <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
                 Mirá los reportes de tu ciudad y generá uno nuevo
               </Text>
             </View>
+            <BotonTema />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Acceso operadores"
               onPress={() => router.push("/login")}
-              style={styles.botonOperador}
+              style={[styles.botonOperador, { backgroundColor: tema.tealSoft }]}
             >
               <Ionicons
                 name="lock-closed-outline"
                 size={16}
-                color={Paleta.tealDeep}
+                color={tema.tealDeep}
               />
-              <Text style={styles.botonOperadorTexto}>Operadores</Text>
+              <Text style={[styles.botonOperadorTexto, { color: tema.tealDeep }]}>
+                Operadores
+              </Text>
             </Pressable>
           </View>
 
           {sesionVencida ? (
-            <View style={styles.aviso}>
-              <Text style={styles.avisoTexto}>{MENSAJE_SESION_VENCIDA}</Text>
+            <View style={[styles.aviso, { backgroundColor: tema.esOscuro ? "#3F1D1D" : "#FDECEC" }]}>
+              <Text style={[styles.avisoTexto, { color: tema.error }]}>
+                {MENSAJE_SESION_VENCIDA}
+              </Text>
               <Pressable
                 onPress={cerrarAvisoSesionVencida}
                 accessibilityRole="button"
               >
-                <Text style={styles.avisoCerrar}>Cerrar</Text>
+                <Text style={[styles.avisoCerrar, { color: tema.onSurface }]}>
+                  Cerrar
+                </Text>
               </Pressable>
             </View>
           ) : null}
 
-          <Text style={styles.seccion}>Tipo de problema</Text>
+          <Text style={[styles.seccion, { color: tema.onSurfaceVariant }]}>
+            Tipo de problema
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -160,7 +184,15 @@ export default function MapaPublicoWebScreen() {
             ))}
           </ScrollView>
 
-          <Text style={[styles.seccion, styles.seccionEspacio]}>Estado</Text>
+          <Text
+            style={[
+              styles.seccion,
+              styles.seccionEspacio,
+              { color: tema.onSurfaceVariant },
+            ]}
+          >
+            Estado
+          </Text>
           <View style={styles.chipsWrap}>
             <Chip
               etiqueta="Todos"
@@ -177,13 +209,29 @@ export default function MapaPublicoWebScreen() {
             ))}
           </View>
 
-          <View style={[styles.mapaCaja, { minHeight: altoMapa }]}>
-            <MapView
-              style={StyleSheet.absoluteFill}
-              mensaje={mensajeMapa}
-            />
+          <View
+            style={[
+              styles.mapaCaja,
+              {
+                minHeight: altoMapa,
+                borderColor: tema.outline,
+                backgroundColor: tema.tealSoft,
+              },
+            ]}
+          >
+            <MapView style={StyleSheet.absoluteFill} mensaje={mensajeMapa} />
             {sincronizandoRed ? (
-              <Text style={styles.sync}>Actualizando…</Text>
+              <Text
+                style={[
+                  styles.sync,
+                  {
+                    color: tema.onSurfaceVariant,
+                    backgroundColor: tema.surface,
+                  },
+                ]}
+              >
+                Actualizando…
+              </Text>
             ) : null}
           </View>
 
@@ -193,11 +241,19 @@ export default function MapaPublicoWebScreen() {
             <Leyenda color={COLORES_ESTADO.resuelto} texto="Resuelto" />
           </View>
 
-          <View style={styles.cta}>
-            <Text style={styles.ctaTitulo}>
+          <View
+            style={[
+              styles.cta,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+              },
+            ]}
+          >
+            <Text style={[styles.ctaTitulo, { color: tema.onSurface }]}>
               {pedirIdentidad ? "¿Sos vecino?" : "Reportá un problema"}
             </Text>
-            <Text style={styles.ctaCuerpo}>
+            <Text style={[styles.ctaCuerpo, { color: tema.onSurfaceVariant }]}>
               En el celular ves el mapa con calles y recibís avisos. Acá podés
               iniciar un reporte o entrar como operador.
             </Text>
@@ -212,9 +268,13 @@ export default function MapaPublicoWebScreen() {
                   onPress={() => {
                     void olvidarDispositivo();
                   }}
-                  style={styles.secundario}
+                  style={[styles.secundario, { borderColor: tema.outline }]}
                 >
-                  <Text style={styles.secundarioTexto}>No soy yo</Text>
+                  <Text
+                    style={[styles.secundarioTexto, { color: tema.onSurface }]}
+                  >
+                    No soy yo
+                  </Text>
                 </Pressable>
               </>
             ) : (
@@ -241,21 +301,33 @@ function Chip({
   onPress: () => void;
   tipoId?: string;
 }) {
+  const tema = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: activo }}
       onPress={onPress}
-      style={[styles.chip, activo ? styles.chipActivo : null]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: activo ? tema.primary : tema.surface,
+          borderColor: activo ? tema.primary : tema.outline,
+        },
+      ]}
     >
       {tipoId ? (
         <IconoCategoria
           tipoId={tipoId}
           size={16}
-          color={activo ? Paleta.paperRaised : undefined}
+          color={activo ? tema.onPrimary : undefined}
         />
       ) : null}
-      <Text style={[styles.chipTexto, activo ? styles.chipTextoActivo : null]}>
+      <Text
+        style={[
+          styles.chipTexto,
+          { color: activo ? tema.onPrimary : tema.onSurface },
+        ]}
+      >
         {etiqueta}
       </Text>
     </Pressable>
@@ -263,10 +335,13 @@ function Chip({
 }
 
 function Leyenda({ color, texto }: { color: string; texto: string }) {
+  const tema = useTheme();
   return (
     <View style={styles.leyendaItem}>
       <View style={[styles.leyendaPunto, { backgroundColor: color }]} />
-      <Text style={styles.leyendaTexto}>{texto}</Text>
+      <Text style={[styles.leyendaTexto, { color: tema.onSurfaceVariant }]}>
+        {texto}
+      </Text>
     </View>
   );
 }
@@ -274,7 +349,6 @@ function Leyenda({ color, texto }: { color: string; texto: string }) {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: "#F4FBF9",
   },
   scroll: {
     flexGrow: 1,
@@ -290,16 +364,16 @@ const styles = StyleSheet.create({
   cabecera: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    backgroundColor: Paleta.paperRaised,
+    gap: 12,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Paleta.line,
     paddingVertical: 16,
     paddingHorizontal: 18,
+    flexWrap: "wrap",
   },
   titulos: {
     flex: 1,
+    minWidth: 180,
     gap: 2,
   },
   marca: {
@@ -307,17 +381,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.4,
     textTransform: "uppercase",
-    color: Paleta.tealDeep,
   },
   titulo: {
     fontFamily: Fonts.bold,
     fontSize: 24,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     lineHeight: 20,
   },
   botonOperador: {
@@ -327,19 +398,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: 40,
     borderRadius: 999,
-    backgroundColor: Paleta.tealSoft,
   },
   botonOperadorTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.tealDeep,
   },
   seccion: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    color: Paleta.inkSoft,
     marginTop: 6,
   },
   seccionEspacio: {
@@ -361,29 +429,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     minHeight: 40,
-    backgroundColor: Paleta.paperRaised,
     borderWidth: 1,
-    borderColor: Paleta.line,
-  },
-  chipActivo: {
-    backgroundColor: Paleta.tealDeep,
-    borderColor: Paleta.tealDeep,
   },
   chipTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.ink,
-  },
-  chipTextoActivo: {
-    color: Paleta.paperRaised,
   },
   mapaCaja: {
     marginTop: 8,
     borderRadius: 24,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: Paleta.line,
-    backgroundColor: Paleta.tealSoft,
   },
   sync: {
     position: "absolute",
@@ -391,8 +447,6 @@ const styles = StyleSheet.create({
     right: 12,
     fontFamily: Fonts.medium,
     fontSize: 12,
-    color: Paleta.inkSoft,
-    backgroundColor: "rgba(255,255,255,0.9)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -416,46 +470,38 @@ const styles = StyleSheet.create({
   leyendaTexto: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   cta: {
     marginTop: 8,
     gap: 12,
     padding: 20,
     borderRadius: 24,
-    backgroundColor: Paleta.paperRaised,
     borderWidth: 1,
-    borderColor: Paleta.line,
   },
   ctaTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   ctaCuerpo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 20,
-    color: Paleta.inkSoft,
     marginBottom: 4,
   },
   secundario: {
     minHeight: 48,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.line,
     alignItems: "center",
     justifyContent: "center",
   },
   secundarioTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   aviso: {
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "#FDECEC",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -464,12 +510,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.rojo,
     lineHeight: 18,
   },
   avisoCerrar: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
   },
 });

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { StyleSheet, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 
 import { MapaCiudadano } from "@/components/mapa/mapa-ciudadano";
@@ -13,5 +14,15 @@ export default function HomeVecinoScreen() {
     }, [establecerOrigen]),
   );
 
-  return <MapaCiudadano />;
+  return (
+    <View style={styles.contenedor}>
+      <MapaCiudadano />
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  contenedor: {
+    flex: 1,
+  },
+});

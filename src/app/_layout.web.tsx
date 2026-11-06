@@ -4,22 +4,24 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
-import { useColorScheme } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { type PropsWithChildren } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { EscuchaAvisos } from "@/components/avisos/escucha-avisos";
 import { EscuchaRed } from "@/components/avisos/escucha-red";
 import { PantallaDesbloqueo } from "@/components/ingreso/pantalla-desbloqueo";
 import { SheetPreferenciaIngreso } from "@/components/ingreso/sheet-preferencia";
 import { SesionProvider, useSesion } from "@/contexto/sesion";
+import { TemaProvider, useTema } from "@/contexto/tema";
 
 SplashScreen.preventAutoHideAsync();
 
 /**
  * Layout web: sin expo-sqlite (wa-sqlite.wasm rompe el bundle).
- * El nativo sigue en `_layout.tsx`.
+ * Tema y navegación iguales al nativo.
  */
 export default function RootLayoutWeb() {
-  const colorScheme = useColorScheme();
   const [fuentesCargadas, errorFuente] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -35,12 +37,25 @@ export default function RootLayoutWeb() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <SesionProvider>
-        <SplashScreenController />
-        <RootNavigator />
-        <SheetPreferenciaIngreso />
-      </SesionProvider>
+    <TemaProvider>
+      <ProveedorNavegacionTema>
+        <SesionProvider>
+          <SplashScreenController />
+          <RootNavigator />
+          <SheetPreferenciaIngreso />
+        </SesionProvider>
+      </ProveedorNavegacionTema>
+    </TemaProvider>
+  );
+}
+
+function ProveedorNavegacionTema({ children }: PropsWithChildren) {
+  const { esOscuro } = useTema();
+
+  return (
+    <ThemeProvider value={esOscuro ? DarkTheme : DefaultTheme}>
+      <StatusBar style={esOscuro ? "light" : "dark"} />
+      {children}
     </ThemeProvider>
   );
 }
@@ -62,10 +77,6 @@ function RootNavigator() {
     return null;
   }
 
-  if (pendienteDesbloqueo && rolToken) {
-    return <PantallaDesbloqueo rol={rolToken} />;
-  }
-
   const esVecino =
     sesion?.esInvitado === false && sesion.usuario.rol === "vecino";
   const esOperador =
@@ -73,7 +84,7 @@ function RootNavigator() {
   const enPublico = !esVecino && !esOperador;
 
   return (
-    <>
+    <View style={styles.contenedorRaiz}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={enPublico}>
           <Stack.Screen name="(publico)" />
@@ -87,8 +98,21 @@ function RootNavigator() {
         <Stack.Screen name="reporte" />
         <Stack.Screen name="reclamo/[id]" />
       </Stack>
+
       <EscuchaAvisos />
       <EscuchaRed />
-    </>
+
+      {pendienteDesbloqueo && rolToken ? (
+        <View style={StyleSheet.absoluteFill}>
+          <PantallaDesbloqueo rol={rolToken} />
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  contenedorRaiz: {
+    flex: 1,
+  },
+});

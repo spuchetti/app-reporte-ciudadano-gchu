@@ -9,7 +9,8 @@ import {
   type PressableProps,
 } from "react-native";
 
-import { Fonts, PaletaOperador, PaletaVecino } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type Variante = "primario" | "secundario" | "texto";
 type RolVisual = "vecino" | "operador";
@@ -31,17 +32,25 @@ export function Boton({
   disabled,
   ...rest
 }: Props) {
+  const tema = useTheme();
   const inactivo = disabled || cargando;
-  const colorPrimario =
-    rol === "operador" ? PaletaOperador.principal : PaletaVecino.oscura;
-  const colorOscuro =
-    rol === "operador" ? PaletaOperador.oscura : PaletaVecino.oscura;
+
+  const colorPrimario = rol === "operador" ? tema.secondary : tema.primary;
+  const colorTexto =
+    rol === "operador"
+      ? tema.esOscuro
+        ? tema.secondary
+        : tema.operadorDeep
+      : tema.esOscuro
+        ? tema.primary
+        : tema.tealDeep;
+
   const colorIcono =
     variante === "primario"
       ? "#FFFFFF"
       : variante === "secundario"
         ? colorPrimario
-        : colorOscuro;
+        : colorTexto;
 
   return (
     <Pressable
@@ -51,8 +60,10 @@ export function Boton({
       style={({ pressed }) => [
         styles.base,
         variante === "primario" && { backgroundColor: colorPrimario },
-        variante === "secundario" && styles.secundario,
-        variante === "secundario" && { borderColor: colorPrimario },
+        variante === "secundario" && [
+          styles.secundario,
+          { borderColor: colorPrimario },
+        ],
         variante === "texto" && styles.texto,
         pressed && !inactivo && styles.pressed,
         inactivo && styles.inactivo,
@@ -73,8 +84,7 @@ export function Boton({
               styles.etiqueta,
               variante === "primario" && styles.etiquetaPrimario,
               variante === "secundario" && { color: colorPrimario },
-              variante === "texto" && styles.etiquetaTexto,
-              variante === "texto" && { color: colorOscuro },
+              variante === "texto" && [styles.etiquetaTexto, { color: colorTexto }],
             ]}
           >
             {titulo}

@@ -8,8 +8,9 @@ import {
 } from "react-native";
 
 import { Boton } from "@/components/ui/boton";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { esErrorServicio } from "@/servicios/error";
 import { ingresoRapidoDisponible } from "@/servicios/ingreso";
 
@@ -18,6 +19,7 @@ function esperar(ms: number) {
 }
 
 export function SheetPreferenciaIngreso() {
+  const tema = useTheme();
   const { pendienteElegirIngreso, elegirMetodo, omitirPreferenciaIngreso } =
     useSesion();
   const [error, setError] = useState<string | null>(null);
@@ -59,12 +61,23 @@ export function SheetPreferenciaIngreso() {
   return (
     <Modal visible={!ocultarParaAuth} animationType="fade" transparent>
       <View style={styles.fondo}>
-        <View style={styles.tarjeta}>
-          <Text style={styles.titulo}>¿Cómo querés ingresar la próxima vez?</Text>
-          <Text style={styles.subtitulo}>
+        <View
+          style={[
+            styles.tarjeta,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderWidth: 1,
+            },
+          ]}
+        >
+          <Text style={[styles.titulo, { color: tema.onSurface }]}>
+            ¿Cómo querés ingresar la próxima vez?
+          </Text>
+          <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]}>
             Lo usás para ingresar. Podés seguir con tus datos, si cancelás.
           </Text>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
           {nativo ? (
             <>
               <Boton
@@ -92,7 +105,9 @@ export function SheetPreferenciaIngreso() {
             onPress={omitirPreferenciaIngreso}
             style={styles.omitir}
           >
-            <Text style={styles.omitirTexto}>Ahora no</Text>
+            <Text style={[styles.omitirTexto, { color: tema.onSurfaceVariant }]}>
+              Ahora no
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -103,36 +118,31 @@ export function SheetPreferenciaIngreso() {
 const styles = StyleSheet.create({
   fondo: {
     flex: 1,
-    backgroundColor: "rgba(18,35,46,0.45)",
+    backgroundColor: "rgba(18,35,46,0.6)",
     justifyContent: "flex-end",
     paddingHorizontal: 12,
+    paddingBottom: 16,
   },
   tarjeta: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 28,
-    borderWidth: 1,
-    borderColor: Paleta.line,
   },
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 22,
     fontWeight: "600",
-    color: Paleta.ink,
     marginBottom: 8,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     lineHeight: 20,
     marginBottom: 24,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -148,6 +158,5 @@ const styles = StyleSheet.create({
   omitirTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.inkSoft,
   },
 });

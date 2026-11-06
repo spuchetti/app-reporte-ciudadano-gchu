@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { obtenerCategoriaVisual } from "@/constants/categorias";
-import { fondoSuave, Fonts, Paleta } from "@/constants/theme";
+import { fondoSuave, Fonts } from "@/constants/theme";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
+import { useTheme } from "@/hooks/use-theme";
 import { TipoDeReporte } from "@/tipos";
 
 const DETALLE: Record<string, { nombre: string; detalle: string }> = {
@@ -23,6 +24,8 @@ type Props = {
 };
 
 export function PasoTipo({ tipos, tipoId, onElegir }: Props) {
+  const tema = useTheme();
+
   return (
     <View style={styles.grilla}>
       {tipos.map((tipo) => {
@@ -35,22 +38,37 @@ export function PasoTipo({ tipos, tipoId, onElegir }: Props) {
             accessibilityRole="button"
             accessibilityState={{ selected: seleccionado }}
             onPress={() => onElegir(tipo.id)}
-            style={[styles.tarjeta, seleccionado ? styles.tarjetaActiva : null]}
+            style={[
+              styles.tarjeta,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+              },
+              seleccionado && {
+                borderColor: tema.primary,
+                backgroundColor: tema.primaryContainer,
+                borderWidth: 2,
+              },
+            ]}
           >
             <View
               style={[
                 styles.icono,
                 {
-                  backgroundColor: fondoSuave(categoria?.color ?? Paleta.teal),
+                  backgroundColor: fondoSuave(categoria?.color ?? tema.primary),
                 },
               ]}
             >
               <IconoCategoria tipoId={tipo.id} size={22} />
             </View>
-            <Text style={styles.nombre}>
+            <Text style={[styles.nombre, { color: tema.onSurface }]}>
               {texto?.nombre ?? categoria?.nombre ?? tipo.nombre}
             </Text>
-            {texto?.detalle ? <Text style={styles.detalle}>{texto.detalle}</Text> : null}
+            {texto?.detalle ? (
+              <Text style={[styles.detalle, { color: tema.onSurfaceVariant }]}>
+                {texto.detalle}
+              </Text>
+            ) : null}
           </Pressable>
         );
       })}
@@ -69,16 +87,9 @@ const styles = StyleSheet.create({
     minHeight: 132,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Paleta.line,
-    backgroundColor: Paleta.paperRaised,
     alignItems: "flex-start",
     padding: 14,
     gap: 6,
-  },
-  tarjetaActiva: {
-    borderWidth: 2,
-    borderColor: Paleta.teal,
-    backgroundColor: Paleta.tealSoft,
   },
   icono: {
     width: 40,
@@ -91,12 +102,10 @@ const styles = StyleSheet.create({
   nombre: {
     fontFamily: Fonts.semiBold,
     fontSize: 16,
-    color: Paleta.ink,
   },
   detalle: {
     fontFamily: Fonts.regular,
     fontSize: 13,
     lineHeight: 18,
-    color: Paleta.inkSoft,
   },
 });

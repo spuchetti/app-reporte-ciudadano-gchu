@@ -4,7 +4,8 @@ import { Image } from "expo-image";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { CapturaCamara } from "@/components/foto/captura-camara";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 type Props = {
   fotos: string[];
@@ -15,6 +16,7 @@ type Props = {
 type Destino = "agregar" | "retomar";
 
 export function PasoFoto({ fotos, onFotos, onRevisando }: Props) {
+  const tema = useTheme();
   const [capturando, setCapturando] = useState(fotos.length === 0);
   const [destino, setDestino] = useState<Destino>("agregar");
 
@@ -45,7 +47,7 @@ export function PasoFoto({ fotos, onFotos, onRevisando }: Props) {
 
   return (
     <View>
-      <View style={styles.marco}>
+      <View style={[styles.marco, { backgroundColor: tema.surfaceVariant }]}>
         <Image
           source={{ uri: fotos[0] }}
           style={styles.hero}
@@ -58,20 +60,27 @@ export function PasoFoto({ fotos, onFotos, onRevisando }: Props) {
             setDestino("retomar");
             setCapturando(true);
           }}
-          style={styles.retomar}
+          style={[
+            styles.retomar,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderWidth: 1,
+            },
+          ]}
         >
-          <Ionicons name="refresh-outline" size={16} color={Paleta.ink} />
-          <Text style={styles.retomarTexto}>Retomar</Text>
+          <Ionicons name="refresh-outline" size={16} color={tema.onSurface} />
+          <Text style={[styles.retomarTexto, { color: tema.onSurface }]}>Retomar</Text>
         </Pressable>
       </View>
       <View style={styles.extra}>
         <Image
           source={{ uri: fotos[0] }}
-          style={styles.miniatura}
+          style={[styles.miniatura, { backgroundColor: tema.surfaceVariant }]}
           contentFit="cover"
         />
         {fotos[1] ? (
-          <View style={styles.segunda}>
+          <View style={[styles.segunda, { backgroundColor: tema.surfaceVariant }]}>
             <Image
               source={{ uri: fotos[1] }}
               style={styles.segundaImagen}
@@ -82,9 +91,16 @@ export function PasoFoto({ fotos, onFotos, onRevisando }: Props) {
               accessibilityLabel="Quitar segunda foto"
               hitSlop={6}
               onPress={() => onFotos(fotos.slice(0, 1))}
-              style={styles.quitar}
+              style={[
+                styles.quitar,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                  borderWidth: 1,
+                },
+              ]}
             >
-              <Ionicons name="close" size={14} color={Paleta.ink} />
+              <Ionicons name="close" size={14} color={tema.onSurface} />
             </Pressable>
           </View>
         ) : (
@@ -95,14 +111,24 @@ export function PasoFoto({ fotos, onFotos, onRevisando }: Props) {
               setDestino("agregar");
               setCapturando(true);
             }}
-            style={styles.agregar}
+            style={[
+              styles.agregar,
+              {
+                borderColor: tema.primary,
+                backgroundColor: tema.primaryContainer,
+              },
+            ]}
           >
-            <Ionicons name="add" size={18} color={Paleta.tealDeep} />
-            <Text style={styles.agregarTexto}>Agregar otra foto</Text>
+            <Ionicons name="add" size={18} color={tema.onPrimaryContainer} />
+            <Text style={[styles.agregarTexto, { color: tema.onPrimaryContainer }]}>
+              Agregar otra foto
+            </Text>
           </Pressable>
         )}
       </View>
-      <Text style={styles.opcional}>La segunda foto es opcional.</Text>
+      <Text style={[styles.opcional, { color: tema.onSurfaceVariant }]}>
+        La segunda foto es opcional.
+      </Text>
     </View>
   );
 }
@@ -111,7 +137,6 @@ const styles = StyleSheet.create({
   marco: {
     borderRadius: 22,
     overflow: "hidden",
-    backgroundColor: "#3F4A57",
     marginBottom: 14,
   },
   hero: {
@@ -125,7 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -133,7 +157,6 @@ const styles = StyleSheet.create({
   retomarTexto: {
     fontFamily: Fonts.medium,
     fontSize: 14,
-    color: Paleta.ink,
   },
   extra: {
     flexDirection: "row",
@@ -144,7 +167,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 14,
-    backgroundColor: "#3F4A57",
   },
   agregar: {
     flex: 1,
@@ -152,8 +174,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: Paleta.teal,
-    backgroundColor: Paleta.tealSoft,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -162,14 +182,12 @@ const styles = StyleSheet.create({
   agregarTexto: {
     fontFamily: Fonts.medium,
     fontSize: 15,
-    color: Paleta.tealDeep,
   },
   segunda: {
     flex: 1,
     height: 72,
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#3F4A57",
   },
   segundaImagen: {
     width: "100%",
@@ -182,14 +200,12 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
   },
   opcional: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
     marginTop: 8,
   },
 });

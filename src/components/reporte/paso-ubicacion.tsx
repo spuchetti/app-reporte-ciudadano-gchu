@@ -3,7 +3,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { MapView, Marker } from "@/components/mapa";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { nombreTipo } from "@/servicios/bandeja";
 import {
   RADIO_DUPLICADO_M,
@@ -43,6 +44,7 @@ export function PasoUbicacion({
   onMapaOcupado,
   sumando = false,
 }: Props) {
+  const tema = useTheme();
   const [cargando, setCargando] = useState(latitud == null);
   const [resolviendoCalle, setResolviendoCalle] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,25 +70,19 @@ export function PasoUbicacion({
           setReportes(lista);
         }
       })
-      .catch(() => {
-        // Si falla el listado, igual se puede marcar el pin.
-      });
+      .catch(() => {});
     return () => {
       activo = false;
     };
   }, []);
 
   useEffect(() => {
-    if (latitud != null && longitud != null) {
-      return;
-    }
+    if (latitud != null && longitud != null) return;
     let activo = true;
     (async () => {
       try {
         const actual = await obtenerUbicacionActual();
-        if (!activo) {
-          return;
-        }
+        if (!activo) return;
         setResolviendoCalle(true);
         const texto = await direccionDesdeCoordenadas(actual);
         if (activo) {
@@ -128,9 +124,7 @@ export function PasoUbicacion({
   }, [onElegirCercano]);
 
   useEffect(() => {
-    if (eleccion === "nuevo") {
-      return;
-    }
+    if (eleccion === "nuevo") return;
     if (!idsCercanos.split("|").filter(Boolean).includes(eleccion)) {
       setEleccion("nuevo");
       onElegirCercano(null);
@@ -144,16 +138,12 @@ export function PasoUbicacion({
   function aplicarCoords(siguiente: Coordenadas) {
     onUbicacionRef.current(siguiente, direccion);
     if (!estaEnLaCiudad(siguiente)) {
-      if (geocodeTimer.current) {
-        clearTimeout(geocodeTimer.current);
-      }
+      if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
       setResolviendoCalle(false);
       setError(MENSAJE_FUERA_DE_LA_CIUDAD);
       return;
     }
-    if (geocodeTimer.current) {
-      clearTimeout(geocodeTimer.current);
-    }
+    if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
     setResolviendoCalle(true);
     geocodeTimer.current = setTimeout(() => {
       void (async () => {
@@ -232,7 +222,17 @@ export function PasoUbicacion({
 
   return (
     <View>
-      <View style={styles.mapa} accessibilityLabel="Mapa para marcar el problema">
+      <View
+        style={[
+          styles.mapa,
+          {
+            backgroundColor: tema.surfaceVariant,
+            borderColor: tema.outline,
+            borderWidth: tema.esOscuro ? 1 : 0,
+          },
+        ]}
+        accessibilityLabel="Mapa para marcar el problema"
+      >
         <MapView
           key={mapaClave}
           style={StyleSheet.absoluteFill}
@@ -263,13 +263,12 @@ export function PasoUbicacion({
               description={reporte.direccion}
             />
           ))}
-          {/* Pin nativo: en Android el Marker custom no arrastra bien. */}
           <Marker
             coordinate={{
               latitude: coords.latitud,
               longitude: coords.longitud,
             }}
-            pinColor={Paleta.teal}
+            pinColor={tema.primary}
             draggable
             onDragStart={() => ocuparMapa(true)}
             onDragEnd={(evento) => {
@@ -281,40 +280,62 @@ export function PasoUbicacion({
             }}
           />
         </MapView>
+
         <View style={styles.direccionCapa} pointerEvents="none">
-          <View style={styles.direccionChip}>
-            <Text style={styles.direccionTexto} numberOfLines={2}>
+          <View
+            style={[
+              styles.direccionChip,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+                borderWidth: tema.esOscuro ? 1 : 0,
+              },
+            ]}
+          >
+            <Text style={[styles.direccionTexto, { color: tema.onSurface }]} numberOfLines={2}>
               {textoDireccion}
             </Text>
           </View>
         </View>
+
         <View style={styles.pista} pointerEvents="none">
           <Text style={styles.pistaTexto}>Arrastrá el pin o tocá el mapa</Text>
         </View>
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Usar ubicación actual"
           disabled={cargando}
           onPress={() => void usarUbicacionActual()}
-          style={styles.ubicar}
+          style={[
+            styles.ubicar,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+              borderWidth: 1,
+            },
+          ]}
         >
           {cargando ? (
-            <ActivityIndicator color={Paleta.tealDeep} />
+            <ActivityIndicator color={tema.primary} />
           ) : (
-            <Ionicons name="locate-outline" size={22} color={Paleta.ink} />
+            <Ionicons name="locate-outline" size={22} color={tema.primary} />
           )}
         </Pressable>
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
 
       {cercanos.length > 0 ? (
         <View style={styles.duplicados}>
-          <Text style={styles.duplicadosTitulo}>
+          <Text style={[styles.duplicadosTitulo, { color: tema.onSurface }]}>
             {cercanos.length === 1
               ? "Hay 1 reporte a menos de 50 m"
               : `Hay ${cercanos.length} reportes a menos de 50 m`}
           </Text>
-          <Text style={styles.duplicadosSub}>¿Alguno es el mismo problema?</Text>
+          <Text style={[styles.duplicadosSub, { color: tema.onSurfaceVariant }]}>
+            ¿Alguno es el mismo problema?
+          </Text>
           {cercanos.map((item) => (
             <OpcionRadio
               key={item.reporte.id}
@@ -362,6 +383,8 @@ function OpcionRadio({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const tema = useTheme();
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -369,14 +392,32 @@ function OpcionRadio({
       accessibilityLabel={`${titulo}. ${detalle}`}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.opcion, activo ? styles.opcionActiva : null]}
+      style={[
+        styles.opcion,
+        {
+          backgroundColor: tema.surface,
+          borderColor: tema.outline,
+        },
+        activo && {
+          borderColor: tema.primary,
+          backgroundColor: tema.primaryContainer,
+        },
+      ]}
     >
-      <View style={[styles.radio, activo ? styles.radioActivo : null]}>
-        {activo ? <View style={styles.radioPunto} /> : null}
+      <View
+        style={[
+          styles.radio,
+          { borderColor: tema.outline },
+          activo && { borderColor: tema.primary },
+        ]}
+      >
+        {activo ? (
+          <View style={[styles.radioPunto, { backgroundColor: tema.primary }]} />
+        ) : null}
       </View>
       <View style={styles.opcionTexto}>
-        <Text style={styles.opcionTitulo}>{titulo}</Text>
-        <Text style={styles.opcionDetalle}>{detalle}</Text>
+        <Text style={[styles.opcionTitulo, { color: tema.onSurface }]}>{titulo}</Text>
+        <Text style={[styles.opcionDetalle, { color: tema.onSurfaceVariant }]}>{detalle}</Text>
       </View>
     </Pressable>
   );
@@ -387,7 +428,6 @@ const styles = StyleSheet.create({
     height: 230,
     borderRadius: 22,
     overflow: "hidden",
-    backgroundColor: Paleta.tealSoft,
     marginBottom: 16,
   },
   direccionCapa: {
@@ -399,7 +439,6 @@ const styles = StyleSheet.create({
   },
   direccionChip: {
     maxWidth: "100%",
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -407,14 +446,13 @@ const styles = StyleSheet.create({
   direccionTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
     textAlign: "center",
   },
   pista: {
     position: "absolute",
     left: 12,
     bottom: 12,
-    backgroundColor: "#3A4553",
+    backgroundColor: "#1E293B",
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -422,7 +460,7 @@ const styles = StyleSheet.create({
   pistaTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
   },
   ubicar: {
     position: "absolute",
@@ -431,13 +469,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Paleta.paperRaised,
     alignItems: "center",
     justifyContent: "center",
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -447,13 +483,11 @@ const styles = StyleSheet.create({
   duplicadosTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 16,
-    color: Paleta.ink,
     lineHeight: 22,
   },
   duplicadosSub: {
     fontFamily: Fonts.regular,
     fontSize: 14,
-    color: Paleta.inkSoft,
     marginTop: -4,
     marginBottom: 2,
   },
@@ -462,33 +496,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderColor: "#E3E8EE",
     borderRadius: 16,
-    backgroundColor: Paleta.paperRaised,
     paddingHorizontal: 14,
     paddingVertical: 12,
-  },
-  opcionActiva: {
-    borderColor: Paleta.teal,
-    backgroundColor: Paleta.tealSoft,
   },
   radio: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#C5CED6",
     alignItems: "center",
     justifyContent: "center",
-  },
-  radioActivo: {
-    borderColor: Paleta.teal,
   },
   radioPunto: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Paleta.teal,
   },
   opcionTexto: {
     flex: 1,
@@ -497,11 +520,9 @@ const styles = StyleSheet.create({
   opcionTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   opcionDetalle: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
 });

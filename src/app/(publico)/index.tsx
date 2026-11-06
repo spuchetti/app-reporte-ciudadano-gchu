@@ -8,10 +8,12 @@ import { Ionicons } from "@expo/vector-icons";
 import IconoPrincipal from "@/assets/branding/icono_principal.svg";
 import { MapView, Marker } from "@/components/mapa";
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { IndicadorRecarga } from "@/components/ui/indicador-recarga";
-import { Fonts, Paleta } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { tiposReporteMock } from "@/mocks/reportes";
 import { MENSAJE_SESION_VENCIDA } from "@/servicios/auth";
 import {
@@ -40,6 +42,7 @@ const REGION_GCHU = {
 
 export default function MapaPublicoScreen() {
   const insets = useSafeAreaInsets();
+  const tema = useTheme();
   const {
     sesionVencida,
     huboVecino,
@@ -82,23 +85,17 @@ export default function MapaPublicoScreen() {
             setReportes(lista);
           }
         })
-        .catch(() => {
-          // El mapa igual se muestra; los pines quedan vacíos.
-        });
+        .catch(() => {});
     }
 
     cargarReportes();
 
     obtenerUbicacionActual()
       .then((coords) => {
-        if (!activo) {
-          return;
-        }
+        if (!activo) return;
         centrarEn(coords);
       })
-      .catch(() => {
-        // Sin GPS seguimos en el centro de la ciudad.
-      });
+      .catch(() => {});
 
     const dejarDeEscucharCola = alActualizarColaReportes(() => {
       cargarReportes();
@@ -132,9 +129,9 @@ export default function MapaPublicoScreen() {
   const filtrosActivos = [filtroEstado, soloCerca || null].filter(Boolean).length;
 
   return (
-    <View style={styles.pantalla}>
-      <StatusBar style="dark" />
-      <View style={styles.mapa} accessibilityLabel="Mapa de reportes">
+    <View style={[styles.pantalla, { backgroundColor: tema.background }]}>
+      <StatusBar style={tema.esOscuro ? "light" : "dark"} />
+      <View style={[styles.mapa, { backgroundColor: tema.background }]} accessibilityLabel="Mapa de reportes">
         <MapView
           ref={mapaRef}
           style={StyleSheet.absoluteFill}
@@ -167,18 +164,25 @@ export default function MapaPublicoScreen() {
           setUbicando(true);
           obtenerUbicacionActual()
             .then((coords) => centrarEn(coords))
-            .catch(() => {
-              // Sin permiso el mapa se queda donde está.
-            })
+            .catch(() => {})
             .finally(() => setUbicando(false));
         }}
         style={[styles.ubicar, { bottom: altoPie + 16 }]}
       >
-        <View style={styles.ubicarCirculo} collapsable={false}>
+        <View
+          style={[
+            styles.ubicarCirculo,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
+          collapsable={false}
+        >
           {ubicando ? (
-            <ActivityIndicator color={Paleta.tealDeep} />
+            <ActivityIndicator color={tema.primary} />
           ) : (
-            <Ionicons name="locate" size={22} color={Paleta.tealDeep} />
+            <Ionicons name="locate" size={22} color={tema.primary} />
           )}
         </View>
       </Pressable>
@@ -187,17 +191,25 @@ export default function MapaPublicoScreen() {
         pointerEvents="box-none"
         style={[styles.cabecera, { paddingTop: insets.top + 8 }]}
       >
-        <View style={styles.tarjetaCabecera}>
+        <View
+          style={[
+            styles.tarjetaCabecera,
+            {
+              backgroundColor: tema.surface,
+              borderColor: tema.outline,
+            },
+          ]}
+        >
           <IconoPrincipal
             width={40}
             height={40}
             accessibilityLabel="Reporte Ciudadano"
           />
           <View style={styles.titulos}>
-            <Text style={styles.titulo} numberOfLines={1}>
+            <Text style={[styles.titulo, { color: tema.onSurface }]} numberOfLines={1}>
               Gualeguaychú
             </Text>
-            <Text style={styles.subtitulo} numberOfLines={1}>
+            <Text style={[styles.subtitulo, { color: tema.onSurfaceVariant }]} numberOfLines={1}>
               Mirá los reportes de tu ciudad
             </Text>
           </View>
@@ -209,15 +221,17 @@ export default function MapaPublicoScreen() {
             hitSlop={8}
             style={[
               styles.botonFiltro,
-              filtrosActivos > 0 ? styles.botonFiltroActivo : null,
+              { backgroundColor: tema.primaryContainer },
+              filtrosActivos > 0 && { backgroundColor: tema.primary },
             ]}
           >
             <Ionicons
               name="options-outline"
               size={20}
-              color={filtrosActivos > 0 ? Paleta.paperRaised : Paleta.tealDeep}
+              color={filtrosActivos > 0 ? tema.onPrimary : tema.onPrimaryContainer}
             />
           </Pressable>
+          <BotonTema />
         </View>
 
         <ScrollView
@@ -243,8 +257,16 @@ export default function MapaPublicoScreen() {
         </ScrollView>
 
         {filtrosAbiertos ? (
-          <View style={styles.panelFiltros}>
-            <Text style={styles.panelTitulo}>Estado</Text>
+          <View
+            style={[
+              styles.panelFiltros,
+              {
+                backgroundColor: tema.surface,
+                borderColor: tema.outline,
+              },
+            ]}
+          >
+            <Text style={[styles.panelTitulo, { color: tema.onSurfaceVariant }]}>Estado</Text>
             <View style={styles.chipsWrap}>
               <Chip
                 etiqueta="Todos"
@@ -276,16 +298,25 @@ export default function MapaPublicoScreen() {
               onPress={() => setFiltrosAbiertos(false)}
               style={styles.listo}
             >
-              <Text style={styles.listoTexto}>Listo</Text>
+              <Text style={[styles.listoTexto, { color: tema.primary }]}>Listo</Text>
             </Pressable>
           </View>
         ) : null}
 
         {sesionVencida ? (
-          <View style={styles.aviso}>
-            <Text style={styles.avisoTexto}>{MENSAJE_SESION_VENCIDA}</Text>
+          <View
+            style={[
+              styles.aviso,
+              {
+                backgroundColor: tema.esOscuro ? "rgba(239, 83, 80, 0.16)" : "#FDECEC",
+                borderColor: tema.outline,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text style={[styles.avisoTexto, { color: tema.error }]}>{MENSAJE_SESION_VENCIDA}</Text>
             <Pressable onPress={cerrarAvisoSesionVencida} accessibilityRole="button">
-              <Text style={styles.avisoCerrar}>Cerrar</Text>
+              <Text style={[styles.avisoCerrar, { color: tema.onSurface }]}>Cerrar</Text>
             </Pressable>
           </View>
         ) : null}
@@ -293,17 +324,30 @@ export default function MapaPublicoScreen() {
 
       <View
         onLayout={(evento) => setAltoPie(evento.nativeEvent.layout.height)}
-        style={[styles.pie, { paddingBottom: insets.bottom + 12 }]}
+        style={[
+          styles.pie,
+          {
+            backgroundColor: tema.surface,
+            borderTopColor: tema.outline,
+            borderTopWidth: tema.esOscuro ? 1 : 0,
+            paddingBottom: insets.bottom + 12,
+          },
+        ]}
       >
         <View style={styles.pieIntro}>
-          <View style={styles.iconoPie}>
-            <Ionicons name="person-outline" size={20} color={Paleta.tealDeep} />
+          <View
+            style={[
+              styles.iconoPie,
+              { backgroundColor: tema.primaryContainer },
+            ]}
+          >
+            <Ionicons name="person-outline" size={20} color={tema.onPrimaryContainer} />
           </View>
           <View style={styles.pieTextos}>
-            <Text style={styles.pieTitulo}>
+            <Text style={[styles.pieTitulo, { color: tema.onSurface }]}>
               {pedirIdentidad ? "¿Sos vecino?" : "Reportá un problema"}
             </Text>
-            <Text style={styles.pieCuerpo}>
+            <Text style={[styles.pieCuerpo, { color: tema.onSurfaceVariant }]}>
               Así podés reportar problemas y seguir tus reclamos. Para mirar el mapa no hace falta.
             </Text>
           </View>
@@ -319,9 +363,15 @@ export default function MapaPublicoScreen() {
               onPress={() => {
                 void olvidarDispositivo();
               }}
-              style={styles.noSoyYo}
+              style={[
+                styles.noSoyYo,
+                {
+                  backgroundColor: tema.surface,
+                  borderColor: tema.outline,
+                },
+              ]}
             >
-              <Text style={styles.noSoyYoTexto}>No soy yo</Text>
+              <Text style={[styles.noSoyYoTexto, { color: tema.onSurface }]}>No soy yo</Text>
             </Pressable>
           </>
         ) : (
@@ -335,8 +385,10 @@ export default function MapaPublicoScreen() {
           onPress={() => router.push("/login")}
           style={styles.acceso}
         >
-          <Ionicons name="lock-closed-outline" size={14} color={Paleta.inkSoft} />
-          <Text style={styles.accesoTexto}>Acceso para operadores municipales</Text>
+          <Ionicons name="lock-closed-outline" size={14} color={tema.onSurfaceVariant} />
+          <Text style={[styles.accesoTexto, { color: tema.onSurfaceVariant }]}>
+            Acceso para operadores municipales
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -356,28 +408,42 @@ function Chip({
   tipoId?: string;
   iconoApp?: boolean;
 }) {
+  const tema = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: activo }}
       onPress={onPress}
-      style={[styles.chip, activo ? styles.chipActivo : null]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: activo ? tema.primary : tema.surface,
+          borderColor: activo ? tema.primary : tema.outline,
+        },
+      ]}
     >
       {iconoApp ? (
         <Ionicons
           name="apps-outline"
           size={16}
-          color={activo ? Paleta.paperRaised : Paleta.ink}
+          color={activo ? tema.onPrimary : tema.onSurface}
         />
       ) : null}
       {tipoId ? (
         <IconoCategoria
           tipoId={tipoId}
           size={16}
-          color={activo ? Paleta.paperRaised : undefined}
+          color={activo ? tema.onPrimary : undefined}
         />
       ) : null}
-      <Text style={[styles.chipTexto, activo ? styles.chipTextoActivo : null]}>
+      <Text
+        style={[
+          styles.chipTexto,
+          { color: activo ? tema.onPrimary : tema.onSurface },
+          activo ? styles.chipTextoActivo : null,
+        ]}
+      >
         {etiqueta}
       </Text>
     </Pressable>
@@ -385,19 +451,18 @@ function Chip({
 }
 
 function Leyenda({ color, texto }: { color: string; texto: string }) {
+  const tema = useTheme();
+
   return (
     <View style={styles.leyendaItem}>
       <View style={[styles.leyendaPunto, { backgroundColor: color }]} />
-      <Text style={styles.leyendaTexto}>{texto}</Text>
+      <Text style={[styles.leyendaTexto, { color: tema.onSurfaceVariant }]}>{texto}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
-    flex: 1,
-    backgroundColor: Paleta.paper,
-  },
+  pantalla: { flex: 1 },
   cabecera: {
     position: "absolute",
     top: 0,
@@ -410,26 +475,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Paleta.line,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  titulos: {
-    flex: 1,
-    gap: 2,
-  },
+  titulos: { flex: 1, gap: 2 },
   titulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 18,
-    color: Paleta.ink,
   },
   subtitulo: {
     fontFamily: Fonts.regular,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
   botonFiltro: {
     width: 44,
@@ -437,10 +495,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
-  },
-  botonFiltroActivo: {
-    backgroundColor: Paleta.tealDeep,
   },
   chips: {
     gap: 12,
@@ -459,28 +513,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: 40,
     justifyContent: "center",
-    backgroundColor: Paleta.paper,
     borderWidth: 1,
-    borderColor: Paleta.line,
-  },
-  chipActivo: {
-    backgroundColor: Paleta.tealDeep,
-    borderColor: Paleta.tealDeep,
   },
   chipTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.ink,
   },
   chipTextoActivo: {
-    color: Paleta.paperRaised,
+    fontFamily: Fonts.semiBold,
   },
   aviso: {
     marginHorizontal: 16,
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "#FDECEC",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -489,18 +535,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.rojo,
     lineHeight: 18,
   },
   avisoCerrar: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.ink,
   },
-  mapa: {
-    flex: 1,
-    backgroundColor: Paleta.tealSoft,
-  },
+  mapa: { flex: 1 },
   ubicar: {
     position: "absolute",
     right: 16,
@@ -513,29 +554,24 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(15, 23, 42, 0.08)",
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 8,
   },
   panelFiltros: {
-    backgroundColor: Paleta.paperRaised,
     borderRadius: 16,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: Paleta.line,
   },
   panelTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 12,
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: Paleta.inkSoft,
   },
   leyenda: {
     flexDirection: "row",
@@ -555,7 +591,6 @@ const styles = StyleSheet.create({
   leyendaTexto: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
   },
   listo: {
     alignSelf: "flex-end",
@@ -566,7 +601,6 @@ const styles = StyleSheet.create({
   listoTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: Paleta.teal,
   },
   pie: {
     position: "absolute",
@@ -578,8 +612,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: Paleta.paperRaised,
-    shadowColor: "#0F172A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -596,36 +629,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.tealSoft,
   },
-  pieTextos: {
-    flex: 1,
-    gap: 2,
-  },
+  pieTextos: { flex: 1, gap: 2 },
   pieTitulo: {
     fontFamily: Fonts.semiBold,
     fontSize: 16,
-    color: Paleta.ink,
   },
   pieCuerpo: {
     fontFamily: Fonts.regular,
     fontSize: 13,
     lineHeight: 18,
-    color: Paleta.inkSoft,
   },
   noSoyYo: {
     minHeight: 48,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: Paleta.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Paleta.paperRaised,
   },
   noSoyYoTexto: {
     fontFamily: Fonts.semiBold,
     fontSize: 15,
-    color: Paleta.ink,
   },
   acceso: {
     flexDirection: "row",
@@ -637,6 +661,5 @@ const styles = StyleSheet.create({
   accesoTexto: {
     fontFamily: Fonts.medium,
     fontSize: 13,
-    color: Paleta.inkSoft,
   },
 });

@@ -11,14 +11,17 @@ import {
 } from "react-native";
 
 import { Boton } from "@/components/ui/boton";
+import { BotonTema } from "@/components/ui/boton-tema";
 import { LogoMarca } from "@/components/ui/logo-marca";
 import { useDesbloqueoAlEntrar } from "@/components/ingreso/use-desbloqueo";
-import { Fonts, Paleta, PaletaOperador } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
 import { useSesion } from "@/contexto/sesion";
+import { useTheme } from "@/hooks/use-theme";
 import { esErrorServicio } from "@/servicios/error";
 
 /** Login operador solo web — no modifica `login.tsx` (móvil). */
 export default function LoginOperadorWebScreen() {
+  const tema = useTheme();
   const { width, height } = useWindowDimensions();
   const ancho = width >= 960;
   const { iniciarSesion } = useSesion();
@@ -54,12 +57,27 @@ export default function LoginOperadorWebScreen() {
   }
 
   const ocupado = cargando || desbloqueo.desbloqueando;
+  const panelMarca = tema.esOscuro ? tema.operadorDeep : tema.operadorDeep;
 
   return (
-    <View style={[styles.pantalla, { minHeight: height }]}>
+    <View
+      style={[
+        styles.pantalla,
+        { minHeight: height, backgroundColor: tema.surface },
+      ]}
+    >
       <StatusBar style="light" />
       <View style={[styles.fila, !ancho && styles.filaApilada]}>
-        <View style={[styles.marca, ancho ? styles.marcaLado : styles.marcaArriba]}>
+        <View
+          style={[
+            styles.marca,
+            { backgroundColor: panelMarca },
+            ancho ? styles.marcaLado : styles.marcaArriba,
+          ]}
+        >
+          <View style={styles.marcaTop}>
+            <BotonTema sobreFondoOscuro />
+          </View>
           <LogoMarca size={ancho ? 120 : 88} sobreOscuro />
           <Text style={styles.tituloMarca}>Reporte Ciudadano</Text>
           <Text style={styles.subtituloMarca}>
@@ -67,19 +85,27 @@ export default function LoginOperadorWebScreen() {
           </Text>
         </View>
 
-        <View style={styles.formulario}>
+        <View
+          style={[styles.formulario, { backgroundColor: tema.surface }]}
+        >
           <View style={styles.formInner}>
-            <Text style={styles.tituloForm}>Operador</Text>
-            <Text style={styles.subtituloForm}>
+            <Text style={[styles.tituloForm, { color: tema.onSurface }]}>
+              Operador
+            </Text>
+            <Text
+              style={[styles.subtituloForm, { color: tema.onSurfaceVariant }]}
+            >
               Ingresá con tu cuenta municipal
             </Text>
 
-            <Text style={styles.etiqueta}>Email</Text>
+            <Text style={[styles.etiqueta, { color: tema.onSurface }]}>
+              Email
+            </Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
               placeholder="tu@gualeguaychu.gov.ar"
-              placeholderTextColor={Paleta.inkSoft}
+              placeholderTextColor={tema.onSurfaceVariant}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
@@ -89,20 +115,27 @@ export default function LoginOperadorWebScreen() {
               onBlur={() => setFocoEmail(false)}
               style={[
                 styles.input,
-                focoEmail ? styles.inputFoco : null,
+                {
+                  color: tema.onSurface,
+                  borderColor: focoEmail ? tema.operador : tema.outline,
+                  backgroundColor: tema.surface,
+                  borderWidth: focoEmail ? 2 : 1,
+                },
                 // @ts-expect-error outlineStyle es de react-native-web
                 { outlineStyle: "none" },
               ]}
             />
 
             <View style={styles.filaEtiqueta}>
-              <Text style={styles.etiqueta}>Contraseña</Text>
+              <Text style={[styles.etiqueta, { color: tema.onSurface }]}>
+                Contraseña
+              </Text>
               <Pressable
                 onPress={() => setMostrarClave((v) => !v)}
                 accessibilityRole="button"
                 hitSlop={8}
               >
-                <Text style={styles.mostrar}>
+                <Text style={[styles.mostrar, { color: tema.operador }]}>
                   {mostrarClave ? "Ocultar" : "Mostrar"}
                 </Text>
               </Pressable>
@@ -111,7 +144,7 @@ export default function LoginOperadorWebScreen() {
               value={contrasena}
               onChangeText={setContrasena}
               placeholder="••••••••"
-              placeholderTextColor={Paleta.inkSoft}
+              placeholderTextColor={tema.onSurfaceVariant}
               secureTextEntry={!mostrarClave}
               autoComplete="password"
               editable={!ocupado}
@@ -120,14 +153,21 @@ export default function LoginOperadorWebScreen() {
               onBlur={() => setFocoClave(false)}
               style={[
                 styles.input,
-                focoClave ? styles.inputFoco : null,
+                {
+                  color: tema.onSurface,
+                  borderColor: focoClave ? tema.operador : tema.outline,
+                  backgroundColor: tema.surface,
+                  borderWidth: focoClave ? 2 : 1,
+                },
                 // @ts-expect-error outlineStyle es de react-native-web
                 { outlineStyle: "none" },
               ]}
             />
 
             {error || desbloqueo.error ? (
-              <Text style={styles.error}>{error ?? desbloqueo.error}</Text>
+              <Text style={[styles.error, { color: tema.error }]}>
+                {error ?? desbloqueo.error}
+              </Text>
             ) : null}
 
             <View style={styles.espacioBoton} />
@@ -148,9 +188,18 @@ export default function LoginOperadorWebScreen() {
               onPress={() => router.replace("/")}
             />
 
-            <View style={styles.ayuda}>
-              <Text style={styles.ayudaTitulo}>Cuenta de prueba</Text>
-              <Text style={styles.ayudaTexto}>
+            <View
+              style={[
+                styles.ayuda,
+                { backgroundColor: tema.surfaceVariant },
+              ]}
+            >
+              <Text style={[styles.ayudaTitulo, { color: tema.onSurface }]}>
+                Cuenta de prueba
+              </Text>
+              <Text
+                style={[styles.ayudaTexto, { color: tema.onSurfaceVariant }]}
+              >
                 Norte: operador.norte@demo.ar / demo1234{"\n"}
                 Sur: operador.sur@demo.ar / demo1234
               </Text>
@@ -165,7 +214,6 @@ export default function LoginOperadorWebScreen() {
 const styles = StyleSheet.create({
   pantalla: {
     flex: 1,
-    backgroundColor: Paleta.paperRaised,
   },
   fila: {
     flex: 1,
@@ -175,11 +223,15 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   marca: {
-    backgroundColor: PaletaOperador.oscura,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
     gap: 12,
+  },
+  marcaTop: {
+    position: "absolute",
+    top: 20,
+    right: 20,
   },
   marcaLado: {
     flex: 1,
@@ -192,7 +244,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 32,
     lineHeight: 38,
-    color: Paleta.paperRaised,
+    color: "#FFFFFF",
     textAlign: "center",
   },
   subtituloMarca: {
@@ -208,7 +260,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 40,
     paddingVertical: 48,
-    backgroundColor: Paleta.paperRaised,
   },
   formInner: {
     width: "100%",
@@ -218,19 +269,16 @@ const styles = StyleSheet.create({
   tituloForm: {
     fontFamily: Fonts.bold,
     fontSize: 28,
-    color: Paleta.ink,
     marginBottom: 6,
   },
   subtituloForm: {
     fontFamily: Fonts.regular,
     fontSize: 15,
-    color: Paleta.inkSoft,
     marginBottom: 28,
   },
   etiqueta: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: Paleta.ink,
     marginBottom: 8,
   },
   filaEtiqueta: {
@@ -242,27 +290,17 @@ const styles = StyleSheet.create({
   mostrar: {
     fontFamily: Fonts.semiBold,
     fontSize: 13,
-    color: PaletaOperador.principal,
   },
   input: {
     fontFamily: Fonts.regular,
     fontSize: 16,
-    color: Paleta.ink,
-    borderWidth: 1,
-    borderColor: Paleta.line,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: Paleta.paperRaised,
-  },
-  inputFoco: {
-    borderColor: PaletaOperador.principal,
-    borderWidth: 2,
   },
   error: {
     fontFamily: Fonts.medium,
-    color: Paleta.rojo,
     fontSize: 13,
     marginBottom: 12,
   },
@@ -276,19 +314,16 @@ const styles = StyleSheet.create({
     marginTop: 28,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#F3F6F8",
     borderRadius: 16,
   },
   ayudaTitulo: {
     fontFamily: Fonts.bold,
     fontSize: 13,
-    color: Paleta.ink,
     marginBottom: 6,
   },
   ayudaTexto: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    color: Paleta.inkSoft,
     lineHeight: 18,
   },
 });

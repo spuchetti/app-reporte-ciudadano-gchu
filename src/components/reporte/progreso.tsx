@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { Fonts, Paleta } from "@/constants/theme";
+import { BotonTema } from "@/components/ui/boton-tema";
+import { Fonts } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { PASOS_REPORTE } from "@/servicios/borrador";
 
 const TITULOS = [
@@ -20,40 +22,53 @@ type Props = {
 };
 
 export function ProgresoReporte({ paso, onAtras, onCerrar, titulo }: Props) {
+  const tema = useTheme();
+
   return (
     <View style={styles.caja}>
       <View style={styles.barra}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          hitSlop={8}
-          onPress={onAtras}
-          style={styles.boton}
-        >
-          <Ionicons name="arrow-back" size={22} color={Paleta.ink} />
-        </Pressable>
-        <Text style={styles.paso}>
+        <View style={styles.lado}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+            hitSlop={8}
+            onPress={onAtras}
+            style={styles.boton}
+          >
+            <Ionicons name="arrow-back" size={22} color={tema.onSurface} />
+          </Pressable>
+        </View>
+        <Text style={[styles.paso, { color: tema.onSurfaceVariant }]} pointerEvents="none">
           Paso {paso} de {PASOS_REPORTE}
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar"
-          hitSlop={8}
-          onPress={onCerrar}
-          style={styles.boton}
-        >
-          <Ionicons name="close" size={22} color={Paleta.ink} />
-        </Pressable>
+        <View style={[styles.lado, styles.ladoDerecho]}>
+          <BotonTema />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar"
+            hitSlop={8}
+            onPress={onCerrar}
+            style={styles.boton}
+          >
+            <Ionicons name="close" size={22} color={tema.onSurface} />
+          </Pressable>
+        </View>
       </View>
       <View style={styles.puntos}>
-        {TITULOS.map((titulo, indice) => (
+        {TITULOS.map((itemTitulo, indice) => (
           <View
-            key={titulo}
-            style={[styles.punto, indice < paso ? styles.puntoActivo : null]}
+            key={itemTitulo}
+            style={[
+              styles.punto,
+              { backgroundColor: tema.outline },
+              indice < paso && { backgroundColor: tema.primary },
+            ]}
           />
         ))}
       </View>
-      <Text style={styles.titulo}>{titulo ?? TITULOS[paso - 1]}</Text>
+      <Text style={[styles.titulo, { color: tema.onSurface }]}>
+        {titulo ?? TITULOS[paso - 1]}
+      </Text>
     </View>
   );
 }
@@ -67,6 +82,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    minHeight: 40,
+  },
+  lado: {
+    minWidth: 86,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  ladoDerecho: {
+    justifyContent: "flex-end",
+    gap: 4,
   },
   boton: {
     width: 40,
@@ -75,14 +101,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   paso: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
     fontFamily: Fonts.medium,
     fontSize: 15,
-    color: Paleta.inkSoft,
   },
   titulo: {
     fontFamily: Fonts.bold,
     fontSize: 26,
-    color: Paleta.ink,
   },
   puntos: {
     flexDirection: "row",
@@ -92,9 +120,5 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Paleta.line,
-  },
-  puntoActivo: {
-    backgroundColor: Paleta.teal,
   },
 });
