@@ -44,6 +44,9 @@ export function AsistenteReporte() {
   const insets = useSafeAreaInsets();
   const tema = useTheme();
   const scrollRef = useRef<ScrollView>(null);
+  /** Evita doble POST si el botón se toca antes del re-render de `enviando`/`sumando`. */
+  const enviandoRef = useRef(false);
+  const sumandoRef = useRef(false);
   const { origen } = useLocalSearchParams<{ origen?: string }>();
   const { sesion, enviarReporte, adherirseAReporte } = useSesion();
   const inicial = leerBorrador();
@@ -202,15 +205,16 @@ export function AsistenteReporte() {
   }
 
   async function onSumarse(reporte: Reporte) {
-    setError(null);
-    if (!vecinoIdentificado) {
-      marcarAdhesionPendiente(reporte.id);
-      router.push("/register");
-      return;
-    }
-
+    if (sumandoRef.current) return;
+    sumandoRef.current = true;
     setSumando(true);
+    setError(null);
     try {
+      if (!vecinoIdentificado) {
+        marcarAdhesionPendiente(reporte.id);
+        router.push("/register");
+        return;
+      }
       await adherirseAReporte(reporte.id);
     } catch (err) {
       setError(
@@ -219,39 +223,42 @@ export function AsistenteReporte() {
           : "No se pudo sumar al reporte. Intentá de nuevo.",
       );
     } finally {
+      sumandoRef.current = false;
       setSumando(false);
     }
   }
 
   async function onEnviar() {
-    setError(null);
-    const actual = leerBorrador();
-    if (
-      actual.latitud == null ||
-      actual.longitud == null ||
-      !estaEnLaCiudad({
-        latitud: actual.latitud,
-        longitud: actual.longitud,
-      })
-    ) {
-      setError(MENSAJE_FUERA_DE_LA_CIUDAD);
-      return;
-    }
-
-    marcarPendienteEnvio();
-    const listo = borradorListoParaEnviar(leerBorrador());
-    if (!listo) {
-      setError("Falta completar el reporte.");
-      return;
-    }
-
-    if (!vecinoIdentificado) {
-      router.push("/register");
-      return;
-    }
-
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
+    setError(null);
     try {
+      const actual = leerBorrador();
+      if (
+        actual.latitud == null ||
+        actual.longitud == null ||
+        !estaEnLaCiudad({
+          latitud: actual.latitud,
+          longitud: actual.longitud,
+        })
+      ) {
+        setError(MENSAJE_FUERA_DE_LA_CIUDAD);
+        return;
+      }
+
+      marcarPendienteEnvio();
+      const listo = borradorListoParaEnviar(leerBorrador());
+      if (!listo) {
+        setError("Falta completar el reporte.");
+        return;
+      }
+
+      if (!vecinoIdentificado) {
+        router.push("/register");
+        return;
+      }
+
       await enviarReporte(listo);
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -265,6 +272,7 @@ export function AsistenteReporte() {
           : "No se pudo enviar el reporte. Intentá de nuevo.",
       );
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   }
