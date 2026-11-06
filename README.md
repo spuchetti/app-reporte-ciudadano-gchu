@@ -2,7 +2,7 @@
   <img src="assets/branding/generated/icono-app.png" alt="Reporte Ciudadano Gualeguaychú" width="120" />
 </p>
 
-<h1 align="center">App Reporte Ciudadano — Gualeguaychú</h1>
+<h1 align="center">App Reporte Ciudadano - Gualeguaychú</h1>
 
 <p align="center">
   Vecinos reportan problemas urbanos · Operadores los gestionan desde el celular
@@ -18,7 +18,7 @@
 
 ---
 
-Aplicación móvil para reportar baches, luminarias, residuos y otros reclamos ciudadanos, con bandeja de gestión municipal.
+Aplicación móvil para reportar baches, luminarias, residuos y otros reclamos ciudadanos, con bandeja de gestión municipal. Incluye modo claro/oscuro y una vista web limitada para demos.
 
 **Stack principal:** Expo SDK 54 · React Native · Expo Router · TypeScript  
 **Backend:** API hermana `api-reporte-ciudadano` (Docker Compose)
@@ -60,7 +60,9 @@ Aplicación móvil para reportar baches, luminarias, residuos y otros reclamos c
 | Persistencia | `expo-sqlite` · `expo-sqlite/kv-store` · `expo-secure-store` |
 | Mapas | `react-native-maps` + Google Maps (Android) |
 | Push | `expo-notifications` + FCM (*development build*) |
+| Tema | Claro / oscuro (`TemaProvider`, preferencia en kv-store) |
 | Red | `expo-network` (sync de cola offline) |
+| Web | Stubs `*.web` (sin push ni SQLite nativo) |
 
 ---
 
@@ -94,7 +96,7 @@ EXPO_PUBLIC_API_URL_TELEFONO=http://<IP-DE-TU-PC>:3000
 | --- | --- |
 | `EXPO_PUBLIC_API_URL` | PC / web |
 | `EXPO_PUBLIC_API_URL_EMULADOR` | Emulador Android (`10.0.2.2`) |
-| `EXPO_PUBLIC_API_URL_TELEFONO` | Teléfono físico (IP de la PC en el Wi‑Fi) |
+| `EXPO_PUBLIC_API_URL_TELEFONO` | Teléfono físico (IP de la PC en el Wi-Fi) |
 | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Maps en Android (`app.config.js`) |
 
 **También necesitás:**
@@ -127,7 +129,7 @@ npm start
 npm run web
 ```
 
-En web no hay push ni SQLite nativo completo; la cola offline queda en memoria.
+En web hay pantallas y tema vía archivos `*.web`, pero no hay push ni SQLite nativo; la cola offline queda en memoria.
 
 ### Scripts
 
@@ -166,7 +168,7 @@ assets/               # Branding e íconos
 
 | Dato | Dónde |
 | --- | --- |
-| Preferencias / flags no sensibles | `expo-sqlite/kv-store` |
+| Preferencias / flags no sensibles (incluye tema) | `expo-sqlite/kv-store` |
 | Sesión y tokens | `expo-secure-store` |
 | Borrador del reporte en curso | SQLite → `borradores_reporte` |
 | Reportes creados sin red | SQLite → `cola_reportes` *(sync al volver internet o al abrir Mis reportes)* |
