@@ -1,17 +1,28 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
-import { Paleta } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
-/** Mismo lenguaje visual que el pull-to-refresh nativo (círculo blanco + teal). */
+/** Mismo lenguaje visual que el pull-to-refresh nativo (círculo + acento). */
 export function IndicadorRecarga({ visible }: { visible: boolean }) {
+  const tema = useTheme();
+
   if (!visible) {
     return null;
   }
 
   return (
     <View pointerEvents="none" style={styles.capa}>
-      <View style={styles.circulo}>
-        <ActivityIndicator color={Paleta.teal} size="small" />
+      <View
+        style={[
+          styles.circulo,
+          {
+            backgroundColor: tema.surface,
+            borderColor: tema.outline,
+            shadowColor: tema.ink,
+          },
+        ]}
+      >
+        <ActivityIndicator color={tema.primary} size="small" />
       </View>
     </View>
   );
@@ -31,10 +42,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(15, 23, 42, 0.08)",
-    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.16,
     shadowRadius: 5,

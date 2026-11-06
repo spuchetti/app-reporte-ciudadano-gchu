@@ -405,7 +405,7 @@ export default function DetalleReclamoScreen() {
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
+        <View style={[styles.hero, { backgroundColor: tema.surfaceVariant }]}>
           {fotoOriginal ? (
             <Image
               accessibilityLabel="Foto del problema"
@@ -414,7 +414,12 @@ export default function DetalleReclamoScreen() {
               resizeMode="cover"
             />
           ) : (
-            <View style={[StyleSheet.absoluteFill, styles.heroVacio]} />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: tema.surfaceVariant },
+              ]}
+            />
           )}
           <View
             style={[
@@ -912,10 +917,6 @@ const styles = StyleSheet.create({
   },
   hero: {
     height: 240,
-    backgroundColor: "#3F4A57",
-  },
-  heroVacio: {
-    backgroundColor: "#3F4A57",
   },
   heroBar: {
     flexDirection: "row",

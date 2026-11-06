@@ -30,30 +30,37 @@ export function TemaProvider({ children }: PropsWithChildren) {
     esquemaSistema === "dark" ? "dark" : "light"
   );
   const [tienePreferenciaManual, setTienePreferenciaManual] = useState(false);
+  const [listo, setListo] = useState(false);
 
-  // Al montar la app, recupera la preferencia persistida en expo-sqlite/kv-store
+  // Solo al montar: lee la preferencia guardada (no re-leer si cambia el SO).
   useEffect(() => {
     let activo = true;
-    leerValorKV(CLAVE_TEMA_KV).then((guardado) => {
-      if (!activo) return;
-      if (guardado === "dark" || guardado === "light") {
-        setThemeState(guardado);
-        setTienePreferenciaManual(true);
-      } else if (esquemaSistema === "dark" || esquemaSistema === "light") {
-        setThemeState(esquemaSistema);
-      }
-    });
+    leerValorKV(CLAVE_TEMA_KV)
+      .then((guardado) => {
+        if (!activo) return;
+        if (guardado === "dark" || guardado === "light") {
+          setThemeState(guardado);
+          setTienePreferenciaManual(true);
+        }
+      })
+      .finally(() => {
+        if (activo) setListo(true);
+      });
     return () => {
       activo = false;
     };
-  }, [esquemaSistema]);
+  }, []);
 
-  // Si el usuario no forzó un tema manual, acompaña los cambios del sistema operativo
+  // Sin preferencia manual, sigue al sistema operativo.
   useEffect(() => {
-    if (!tienePreferenciaManual && (esquemaSistema === "dark" || esquemaSistema === "light")) {
+    if (
+      listo &&
+      !tienePreferenciaManual &&
+      (esquemaSistema === "dark" || esquemaSistema === "light")
+    ) {
       setThemeState(esquemaSistema);
     }
-  }, [esquemaSistema, tienePreferenciaManual]);
+  }, [esquemaSistema, tienePreferenciaManual, listo]);
 
   const setTheme = useCallback((nuevoTema: ColorScheme) => {
     setTienePreferenciaManual(true);
