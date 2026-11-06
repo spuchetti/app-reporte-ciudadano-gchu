@@ -4,7 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { IconoCategoria } from "@/components/ui/icono-categoria";
 import { InsigniaEstado } from "@/components/ui/insignia-estado";
-import { Fonts } from "@/constants/theme";
+import { Fonts, Paleta } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { EstadoReporte } from "@/tipos";
 
@@ -31,98 +31,46 @@ export function TicketReporte({
 }: Props) {
   const tema = useTheme();
 
+  const fondoTarjeta = tema.esOscuro ? "#10232B" : Paleta.tealDeep;
+  const bordeTarjeta = tema.esOscuro ? "rgba(38, 198, 218, 0.3)" : "transparent";
+
   return (
     <View
       style={[
         styles.tarjeta,
         {
-          backgroundColor: tema.primaryContainer,
-          borderColor: tema.outline,
-          borderWidth: 1,
+          backgroundColor: fondoTarjeta,
+          borderColor: bordeTarjeta,
+          borderWidth: tema.esOscuro ? 1 : 0,
         },
       ]}
     >
-      <View
-        style={[
-          styles.filaCodigo,
-          {
-            borderBottomColor: tema.esOscuro
-              ? "rgba(255,255,255,0.18)"
-              : "rgba(0,0,0,0.12)",
-          },
-        ]}
-      >
-        <Text style={[styles.codigo, { color: tema.onPrimaryContainer }]}>{codigo}</Text>
-        <Ionicons name="location-outline" size={20} color={tema.onPrimaryContainer} />
+      <View style={styles.filaCodigo}>
+        <Text style={styles.codigo}>{codigo}</Text>
+        <Ionicons name="location-outline" size={20} color="#FFFFFF" />
       </View>
+
       <Fila icono={tipoId ? null : "construct-outline"} tipoId={tipoId}>
-        <Text style={[styles.principal, { color: tema.onPrimaryContainer }]}>
-          {tipoNombre}
-        </Text>
-        {area ? (
-          <Text
-            style={[
-              styles.secundario,
-              {
-                color: tema.esOscuro
-                  ? "rgba(255,255,255,0.76)"
-                  : "rgba(0,0,0,0.64)",
-              },
-            ]}
-          >
-            {area}
-          </Text>
-        ) : null}
+        <Text style={styles.principal}>{tipoNombre}</Text>
+        {area ? <Text style={styles.secundario}>{area}</Text> : null}
       </Fila>
+
       <Fila icono="location-outline">
-        <Text style={[styles.direccion, { color: tema.onPrimaryContainer }]}>
-          {direccion}
-        </Text>
+        <Text style={styles.direccion}>{direccion}</Text>
       </Fila>
+
       <Fila icono="time-outline">
-        <Text
-          style={[
-            styles.secundario,
-            {
-              color: tema.esOscuro
-                ? "rgba(255,255,255,0.76)"
-                : "rgba(0,0,0,0.64)",
-            },
-          ]}
-        >
-          Estado
-        </Text>
+        <Text style={styles.secundario}>Estado</Text>
         {pendiente ? (
-          <View
-            style={[
-              styles.pendiente,
-              {
-                backgroundColor: tema.esOscuro
-                  ? "rgba(250, 204, 21, 0.18)"
-                  : "#FFF6DC",
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.pendientePunto,
-                { backgroundColor: tema.amarillo },
-              ]}
-            />
-            <Text
-              style={[
-                styles.pendienteTexto,
-                { color: tema.esOscuro ? tema.amarillo : "#3F3420" },
-              ]}
-            >
-              {estado}
-            </Text>
+          <View style={styles.pendiente}>
+            <View style={styles.pendientePunto} />
+            <Text style={styles.pendienteTexto}>{estado}</Text>
           </View>
         ) : (
           <InsigniaEstado
             estado={estadoClave}
             etiqueta={estado}
-            sobreFondoOscuro={tema.esOscuro}
+            sobreFondoOscuro
           />
         )}
       </Fila>
@@ -139,27 +87,13 @@ function Fila({
   tipoId?: string;
   children: ReactNode;
 }) {
-  const tema = useTheme();
-
   return (
     <View style={styles.fila}>
-      <View
-        style={[
-          styles.burbuja,
-          {
-            backgroundColor: tema.esOscuro
-              ? "rgba(255,255,255,0.12)"
-              : "rgba(0,0,0,0.06)",
-            borderColor: tema.esOscuro
-              ? "rgba(255,255,255,0.22)"
-              : "rgba(0,0,0,0.12)",
-          },
-        ]}
-      >
+      <View style={styles.burbuja}>
         {tipoId ? (
-          <IconoCategoria tipoId={tipoId} size={16} color={tema.onPrimaryContainer} />
+          <IconoCategoria tipoId={tipoId} size={16} color="#FFFFFF" />
         ) : icono ? (
-          <Ionicons name={icono} size={16} color={tema.onPrimaryContainer} />
+          <Ionicons name={icono} size={16} color="#FFFFFF" />
         ) : null}
       </View>
       <View style={styles.filaTexto}>{children}</View>
@@ -173,6 +107,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 20,
     gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 4,
   },
   filaCodigo: {
     flexDirection: "row",
@@ -180,10 +119,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 14,
     borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.28)",
   },
   codigo: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 18,
+    fontFamily: Fonts.bold,
+    fontSize: 20,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   fila: {
     flexDirection: "row",
@@ -191,10 +133,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   burbuja: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -203,16 +147,19 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   principal: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 15,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+    color: "#FFFFFF",
   },
   secundario: {
     fontFamily: Fonts.regular,
     fontSize: 13,
+    color: "rgba(255, 255, 255, 0.82)",
   },
   direccion: {
-    fontFamily: Fonts.regular,
+    fontFamily: Fonts.medium,
     fontSize: 15,
+    color: "#FFFFFF",
     lineHeight: 20,
   },
   pendiente: {
@@ -221,6 +168,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: 4,
+    backgroundColor: "#FFF4D6",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -229,9 +177,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    backgroundColor: "#F2B705",
   },
   pendienteTexto: {
-    fontFamily: Fonts.medium,
-    fontSize: 13,
+    fontFamily: Fonts.semiBold,
+    fontSize: 12,
+    color: "#785500",
   },
 });
