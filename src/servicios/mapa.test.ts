@@ -16,18 +16,19 @@ describe("servicios/mapa", () => {
     expect(metrosEntre(origen, origen)).toBe(0);
   });
 
-  test("detecta reportes a menos de 50 metros", () => {
-    const a30m = {
+  test("detecta reportes a menos de 100 metros", () => {
+    const a90m = {
       ...origen,
-      latitud: origen.latitud + 30 / 111_320,
+      latitud: origen.latitud + 90 / 111_320,
     };
-    const a80m = {
+    const a120m = {
       ...origen,
-      latitud: origen.latitud + 80 / 111_320,
+      latitud: origen.latitud + 120 / 111_320,
     };
 
-    expect(metrosEntre(origen, a30m)).toBeLessThan(RADIO_DUPLICADO_M);
-    expect(metrosEntre(origen, a80m)).toBeGreaterThan(RADIO_DUPLICADO_M);
+    expect(RADIO_DUPLICADO_M).toBe(100);
+    expect(metrosEntre(origen, a90m)).toBeLessThan(RADIO_DUPLICADO_M);
+    expect(metrosEntre(origen, a120m)).toBeGreaterThan(RADIO_DUPLICADO_M);
   });
 
   test("cerca tuyo llega hasta 100 metros", () => {

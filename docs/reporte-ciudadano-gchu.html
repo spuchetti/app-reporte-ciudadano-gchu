@@ -801,7 +801,7 @@
         La app corre sobre <strong>Expo SDK 54</strong> y habla con la API hermana <code>api-reporte-ciudadano</code> (Compose). Del lado del <strong>vecino</strong>, el flujo de reporte es de cinco pasos con foto obligatoria, GPS, texto o voz, adhesión a duplicados cercanos, cola offline en SQLite y push al cambiar el estado. Del lado del <strong>operador</strong>, la bandeja filtra y asigna; el detalle cambia estado, marca duplicado, corrige zona y sube la foto del arreglo; también se puede escanear el QR. El <strong>invitado</strong> mira el mapa público sin cuenta. Las zonas se consultan, no se administran. Abajo: pantallas, componentes, estructura y contrato con la API.
       </p>
       <div class="callout">
-        <strong>Por qué existe esta app.</strong> Hoy el Centro de Atención al Vecino carga todo a mano en una planilla compartida. El trimestre pasado cargaron catorce veces el mismo bache por llamadas repetidas, una rama mal anotada tardó tres semanas en atenderse y cortó la luz de media manzana, y el intendente se enteró de un pozo por Facebook en vez de por el propio equipo. La detección de duplicados a 50&nbsp;m, el número de seguimiento y los avisos automáticos existen puntualmente para que esas tres cosas no vuelvan a pasar.
+        <strong>Por qué existe esta app.</strong> Hoy el Centro de Atención al Vecino carga todo a mano en una planilla compartida. El trimestre pasado cargaron catorce veces el mismo bache por llamadas repetidas, una rama mal anotada tardó tres semanas en atenderse y cortó la luz de media manzana, y el intendente se enteró de un pozo por Facebook en vez de por el propio equipo. La detección de duplicados a 100&nbsp;m, el número de seguimiento y los avisos automáticos existen puntualmente para que esas tres cosas no vuelvan a pasar.
       </div>
       <div class="quote">"El vecino no se enoja porque el bache tarde. Se enoja porque nadie le dice nada."<span>— Claudia Benítez, Centro de Atención al Vecino de Gualeguaychú</span></div>
     </section>
@@ -917,7 +917,7 @@
               <li>Pin arrastrable para corregir la posición</li>
               <li>Dirección invertida (geocoding)</li>
               <li>Atajo "Usar ubicación actual". Si niega el permiso, igual puede poner el punto a mano</li>
-              <li>Si hay un reporte del mismo tipo a menos de 50&nbsp;m, pregunta si es el mismo y deja sumarse</li>
+              <li>Si hay un reporte del mismo tipo a menos de 100&nbsp;m, pregunta si es el mismo y deja sumarse</li>
             </ul>
           </div>
           <div>
@@ -1139,7 +1139,7 @@
       <div class="flow">
         <div class="flow-title">Flujo 2 — Detección de duplicados</div>
         <div class="flow-step"><div class="num">1</div><div class="body"><strong>El vecino selecciona la ubicación</strong></div></div>
-        <div class="flow-step"><div class="num">2</div><div class="body"><strong>El sistema busca reportes a menos de 50&nbsp;m</strong></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="body"><strong>El sistema busca reportes a menos de 100&nbsp;m</strong></div></div>
         <div class="flow-step branch"><div class="num">3a</div><div class="body"><strong>"¿Es este el mismo problema?" → Sí</strong><span>El vecino se adhiere al reporte existente</span></div></div>
         <div class="flow-step branch"><div class="num">3b</div><div class="body"><strong>"¿Es este el mismo problema?" → No</strong><span>Continúa con la carga de un reporte nuevo</span></div></div>
       </div>

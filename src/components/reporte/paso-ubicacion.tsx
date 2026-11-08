@@ -330,8 +330,8 @@ export function PasoUbicacion({
         <View style={styles.duplicados}>
           <Text style={[styles.duplicadosTitulo, { color: tema.onSurface }]}>
             {cercanos.length === 1
-              ? "Hay 1 reporte a menos de 50 m"
-              : `Hay ${cercanos.length} reportes a menos de 50 m`}
+              ? "Hay 1 reporte a menos de 100 m"
+              : `Hay ${cercanos.length} reportes a menos de 100 m`}
           </Text>
           <Text style={[styles.duplicadosSub, { color: tema.onSurfaceVariant }]}>
             ¿Alguno es el mismo problema?
