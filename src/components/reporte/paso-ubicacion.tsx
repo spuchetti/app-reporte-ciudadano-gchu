@@ -11,7 +11,7 @@ import {
   reportesDentroDeRadio,
   type ReporteCercano,
 } from "@/servicios/mapa";
-import { obtenerReportes } from "@/servicios/reportes";
+import { obtenerReportesCercanos } from "@/servicios/reportes";
 import {
   COORDENADAS_CENTRO,
   DIRECCION_SIN_CONEXION,
@@ -50,6 +50,7 @@ export function PasoUbicacion({
   const [error, setError] = useState<string | null>(null);
   const [mapaClave, setMapaClave] = useState(0);
   const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [errorCercanos, setErrorCercanos] = useState<string | null>(null);
   const [eleccion, setEleccion] = useState("nuevo");
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onUbicacionRef = useRef(onUbicacion);
@@ -64,17 +65,32 @@ export function PasoUbicacion({
 
   useEffect(() => {
     let activo = true;
-    obtenerReportes()
-      .then((lista) => {
-        if (activo) {
-          setReportes(lista);
-        }
-      })
-      .catch(() => {});
+    setReportes([]);
+    setErrorCercanos(null);
+    if (latitud == null || longitud == null) {
+      return () => {
+        activo = false;
+      };
+    }
+
+    const timer = setTimeout(() => {
+      obtenerReportesCercanos({ latitud, longitud }, tipoId)
+        .then((lista) => {
+          if (activo) {
+            setReportes(lista);
+          }
+        })
+        .catch(() => {
+          if (activo) {
+            setErrorCercanos("No pudimos consultar los reclamos cercanos.");
+          }
+        });
+    }, 250);
     return () => {
       activo = false;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [latitud, longitud, tipoId]);
 
   useEffect(() => {
     if (latitud != null && longitud != null) return;
@@ -325,13 +341,16 @@ export function PasoUbicacion({
       </View>
 
       {error ? <Text style={[styles.error, { color: tema.error }]}>{error}</Text> : null}
+      {errorCercanos ? (
+        <Text style={[styles.error, { color: tema.error }]}>{errorCercanos}</Text>
+      ) : null}
 
       {cercanos.length > 0 ? (
         <View style={styles.duplicados}>
           <Text style={[styles.duplicadosTitulo, { color: tema.onSurface }]}>
             {cercanos.length === 1
-              ? "Hay 1 reporte a menos de 50 m"
-              : `Hay ${cercanos.length} reportes a menos de 50 m`}
+              ? "Hay 1 reporte a 100 m o menos"
+              : `Hay ${cercanos.length} reportes a 100 m o menos`}
           </Text>
           <Text style={[styles.duplicadosSub, { color: tema.onSurfaceVariant }]}>
             ¿Alguno es el mismo problema?

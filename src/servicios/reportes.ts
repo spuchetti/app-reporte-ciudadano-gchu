@@ -21,6 +21,11 @@ import {
 } from "@/servicios/base-datos";
 import { ESTADOS_GESTION, esPendiente } from "@/servicios/bandeja";
 import { ErrorServicio, esErrorServicio } from "@/servicios/error";
+import {
+  RADIO_DUPLICADO_M,
+  metrosEntre,
+  reportesDentroDeRadio,
+} from "@/servicios/mapa";
 import { hayInternet } from "@/servicios/red";
 import {
   DIRECCION_SIN_CONEXION,
@@ -34,6 +39,7 @@ import {
 import {
   Adhesion,
   CambioDeEstado,
+  Coordenadas,
   DatosBorradorReporte,
   EstadoReporte,
   Reporte,
@@ -221,6 +227,47 @@ export const obtenerReportes = async (): Promise<Reporte[]> => {
   await delay(600);
   return reportesMock.filter((reporte) => reporte.sincronizado);
 };
+
+export async function obtenerReportesCercanos(
+  origen: Coordenadas,
+  tipoId?: string,
+): Promise<Reporte[]> {
+  if (enPrueba()) {
+    await delay(400);
+    return reportesDentroDeRadio({
+      reportes: reportesMock.filter((reporte) => reporte.sincronizado),
+      origen,
+      radioMetros: RADIO_DUPLICADO_M,
+      tipoId,
+      soloAbiertos: true,
+    }).map(({ reporte }) => reporte);
+  }
+
+  const porPagina = 100;
+  const reportes: Reporte[] = [];
+  let pagina = 1;
+  while (true) {
+    const parametros = [
+      `latitud=${encodeURIComponent(String(origen.latitud))}`,
+      `longitud=${encodeURIComponent(String(origen.longitud))}`,
+      `radioMetros=${RADIO_DUPLICADO_M}`,
+      `pagina=${pagina}`,
+      `porPagina=${porPagina}`,
+    ];
+    if (tipoId) {
+      parametros.push(`tipoId=${encodeURIComponent(tipoId)}`);
+    }
+
+    const actuales = await pedirReportes(
+      `/reportes/cercanos?${parametros.join("&")}`,
+    );
+    reportes.push(...actuales);
+    if (actuales.length < porPagina) {
+      return reportes;
+    }
+    pagina += 1;
+  }
+}
 
 // Obtener un reporte por ID
 export const obtenerReportePorId = async (
@@ -969,11 +1016,12 @@ function sumarAdhesion(reporte: Reporte, usuarioId: string) {
 export const adherirAReporte = async (
   reporteId: string,
   vecinoId: string,
+  ubicacion: Coordenadas,
 ): Promise<Reporte> => {
   if (!enPrueba()) {
     return pedirReporte(
       `/reportes/${encodeURIComponent(reporteId)}/adhesiones`,
-      { method: "POST" },
+      { method: "POST", body: JSON.stringify(ubicacion) },
     );
   }
 
@@ -989,6 +1037,13 @@ export const adherirAReporte = async (
     throw new ErrorServicio({
       codigo: "REPORTE_PROPIO",
       mensaje: "Ese reporte ya lo cargaste vos.",
+    });
+  }
+
+  if (metrosEntre(ubicacion, reporte.coordenadas) > RADIO_DUPLICADO_M) {
+    throw new ErrorServicio({
+      codigo: "ADHESION_FUERA_DE_RADIO",
+      mensaje: "Sólo podés sumarte a un reclamo que esté a 100 m o menos.",
     });
   }
 
