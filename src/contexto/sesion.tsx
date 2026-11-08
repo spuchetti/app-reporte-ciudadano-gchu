@@ -31,12 +31,14 @@ import {
   registrarDispositivo,
 } from "@/servicios/notificaciones";
 import { hayInternet } from "@/servicios/red";
+import { obtenerUbicacionActual } from "@/servicios/ubicacion";
 import {
   adherirAReporte,
   crearReporte,
   datosCreacionDesdeBorrador,
   paramsDeTicket,
 } from "@/servicios/reportes";
+import type { Coordenadas } from "@/tipos";
 import {
   DatosBorradorReporte,
   DatosRegistro,
@@ -63,7 +65,10 @@ type ValorSesion = {
     borrador: DatosBorradorReporte,
   ) => Promise<Reporte>;
   enviarReporte: (borrador: DatosBorradorReporte) => Promise<Reporte>;
-  adherirseAReporte: (reporteId: string) => Promise<Reporte>;
+  adherirseAReporte: (
+    reporteId: string,
+    ubicacion?: Coordenadas,
+  ) => Promise<Reporte>;
   adherirPrimerReporte: (
     datos: DatosRegistro,
     reporteId: string,
@@ -248,11 +253,16 @@ export function SesionProvider({ children }: PropsWithChildren) {
   };
 
   const adherirseAReporte = useCallback(
-    async (reporteId: string) => {
+    async (reporteId: string, ubicacion?: Coordenadas) => {
       if (!sesion || sesion.esInvitado !== false || sesion.usuario.rol !== "vecino") {
         throw new Error("Tenés que identificarte para sumarte al reporte.");
       }
-      const reporte = await adherirAReporte(reporteId, sesion.usuario.id);
+      const posicion = ubicacion ?? (await obtenerUbicacionActual());
+      const reporte = await adherirAReporte(
+        reporteId,
+        sesion.usuario.id,
+        posicion,
+      );
       limpiarBorrador();
       irATicket(reporte, "sumado");
       return reporte;
@@ -268,7 +278,12 @@ export function SesionProvider({ children }: PropsWithChildren) {
         );
       }
       const siguiente = await identificarVecino(datos);
-      const reporte = await adherirAReporte(reporteId, siguiente.usuario.id);
+      const ubicacion = await obtenerUbicacionActual();
+      const reporte = await adherirAReporte(
+        reporteId,
+        siguiente.usuario.id,
+        ubicacion,
+      );
       limpiarBorrador();
       await despuesDeEntrar(siguiente, "vecino");
       irATicket(reporte, "sumado");

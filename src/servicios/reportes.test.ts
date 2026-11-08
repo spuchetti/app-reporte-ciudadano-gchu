@@ -14,6 +14,7 @@ import {
   obtenerAvisosDeEstado,
   obtenerReportePorId,
   obtenerReportes,
+  obtenerReportesCercanos,
   obtenerReportesPorZona,
   sincronizarPendientes,
   paramsDeTicket,
@@ -459,8 +460,12 @@ describe("servicios/reportes", () => {
     }
     const adhesionesPrev = original.adhesiones;
 
-    const primera = await esperar(adherirAReporte("rep-001", "usr-002"));
-    const segunda = await esperar(adherirAReporte("rep-001", "usr-002"));
+    const primera = await esperar(
+      adherirAReporte("rep-001", "usr-002", original.coordenadas),
+    );
+    const segunda = await esperar(
+      adherirAReporte("rep-001", "usr-002", original.coordenadas),
+    );
 
     expect(primera.adhesiones).toBe(adhesionesPrev + 1);
     expect(segunda.adhesiones).toBe(adhesionesPrev + 1);
@@ -480,6 +485,38 @@ describe("servicios/reportes", () => {
     original.adhesiones = adhesionesDelReporte("rep-001").length;
   });
 
+  test("rechaza sumarse a un reporte a más de 100 m", async () => {
+    const original = reportesMock.find((item) => item.id === "rep-001");
+    if (!original) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+
+    await expect(
+      adherirAReporte("rep-001", "usr-002", {
+        latitud: original.coordenadas.latitud + 110 / 111_320,
+        longitud: original.coordenadas.longitud,
+      }),
+    ).rejects.toMatchObject({ codigo: "ADHESION_FUERA_DE_RADIO" });
+  });
+
+  test("consulta reportes cercanos abiertos del tipo elegido", async () => {
+    const cercanos = await esperar(
+      obtenerReportesCercanos(
+        reportesMock[0].coordenadas,
+        reportesMock[0].tipoId,
+      ),
+    );
+
+    expect(cercanos.length).toBeGreaterThan(0);
+    expect(
+      cercanos.every(
+        (reporte) =>
+          reporte.tipoId === reportesMock[0].tipoId &&
+          ["recibido", "en_revision", "asignado"].includes(reporte.estado),
+      ),
+    ).toBe(true);
+  });
+
   test("lista quién se sumó y los reportes de ese vecino", async () => {
     const delReporte = adhesionesDelReporte("rep-004");
 
@@ -491,8 +528,13 @@ describe("servicios/reportes", () => {
   });
 
   test("rechaza sumarse al propio reporte", async () => {
-    await expect(adherirAReporte("rep-001", "usr-001")).rejects.toMatchObject({
-      codigo: "REPORTE_PROPIO",
-    });
+    const propio = reportesMock.find((item) => item.id === "rep-001");
+    if (!propio) {
+      throw new Error("faltaba el reporte de prueba");
+    }
+
+    await expect(
+      adherirAReporte("rep-001", "usr-001", propio.coordenadas),
+    ).rejects.toMatchObject({ codigo: "REPORTE_PROPIO" });
   });
 });

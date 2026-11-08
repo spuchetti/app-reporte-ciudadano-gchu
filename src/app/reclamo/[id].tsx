@@ -46,10 +46,11 @@ import {
   marcarDuplicado,
   obtenerCambiosEstado,
   obtenerReportePorId,
+  obtenerReportesCercanos,
   obtenerReportes,
   textoDuplicado,
 } from "@/servicios/reportes";
-import { COLORES_ESTADO, RADIO_CERCA_M, metrosEntre } from "@/servicios/mapa";
+import { COLORES_ESTADO } from "@/servicios/mapa";
 import { obtenerUbicacionActual } from "@/servicios/ubicacion";
 import { CambioDeEstado, Coordenadas, EstadoReporte, Reporte } from "@/tipos";
 
@@ -156,6 +157,9 @@ export default function DetalleReclamoScreen() {
   const [errorSumar, setErrorSumar] = useState<string | null>(null);
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
   const [ubicacionLista, setUbicacionLista] = useState(false);
+  const [estaCerca, setEstaCerca] = useState(false);
+  const [verificandoCercania, setVerificandoCercania] = useState(false);
+  const [errorCercania, setErrorCercania] = useState<string | null>(null);
   const pantallaActiva = useRef(true);
   const secuenciaCarga = useRef(0);
 
@@ -249,6 +253,43 @@ export default function DetalleReclamoScreen() {
       activo = false;
     };
   }, [usuario?.rol]);
+
+  useEffect(() => {
+    let activo = true;
+    const reporteCercanoId = reporte?.id;
+    if (!ubicacion || !reporteCercanoId || usuario?.rol !== "vecino") {
+      setEstaCerca(false);
+      setVerificandoCercania(false);
+      setErrorCercania(null);
+      return () => {
+        activo = false;
+      };
+    }
+
+    setEstaCerca(false);
+    setVerificandoCercania(true);
+    setErrorCercania(null);
+    obtenerReportesCercanos(ubicacion)
+      .then((cercanos) => {
+        if (activo) {
+          setEstaCerca(cercanos.some((item) => item.id === reporteCercanoId));
+        }
+      })
+      .catch(() => {
+        if (activo) {
+          setErrorCercania("No pudimos comprobar la distancia al reclamo.");
+        }
+      })
+      .finally(() => {
+        if (activo) {
+          setVerificandoCercania(false);
+        }
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [ubicacion, reporte?.id, usuario?.rol]);
 
   async function onCambiarEstado(
     estado: EstadoReporte,
@@ -352,13 +393,15 @@ export default function DetalleReclamoScreen() {
       reporte.estado !== "rechazado" &&
       !adhesionesDelReporte(reporte.id).some((item) => item.usuarioId === usuario.id),
   );
-  const distancia =
-    reporte && ubicacion ? metrosEntre(ubicacion, reporte.coordenadas) : null;
-  const estaCerca = distancia != null && distancia <= RADIO_CERCA_M;
   const puedeSumarse = puedeAdherirse && estaCerca;
   const avisoDistancia =
-    puedeAdherirse && ubicacionLista && !estaCerca
-      ? "Solo podés sumarte a un reclamo que esté a menos de 100 m."
+    puedeAdherirse &&
+    ubicacion != null &&
+    ubicacionLista &&
+    !verificandoCercania &&
+    !estaCerca &&
+    !errorCercania
+      ? "Solo podés sumarte a un reclamo que esté a 100 m o menos."
       : null;
 
   async function onSumarse() {
@@ -368,7 +411,7 @@ export default function DetalleReclamoScreen() {
     setErrorSumar(null);
     setSumando(true);
     try {
-      await adherirseAReporte(reporte.id);
+      await adherirseAReporte(reporte.id, ubicacion ?? undefined);
     } catch (err) {
       setErrorSumar(
         esErrorServicio(err)
@@ -674,6 +717,10 @@ export default function DetalleReclamoScreen() {
             ) : avisoDistancia ? (
               <Text style={[styles.avisoDistancia, { color: tema.onSurfaceVariant }]}>
                 {avisoDistancia}
+              </Text>
+            ) : errorCercania ? (
+              <Text style={[styles.errorSumar, { color: tema.error }]}>
+                {errorCercania}
               </Text>
             ) : null}
 
