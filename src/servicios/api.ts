@@ -1,4 +1,4 @@
-import axios, { isAxiosError } from "axios";
+import { create as createAxios, isAxiosError } from "axios";
 import { isDevice } from "expo-device";
 import { Platform } from "react-native";
 
@@ -28,7 +28,7 @@ export function urlApi() {
 
 export const URL_API = urlApi();
 
-const cliente = axios.create({ baseURL: URL_API });
+const cliente = createAxios({ baseURL: URL_API });
 
 const CLAVE_SESION = "sesion";
 
@@ -69,8 +69,8 @@ function aFoto(foto: FotoApi, principal: boolean): Foto {
 export function adaptarReporte(reporte: ReporteApi): Reporte {
   const arreglo = reporte.fotos.find((foto) => foto.momento === "arreglo");
   const problema = reporte.fotos.filter((foto) => foto.momento !== "arreglo");
-  const fotos = (problema.length > 0 ? problema : reporte.fotos).map((foto, indice) =>
-    aFoto(foto, indice === 0),
+  const fotos = (problema.length > 0 ? problema : reporte.fotos).map(
+    (foto, indice) => aFoto(foto, indice === 0),
   );
 
   return {
@@ -123,9 +123,13 @@ function errorDeCuerpo(cuerpo: unknown) {
   return (cuerpo as ErrorCuerpo).error;
 }
 
-export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Promise<T> {
+export async function pedir<T>(
+  ruta: string,
+  opciones: OpcionesPedido = {},
+): Promise<T> {
   const headers: Record<string, string> = {};
-  const token = opciones.token === undefined ? await tokenGuardado() : opciones.token;
+  const token =
+    opciones.token === undefined ? await tokenGuardado() : opciones.token;
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -169,7 +173,10 @@ export async function pedirLista<T>(ruta: string): Promise<T[]> {
   return Array.isArray(datos) ? datos : [];
 }
 
-export async function pedirReporte(ruta: string, opciones?: OpcionesPedido): Promise<Reporte> {
+export async function pedirReporte(
+  ruta: string,
+  opciones?: OpcionesPedido,
+): Promise<Reporte> {
   return adaptarReporte(await pedir<ReporteApi>(ruta, opciones));
 }
 
